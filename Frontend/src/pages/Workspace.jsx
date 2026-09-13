@@ -41,14 +41,13 @@ export default function Workspace() {
   useEffect(() => {
     if (!user || !roomId) return;
 
-    // Grab username safely regardless of DB schema
     const myUsername = user.name || user.username || "Peer";
 
     const provider = new SocketIOProvider(
       "http://localhost:5000",
       roomId,
       ydoc,
-      { autoConnect: true }, // Removed the invalid 5th argument
+      { autoConnect: true },
     );
 
     const updateUsers = () => {
@@ -60,7 +59,7 @@ export default function Workspace() {
       );
     };
 
-    // Initialize local state with a null cursor
+    // Initialize local state
     provider.awareness.setLocalStateField("user", {
       username: myUsername,
       color: userColor,
@@ -70,7 +69,12 @@ export default function Workspace() {
     updateUsers();
     provider.awareness.on("change", updateUsers);
 
-    // Pass awareness to CanvasBoard
+    // FIXED HEARTBEAT: Instead of overwriting local state,
+    // we safely touch a dummy timestamp field to keep the connection alive.
+    const heartbeatInterval = setInterval(() => {
+      provider.awareness.setLocalStateField("lastActive", Date.now());
+    }, 15000);
+
     setAwareness(provider.awareness);
 
     const handleBeforeUnload = () =>
@@ -78,6 +82,7 @@ export default function Workspace() {
     window.addEventListener("beforeunload", handleBeforeUnload);
 
     return () => {
+      clearInterval(heartbeatInterval);
       provider.awareness.off("change", updateUsers);
       window.removeEventListener("beforeunload", handleBeforeUnload);
       provider.awareness.setLocalStateField("user", null);
