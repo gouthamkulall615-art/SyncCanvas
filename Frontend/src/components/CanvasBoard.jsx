@@ -232,6 +232,18 @@ export default function CanvasBoard({ shapesMap, awareness }) {
     setSelectedId(null);
   };
 
+  const clearCanvas = () => {
+    if (
+      window.confirm(
+        "Are u sure you want to clear the entire canvas for everyone?",
+      )
+    ) {
+      const keys = Array.from(shapesMap.keys());
+      keys.forEach((key) => shapesMap.delete(key));
+      setSelectedId(null);
+    }
+  };
+
   const updateShapeColor = (newColor) => {
     if (!selectedId) return;
     const existing = shapesMap.get(selectedId);
@@ -345,6 +357,16 @@ export default function CanvasBoard({ shapesMap, awareness }) {
             </button>
           );
         })}
+      </div>
+
+      <div className="absolute top-6 right-6 z-50">
+        <button
+          onClick={clearCanvas}
+          className="px-4 py-2 bg-[#1a1d24]/95 backdrop-blur-md border border-red-900/50 text-red-400 text-xs font-semibold tracking-wide uppercase rounded-xl hover:bg-red-500/10 hover:border-red-500/80 transition-all shadow-xl flex items-center gap-2"
+        >
+          <FiTrash2 size={14} />
+          Clear Canvas
+        </button>
       </div>
 
       {/* Right-Side Properties Panel */}
