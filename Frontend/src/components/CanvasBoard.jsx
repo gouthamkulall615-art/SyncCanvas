@@ -34,12 +34,24 @@ export default function CanvasBoard({ shapesMap, awareness }) {
   const [selectedId, setSelectedId] = useState(null);
   const [drawingShapeId, setDrawingShapeId] = useState(null);
   const [activeTool, setActiveTool] = useState("select");
-  const [isDrawing, setIsDrawing] = useState(false); // Track freehand drawing
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [editingTextId, setEditingTextId] = useState(null);
 
   const stageRef = useRef(null);
   const transformerRef = useRef(null);
   const containerRef = useRef(null);
+  const textareaRef = useRef(null); // <-- Added ref for the text editor
+
   const [size, setSize] = useState({ width: 0, height: 0 });
+
+  // Handle safe focusing of the textarea to prevent the instant-blur bug
+  useEffect(() => {
+    if (editingTextId && textareaRef.current) {
+      setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 50);
+    }
+  }, [editingTextId]);
 
   useEffect(() => {
     const updateSize = () => {
@@ -96,7 +108,6 @@ export default function CanvasBoard({ shapesMap, awareness }) {
     transformerRef.current.getLayer().batchDraw();
   }, [selectedId, shapes]);
 
-  //  MOUSE EVENTS FOR DRAWING & CURSORS
   const handleStageMouseDown = (e) => {
     if (activeTool === "pan") return;
 
@@ -122,10 +133,25 @@ export default function CanvasBoard({ shapesMap, awareness }) {
       });
       setDrawingShapeId(id);
     }
+
+    if (activeTool === "text") {
+      const id = nextId();
+      shapesMap.set(id, {
+        type: "text",
+        x: pos.x,
+        y: pos.y,
+        text: "",
+        fill: "#ffffff",
+        fontSize: 24,
+      });
+      setSelectedId(id);
+      setEditingTextId(id);
+      setActiveTool("select");
+      return;
+    }
   };
 
   const handleMouseMove = (e) => {
-    // 1. Broadcast Cursor
     if (awareness) {
       const stage = e.target.getStage();
       const point = stage.getPointerPosition();
@@ -138,7 +164,6 @@ export default function CanvasBoard({ shapesMap, awareness }) {
       }
     }
 
-    // 2. Handle Freehand Drawing
     if (!isDrawing || (activeTool !== "pen" && activeTool !== "highlighter"))
       return;
 
@@ -157,7 +182,6 @@ export default function CanvasBoard({ shapesMap, awareness }) {
   const handleStageMouseUp = () => {
     if (isDrawing) {
       setIsDrawing(false);
-
       setDrawingShapeId(null);
     }
   };
@@ -210,22 +234,6 @@ export default function CanvasBoard({ shapesMap, awareness }) {
     setActiveTool("select");
   };
 
-  const addText = () => {
-    const text = prompt("Enter text:");
-    if (!text) return;
-    const id = nextId();
-    shapesMap.set(id, {
-      type: "text",
-      x: 400,
-      y: 300,
-      text: text,
-      fill: "#ffffff",
-      fontSize: 24,
-    });
-    setSelectedId(id);
-    setActiveTool("select");
-  };
-
   const deleteSelected = () => {
     if (!selectedId) return;
     shapesMap.delete(selectedId);
@@ -235,7 +243,7 @@ export default function CanvasBoard({ shapesMap, awareness }) {
   const clearCanvas = () => {
     if (
       window.confirm(
-        "Are u sure you want to clear the entire canvas for everyone?",
+        "Are you sure you want to clear the entire canvas for everyone?",
       )
     ) {
       const keys = Array.from(shapesMap.keys());
@@ -276,14 +284,7 @@ export default function CanvasBoard({ shapesMap, awareness }) {
         width: Math.max(20, node.width() * scaleX),
         height: Math.max(20, node.height() * scaleY),
       });
-    } else if (existing.type === "circle") {
-      shapesMap.set(id, {
-        ...existing,
-        x: node.x(),
-        y: node.y(),
-        radius: Math.max(10, node.radius() * scaleX),
-      });
-    } else if (existing.type === "diamond") {
+    } else if (existing.type === "circle" || existing.type === "diamond") {
       shapesMap.set(id, {
         ...existing,
         x: node.x(),
@@ -307,7 +308,8 @@ export default function CanvasBoard({ shapesMap, awareness }) {
     const handleKeyDown = (e) => {
       if (
         (e.key === "Delete" || e.key === "Backspace") &&
-        document.activeElement.tagName !== "INPUT"
+        document.activeElement.tagName !== "INPUT" &&
+        document.activeElement.tagName !== "TEXTAREA"
       ) {
         deleteSelected();
       }
@@ -317,7 +319,7 @@ export default function CanvasBoard({ shapesMap, awareness }) {
   }, [selectedId]);
 
   return (
-    <div className="canvas-board relative w-full h-full">
+    <div className="canvas-board relative w-full h-full overflow-hidden">
       {/* Top-Center Floating Toolbar */}
       <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 rounded-xl px-1.5 py-1.5 flex items-center gap-0.5 shadow-2xl">
         {[
@@ -335,7 +337,6 @@ export default function CanvasBoard({ shapesMap, awareness }) {
                 Aa
               </span>
             ),
-            action: addText,
           },
         ].map((tool) => {
           const isActive = activeTool === tool.id;
@@ -359,6 +360,7 @@ export default function CanvasBoard({ shapesMap, awareness }) {
         })}
       </div>
 
+      {/* Top-Right Global Actions */}
       <div className="absolute top-6 right-6 z-50">
         <button
           onClick={clearCanvas}
@@ -368,6 +370,54 @@ export default function CanvasBoard({ shapesMap, awareness }) {
           Clear Canvas
         </button>
       </div>
+
+      {/* Inline Text Editor */}
+      {editingTextId && shapesMap.get(editingTextId) && (
+        <textarea
+          ref={textareaRef} // <-- Ref linked here
+          value={shapesMap.get(editingTextId).text}
+          onChange={(e) => {
+            const existing = shapesMap.get(editingTextId);
+            if (existing) {
+              shapesMap.set(editingTextId, {
+                ...existing,
+                text: e.target.value,
+              });
+            }
+          }}
+          onBlur={() => {
+            const existing = shapesMap.get(editingTextId);
+            if (existing && !existing.text.trim()) {
+              shapesMap.delete(editingTextId);
+            }
+            setEditingTextId(null);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              e.target.blur();
+            }
+          }}
+          style={{
+            position: "absolute",
+            top: `${shapesMap.get(editingTextId).y}px`,
+            left: `${shapesMap.get(editingTextId).x}px`,
+            background: "transparent",
+            color: shapesMap.get(editingTextId).fill,
+            fontSize: `${shapesMap.get(editingTextId).fontSize}px`,
+            fontFamily: "sans-serif",
+            fontWeight: "bold",
+            border: "1px dashed #4b5563",
+            outline: "none",
+            resize: "none",
+            minHeight: "40px",
+            minWidth: "150px",
+            overflow: "hidden",
+            whiteSpace: "pre",
+            zIndex: 100,
+          }}
+        />
+      )}
 
       {/* Right-Side Properties Panel */}
       {selectedId && (
@@ -430,10 +480,12 @@ export default function CanvasBoard({ shapesMap, awareness }) {
       {/* Konva Canvas */}
       <div
         ref={containerRef}
-        className={`canvas-container ${
+        className={`canvas-container relative w-full h-full ${
           activeTool === "pan"
             ? "cursor-grab"
-            : activeTool === "pen" || activeTool === "highlighter"
+            : activeTool === "pen" ||
+                activeTool === "highlighter" ||
+                activeTool === "text"
               ? "cursor-crosshair"
               : "cursor-default"
         }`}
@@ -444,7 +496,7 @@ export default function CanvasBoard({ shapesMap, awareness }) {
             ref={stageRef}
             width={size.width}
             height={size.height}
-            draggable={activeTool === "pan"} // Allow dragging the entire stage to pan
+            draggable={activeTool === "pan"}
             onMouseDown={handleStageMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleStageMouseUp}
@@ -509,6 +561,9 @@ export default function CanvasBoard({ shapesMap, awareness }) {
                         fill={shape.fill}
                         fontFamily="sans-serif"
                         fontStyle="bold"
+                        opacity={editingTextId === shape.id ? 0 : 1}
+                        onDblClick={() => setEditingTextId(shape.id)}
+                        onDblTap={() => setEditingTextId(shape.id)}
                       />
                     );
                   case "line":
@@ -544,6 +599,15 @@ export default function CanvasBoard({ shapesMap, awareness }) {
                 boundBoxFunc={(oldBox, newBox) =>
                   newBox.width < 20 || newBox.height < 20 ? oldBox : newBox
                 }
+                // CRITICAL FIX: Allow double-clicking the blue transformer box to edit the text underneath
+                onDblClick={() => {
+                  const shape = shapes.find((s) => s.id === selectedId);
+                  if (shape?.type === "text") setEditingTextId(selectedId);
+                }}
+                onDblTap={() => {
+                  const shape = shapes.find((s) => s.id === selectedId);
+                  if (shape?.type === "text") setEditingTextId(selectedId);
+                }}
               />
 
               {/* Render Remote Cursors */}
