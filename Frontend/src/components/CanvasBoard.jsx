@@ -32,6 +32,7 @@ export default function CanvasBoard({ shapesMap, awareness }) {
   const [shapes, setShapes] = useState([]);
   const [remoteUsers, setRemoteUsers] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
+  const [drawingShapeId, setDrawingShapeId] = useState(null);
   const [activeTool, setActiveTool] = useState("select");
   const [isDrawing, setIsDrawing] = useState(false); // Track freehand drawing
 
@@ -109,6 +110,7 @@ export default function CanvasBoard({ shapesMap, awareness }) {
 
     if (activeTool === "pen" || activeTool === "highlighter") {
       setIsDrawing(true);
+      setSelectedId(null);
       const id = nextId();
       shapesMap.set(id, {
         type: "line",
@@ -118,7 +120,7 @@ export default function CanvasBoard({ shapesMap, awareness }) {
         strokeWidth: activeTool === "highlighter" ? 14 : 3,
         opacity: activeTool === "highlighter" ? 0.4 : 1,
       });
-      setSelectedId(id);
+      setDrawingShapeId(id);
     }
   };
 
@@ -142,10 +144,10 @@ export default function CanvasBoard({ shapesMap, awareness }) {
 
     const stage = e.target.getStage();
     const point = stage.getPointerPosition();
-    const existing = shapesMap.get(selectedId);
+    const existing = shapesMap.get(drawingShapeId);
 
     if (existing && existing.type === "line") {
-      shapesMap.set(selectedId, {
+      shapesMap.set(drawingShapeId, {
         ...existing,
         points: [...existing.points, point.x, point.y],
       });
@@ -155,7 +157,8 @@ export default function CanvasBoard({ shapesMap, awareness }) {
   const handleStageMouseUp = () => {
     if (isDrawing) {
       setIsDrawing(false);
-      setActiveTool("select"); // Revert to select after drawing a line
+
+      setDrawingShapeId(null);
     }
   };
 
