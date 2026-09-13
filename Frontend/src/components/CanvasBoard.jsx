@@ -10,6 +10,8 @@ import {
   Text,
   Label,
   Tag,
+  Line,
+  RegularPolygon,
 } from "react-konva";
 import {
   FiMousePointer,
@@ -30,7 +32,8 @@ export default function CanvasBoard({ shapesMap, awareness }) {
   const [shapes, setShapes] = useState([]);
   const [remoteUsers, setRemoteUsers] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
-  const [activeTool, setActiveTool] = useState("select"); // Default to select tool
+  const [activeTool, setActiveTool] = useState("select");
+  const [isDrawing, setIsDrawing] = useState(false); // Track freehand drawing
 
   const stageRef = useRef(null);
   const transformerRef = useRef(null);
@@ -63,31 +66,19 @@ export default function CanvasBoard({ shapesMap, awareness }) {
     return () => shapesMap.unobserve(syncFromMap);
   }, [shapesMap]);
 
-  // Sync Remote Cursors from Awareness
   useEffect(() => {
     if (!awareness) return;
-
     const updateCursors = () => {
       const states = Array.from(awareness.getStates().entries());
-
-      // CRITICAL FIX: Use the document's underlying client ID
       const localClientId = awareness.doc.clientID;
-
       const others = states
-        .filter(([clientId, state]) => {
-          // Force string comparison to safely filter out your own local cursor
-          return (
-            String(clientId) !== String(localClientId) && state?.user?.cursor
-          );
-        })
-        .map(([clientId, state]) => ({
-          clientId,
-          ...state.user,
-        }));
-
+        .filter(
+          ([clientId, state]) =>
+            String(clientId) !== String(localClientId) && state?.user?.cursor,
+        )
+        .map(([clientId, state]) => ({ clientId, ...state.user }));
       setRemoteUsers(others);
     };
-
     awareness.on("change", updateCursors);
     return () => awareness.off("change", updateCursors);
   }, [awareness]);
@@ -104,31 +95,76 @@ export default function CanvasBoard({ shapesMap, awareness }) {
     transformerRef.current.getLayer().batchDraw();
   }, [selectedId, shapes]);
 
-  // Extract X/Y integers so the WebSocket can stringify the JSON
+  //  MOUSE EVENTS FOR DRAWING & CURSORS
+  const handleStageMouseDown = (e) => {
+    if (activeTool === "pan") return;
+
+    const stage = e.target.getStage();
+    const pos = stage.getPointerPosition();
+
+    if (activeTool === "select") {
+      if (e.target === stage) setSelectedId(null);
+      return;
+    }
+
+    if (activeTool === "pen" || activeTool === "highlighter") {
+      setIsDrawing(true);
+      const id = nextId();
+      shapesMap.set(id, {
+        type: "line",
+        points: [pos.x, pos.y],
+        fill: "transparent",
+        stroke: activeTool === "highlighter" ? "#f59e0b" : "#ffffff",
+        strokeWidth: activeTool === "highlighter" ? 14 : 3,
+        opacity: activeTool === "highlighter" ? 0.4 : 1,
+      });
+      setSelectedId(id);
+    }
+  };
+
   const handleMouseMove = (e) => {
-    if (!awareness) return;
+    // 1. Broadcast Cursor
+    if (awareness) {
+      const stage = e.target.getStage();
+      const point = stage.getPointerPosition();
+      const state = awareness.getLocalState();
+      if (state?.user && point) {
+        awareness.setLocalStateField("user", {
+          ...state.user,
+          cursor: { x: point.x, y: point.y },
+        });
+      }
+    }
+
+    // 2. Handle Freehand Drawing
+    if (!isDrawing || (activeTool !== "pen" && activeTool !== "highlighter"))
+      return;
+
     const stage = e.target.getStage();
     const point = stage.getPointerPosition();
-    const state = awareness.getLocalState();
+    const existing = shapesMap.get(selectedId);
 
-    if (state?.user && point) {
-      awareness.setLocalStateField("user", {
-        ...state.user,
-        cursor: { x: point.x, y: point.y },
+    if (existing && existing.type === "line") {
+      shapesMap.set(selectedId, {
+        ...existing,
+        points: [...existing.points, point.x, point.y],
       });
     }
   };
 
-  const handleMouseLeave = () => {
-    if (!awareness) return;
-    const state = awareness.getLocalState();
-    if (state?.user) {
-      awareness.setLocalStateField("user", { ...state.user, cursor: null });
+  const handleStageMouseUp = () => {
+    if (isDrawing) {
+      setIsDrawing(false);
+      setActiveTool("select"); // Revert to select after drawing a line
     }
   };
 
-  const handleStageMouseDown = (e) => {
-    if (e.target === e.target.getStage()) setSelectedId(null);
+  const handleMouseLeave = () => {
+    if (isDrawing) setIsDrawing(false);
+    if (!awareness) return;
+    const state = awareness.getLocalState();
+    if (state?.user)
+      awareness.setLocalStateField("user", { ...state.user, cursor: null });
   };
 
   const addRectangle = () => {
@@ -142,7 +178,7 @@ export default function CanvasBoard({ shapesMap, awareness }) {
       fill: "#3b82f6",
     });
     setSelectedId(id);
-    setActiveTool("select"); // Revert to select tool after drawing
+    setActiveTool("select");
   };
 
   const addCircle = () => {
@@ -155,7 +191,36 @@ export default function CanvasBoard({ shapesMap, awareness }) {
       fill: "#ef4444",
     });
     setSelectedId(id);
-    setActiveTool("select"); // Revert to select tool after drawing
+    setActiveTool("select");
+  };
+
+  const addDiamond = () => {
+    const id = nextId();
+    shapesMap.set(id, {
+      type: "diamond",
+      x: 500,
+      y: 300,
+      radius: 70,
+      fill: "#8b5cf6",
+    });
+    setSelectedId(id);
+    setActiveTool("select");
+  };
+
+  const addText = () => {
+    const text = prompt("Enter text:");
+    if (!text) return;
+    const id = nextId();
+    shapesMap.set(id, {
+      type: "text",
+      x: 400,
+      y: 300,
+      text: text,
+      fill: "#ffffff",
+      fontSize: 24,
+    });
+    setSelectedId(id);
+    setActiveTool("select");
   };
 
   const deleteSelected = () => {
@@ -167,9 +232,12 @@ export default function CanvasBoard({ shapesMap, awareness }) {
   const updateShapeColor = (newColor) => {
     if (!selectedId) return;
     const existing = shapesMap.get(selectedId);
-    if (existing) {
-      shapesMap.set(selectedId, { ...existing, fill: newColor });
-    }
+    if (existing)
+      shapesMap.set(selectedId, {
+        ...existing,
+        fill: newColor,
+        stroke: existing.type === "line" ? newColor : undefined,
+      });
   };
 
   const updateShapePosition = (id, x, y) => {
@@ -200,6 +268,23 @@ export default function CanvasBoard({ shapesMap, awareness }) {
         y: node.y(),
         radius: Math.max(10, node.radius() * scaleX),
       });
+    } else if (existing.type === "diamond") {
+      shapesMap.set(id, {
+        ...existing,
+        x: node.x(),
+        y: node.y(),
+        radius: Math.max(10, node.radius() * scaleX),
+      });
+    } else {
+      node.scaleX(scaleX);
+      node.scaleY(scaleY);
+      shapesMap.set(id, {
+        ...existing,
+        x: node.x(),
+        y: node.y(),
+        scaleX,
+        scaleY,
+      });
     }
   };
 
@@ -218,14 +303,14 @@ export default function CanvasBoard({ shapesMap, awareness }) {
 
   return (
     <div className="canvas-board relative w-full h-full">
-      {/* Top-Center Floating Toolbar - Updated with Figma Icons */}
+      {/* Top-Center Floating Toolbar */}
       <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 rounded-xl px-1.5 py-1.5 flex items-center gap-0.5 shadow-2xl">
         {[
           { id: "select", icon: <FiMousePointer size={18} /> },
           { id: "pan", icon: <LuHand size={18} /> },
           { id: "rect", icon: <FiSquare size={18} />, action: addRectangle },
           { id: "circle", icon: <FiCircle size={18} />, action: addCircle },
-          { id: "diamond", icon: <LuDiamond size={18} /> },
+          { id: "diamond", icon: <LuDiamond size={18} />, action: addDiamond },
           { id: "pen", icon: <FiPenTool size={18} /> },
           { id: "highlighter", icon: <FiEdit3 size={18} /> },
           {
@@ -235,6 +320,7 @@ export default function CanvasBoard({ shapesMap, awareness }) {
                 Aa
               </span>
             ),
+            action: addText,
           },
         ].map((tool) => {
           const isActive = activeTool === tool.id;
@@ -258,6 +344,7 @@ export default function CanvasBoard({ shapesMap, awareness }) {
         })}
       </div>
 
+      {/* Right-Side Properties Panel */}
       {selectedId && (
         <div className="absolute right-6 top-24 z-50 bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 rounded-xl p-5 w-64 shadow-2xl text-white">
           <div className="flex items-center justify-between mb-4">
@@ -269,30 +356,37 @@ export default function CanvasBoard({ shapesMap, awareness }) {
           <div className="space-y-5">
             <div>
               <p className="text-[11px] text-zinc-500 uppercase tracking-wider mb-2">
-                Fill Color
+                Color
               </p>
               <div className="flex gap-2">
-                {["#ef4444", "#3b82f6", "#8b5cf6", "#f59e0b", "#10b981"].map(
-                  (color) => {
-                    const currentShape = shapes.find(
-                      (s) => s.id === selectedId,
-                    );
-                    const isActive = currentShape?.fill === color;
+                {[
+                  "#ef4444",
+                  "#3b82f6",
+                  "#8b5cf6",
+                  "#f59e0b",
+                  "#10b981",
+                  "#ffffff",
+                ].map((color) => {
+                  const currentShape = shapes.find((s) => s.id === selectedId);
+                  const activeColor =
+                    currentShape?.type === "line"
+                      ? currentShape?.stroke
+                      : currentShape?.fill;
+                  const isActive = activeColor === color;
 
-                    return (
-                      <button
-                        key={color}
-                        onClick={() => updateShapeColor(color)}
-                        className={`w-6 h-6 rounded-md border transition-all hover:scale-110 ${
-                          isActive
-                            ? "scale-110 border-white shadow-[0_0_8px_rgba(255,255,255,0.3)]"
-                            : "border-zinc-700/50"
-                        }`}
-                        style={{ backgroundColor: color }}
-                      />
-                    );
-                  },
-                )}
+                  return (
+                    <button
+                      key={color}
+                      onClick={() => updateShapeColor(color)}
+                      className={`w-6 h-6 rounded-md border transition-all hover:scale-110 ${
+                        isActive
+                          ? "scale-110 border-white shadow-[0_0_8px_rgba(255,255,255,0.3)]"
+                          : "border-zinc-700/50"
+                      }`}
+                      style={{ backgroundColor: color }}
+                    />
+                  );
+                })}
               </div>
             </div>
             <div className="pt-4 border-t border-zinc-800/80">
@@ -308,10 +402,15 @@ export default function CanvasBoard({ shapesMap, awareness }) {
         </div>
       )}
 
+      {/* Konva Canvas */}
       <div
         ref={containerRef}
         className={`canvas-container ${
-          activeTool === "pan" ? "cursor-grab" : "cursor-crosshair"
+          activeTool === "pan"
+            ? "cursor-grab"
+            : activeTool === "pen" || activeTool === "highlighter"
+              ? "cursor-crosshair"
+              : "cursor-default"
         }`}
         onMouseLeave={handleMouseLeave}
       >
@@ -320,8 +419,10 @@ export default function CanvasBoard({ shapesMap, awareness }) {
             ref={stageRef}
             width={size.width}
             height={size.height}
+            draggable={activeTool === "pan"} // Allow dragging the entire stage to pan
             onMouseDown={handleStageMouseDown}
             onMouseMove={handleMouseMove}
+            onMouseUp={handleStageMouseUp}
           >
             <Layer>
               {shapes.map((shape) => {
@@ -330,7 +431,9 @@ export default function CanvasBoard({ shapesMap, awareness }) {
                   x: shape.x,
                   y: shape.y,
                   fill: shape.fill,
-                  draggable: activeTool === "select", // Only allow dragging if the select tool is active
+                  draggable: activeTool === "select",
+                  scaleX: shape.scaleX || 1,
+                  scaleY: shape.scaleY || 1,
                   onClick: () => {
                     if (activeTool === "select") setSelectedId(shape.id);
                   },
@@ -343,21 +446,64 @@ export default function CanvasBoard({ shapesMap, awareness }) {
                     updateShapeTransform(shape.id, e.target),
                 };
 
-                return shape.type === "rect" ? (
-                  <Rect
-                    key={shape.id}
-                    {...commonProps}
-                    width={shape.width}
-                    height={shape.height}
-                    cornerRadius={4}
-                  />
-                ) : shape.type === "circle" ? (
-                  <Circle
-                    key={shape.id}
-                    {...commonProps}
-                    radius={shape.radius}
-                  />
-                ) : null;
+                switch (shape.type) {
+                  case "rect":
+                    return (
+                      <Rect
+                        key={shape.id}
+                        {...commonProps}
+                        width={shape.width}
+                        height={shape.height}
+                        cornerRadius={4}
+                      />
+                    );
+                  case "circle":
+                    return (
+                      <Circle
+                        key={shape.id}
+                        {...commonProps}
+                        radius={shape.radius}
+                      />
+                    );
+                  case "diamond":
+                    return (
+                      <RegularPolygon
+                        key={shape.id}
+                        {...commonProps}
+                        sides={4}
+                        radius={shape.radius}
+                      />
+                    );
+                  case "text":
+                    return (
+                      <Text
+                        key={shape.id}
+                        {...commonProps}
+                        text={shape.text}
+                        fontSize={shape.fontSize}
+                        fill={shape.fill}
+                        fontFamily="sans-serif"
+                        fontStyle="bold"
+                      />
+                    );
+                  case "line":
+                    return (
+                      <Line
+                        key={shape.id}
+                        {...commonProps}
+                        points={shape.points}
+                        stroke={shape.stroke}
+                        strokeWidth={shape.strokeWidth}
+                        opacity={shape.opacity}
+                        tension={0.5}
+                        lineCap="round"
+                        lineJoin="round"
+                        fillEnabled={false}
+                      />
+                    );
+                  default:
+                    return null;
+                }
               })}
 
               <Transformer
