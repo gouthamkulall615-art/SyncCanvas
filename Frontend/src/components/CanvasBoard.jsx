@@ -17,7 +17,10 @@ import {
   FiCircle,
   FiTrash2,
   FiMoreVertical,
+  FiPenTool,
+  FiEdit3,
 } from "react-icons/fi";
+import { LuHand, LuDiamond } from "react-icons/lu";
 import "./CanvasBoard.css";
 
 let idCounter = 0;
@@ -27,6 +30,7 @@ export default function CanvasBoard({ shapesMap, awareness }) {
   const [shapes, setShapes] = useState([]);
   const [remoteUsers, setRemoteUsers] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
+  const [activeTool, setActiveTool] = useState("select"); // Default to select tool
 
   const stageRef = useRef(null);
   const transformerRef = useRef(null);
@@ -100,7 +104,7 @@ export default function CanvasBoard({ shapesMap, awareness }) {
     transformerRef.current.getLayer().batchDraw();
   }, [selectedId, shapes]);
 
-  // CRITICAL FIX: Extract X/Y integers so the WebSocket can stringify the JSON
+  // Extract X/Y integers so the WebSocket can stringify the JSON
   const handleMouseMove = (e) => {
     if (!awareness) return;
     const stage = e.target.getStage();
@@ -138,6 +142,7 @@ export default function CanvasBoard({ shapesMap, awareness }) {
       fill: "#3b82f6",
     });
     setSelectedId(id);
+    setActiveTool("select"); // Revert to select tool after drawing
   };
 
   const addCircle = () => {
@@ -150,6 +155,7 @@ export default function CanvasBoard({ shapesMap, awareness }) {
       fill: "#ef4444",
     });
     setSelectedId(id);
+    setActiveTool("select"); // Revert to select tool after drawing
   };
 
   const deleteSelected = () => {
@@ -212,28 +218,44 @@ export default function CanvasBoard({ shapesMap, awareness }) {
 
   return (
     <div className="canvas-board relative w-full h-full">
-      <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 rounded-full px-2 py-2 flex items-center gap-1 shadow-2xl">
-        <button
-          className="p-2.5 text-blue-400 bg-blue-500/10 rounded-full hover:bg-blue-500/20 transition-colors"
-          title="Select"
-        >
-          <FiMousePointer size={18} />
-        </button>
-        <div className="w-px h-6 bg-zinc-700/50 mx-1"></div>
-        <button
-          onClick={addRectangle}
-          className="p-2.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-full transition-colors"
-          title="Rectangle"
-        >
-          <FiSquare size={18} />
-        </button>
-        <button
-          onClick={addCircle}
-          className="p-2.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-full transition-colors"
-          title="Circle"
-        >
-          <FiCircle size={18} />
-        </button>
+      {/* Top-Center Floating Toolbar - Updated with Figma Icons */}
+      <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 rounded-xl px-1.5 py-1.5 flex items-center gap-0.5 shadow-2xl">
+        {[
+          { id: "select", icon: <FiMousePointer size={18} /> },
+          { id: "pan", icon: <LuHand size={18} /> },
+          { id: "rect", icon: <FiSquare size={18} />, action: addRectangle },
+          { id: "circle", icon: <FiCircle size={18} />, action: addCircle },
+          { id: "diamond", icon: <LuDiamond size={18} /> },
+          { id: "pen", icon: <FiPenTool size={18} /> },
+          { id: "highlighter", icon: <FiEdit3 size={18} /> },
+          {
+            id: "text",
+            icon: (
+              <span className="text-[13px] font-bold font-serif leading-none tracking-tighter">
+                Aa
+              </span>
+            ),
+          },
+        ].map((tool) => {
+          const isActive = activeTool === tool.id;
+          return (
+            <button
+              key={tool.id}
+              onClick={() => {
+                setActiveTool(tool.id);
+                if (tool.action) tool.action();
+              }}
+              className={`p-2.5 rounded-lg flex items-center justify-center transition-all ${
+                isActive
+                  ? "bg-blue-500/20 text-blue-400 border border-blue-500/50 shadow-sm"
+                  : "text-zinc-400 hover:text-white hover:bg-zinc-800/50 border border-transparent"
+              }`}
+              title={tool.id.charAt(0).toUpperCase() + tool.id.slice(1)}
+            >
+              {tool.icon}
+            </button>
+          );
+        })}
       </div>
 
       {selectedId && (
@@ -252,7 +274,6 @@ export default function CanvasBoard({ shapesMap, awareness }) {
               <div className="flex gap-2">
                 {["#ef4444", "#3b82f6", "#8b5cf6", "#f59e0b", "#10b981"].map(
                   (color) => {
-                    // Find the currently selected shape to highlight its active color
                     const currentShape = shapes.find(
                       (s) => s.id === selectedId,
                     );
@@ -289,7 +310,9 @@ export default function CanvasBoard({ shapesMap, awareness }) {
 
       <div
         ref={containerRef}
-        className="canvas-container"
+        className={`canvas-container ${
+          activeTool === "pan" ? "cursor-grab" : "cursor-crosshair"
+        }`}
         onMouseLeave={handleMouseLeave}
       >
         {size.width > 0 && (
@@ -307,9 +330,13 @@ export default function CanvasBoard({ shapesMap, awareness }) {
                   x: shape.x,
                   y: shape.y,
                   fill: shape.fill,
-                  draggable: true,
-                  onClick: () => setSelectedId(shape.id),
-                  onTap: () => setSelectedId(shape.id),
+                  draggable: activeTool === "select", // Only allow dragging if the select tool is active
+                  onClick: () => {
+                    if (activeTool === "select") setSelectedId(shape.id);
+                  },
+                  onTap: () => {
+                    if (activeTool === "select") setSelectedId(shape.id);
+                  },
                   onDragEnd: (e) =>
                     updateShapePosition(shape.id, e.target.x(), e.target.y()),
                   onTransformEnd: (e) =>
