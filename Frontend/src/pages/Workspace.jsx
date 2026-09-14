@@ -51,29 +51,45 @@ export default function Workspace() {
     );
 
     const updateUsers = () => {
+      // 1. Grab everyone currently in the Yjs network
       const states = Array.from(provider.awareness.getStates().entries());
-      setUsers(
-        states
-          .filter(([, state]) => state?.user?.username)
-          .map(([clientId, state]) => ({ clientId, ...state.user })),
-      );
+
+      // 2. Filter out ONLY the remote users (ignoring our own network echo)
+      const remoteUsers = states
+        .filter(
+          ([clientId, state]) =>
+            clientId !== provider.awareness.clientID && state?.user?.username,
+        )
+        .map(([clientId, state]) => ({ clientId, ...state.user }));
+
+      // 3. Optimistic UI: Always hardcode our own local profile at the start of the array
+      setUsers([
+        {
+          clientId: provider.awareness.clientID || "local",
+          username: myUsername,
+          color: userColor,
+        },
+        ...remoteUsers,
+      ]);
     };
 
-    // Initialize local state
-    provider.awareness.setLocalStateField("user", {
-      username: myUsername,
-      color: userColor,
-      cursor: null,
-    });
+    const injectPresence = () => {
+      const currentState = provider.awareness.getLocalState();
+      provider.awareness.setLocalStateField("user", {
+        username: myUsername,
+        color: userColor,
+        cursor: currentState?.user?.cursor || null,
+      });
+    };
 
+    injectPresence();
     updateUsers();
-    provider.awareness.on("change", updateUsers);
 
-    // FIXED HEARTBEAT: Instead of overwriting local state,
-    // we safely touch a dummy timestamp field to keep the connection alive.
-    const heartbeatInterval = setInterval(() => {
-      provider.awareness.setLocalStateField("lastActive", Date.now());
-    }, 15000);
+    // Listen for both network changes and awareness updates
+    provider.awareness.on("change", updateUsers);
+    provider.awareness.on("update", updateUsers);
+
+    const heartbeatInterval = setInterval(injectPresence, 10000);
 
     setAwareness(provider.awareness);
 
@@ -84,6 +100,7 @@ export default function Workspace() {
     return () => {
       clearInterval(heartbeatInterval);
       provider.awareness.off("change", updateUsers);
+      provider.awareness.off("update", updateUsers);
       window.removeEventListener("beforeunload", handleBeforeUnload);
       provider.awareness.setLocalStateField("user", null);
       provider.disconnect();
