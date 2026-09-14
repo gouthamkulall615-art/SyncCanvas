@@ -36,6 +36,7 @@ export default function CanvasBoard({ shapesMap, awareness }) {
   const [activeTool, setActiveTool] = useState("select");
   const [isDrawing, setIsDrawing] = useState(false);
   const [editingTextId, setEditingTextId] = useState(null);
+  const [showClearModal, setShowClearModal] = useState(false);
 
   const stageRef = useRef(null);
   const transformerRef = useRef(null);
@@ -249,16 +250,11 @@ export default function CanvasBoard({ shapesMap, awareness }) {
     setSelectedId(null);
   };
 
-  const clearCanvas = () => {
-    if (
-      window.confirm(
-        "Are you sure you want to clear the entire canvas for everyone?",
-      )
-    ) {
-      const keys = Array.from(shapesMap.keys());
-      keys.forEach((key) => shapesMap.delete(key));
-      setSelectedId(null);
-    }
+  const confirmClearCanvas = () => {
+    const keys = Array.from(shapesMap.keys());
+    keys.forEach((key) => shapesMap.delete(key));
+    setSelectedId(null);
+    setShowClearModal(false);
   };
 
   const updateShapeProperty = (property, value) => {
@@ -326,6 +322,35 @@ export default function CanvasBoard({ shapesMap, awareness }) {
 
   return (
     <div className="canvas-board relative w-full h-full overflow-hidden">
+      {/* Custom Clear Canvas Modal Overlay */}
+      {showClearModal && (
+        <div className="absolute inset-0 z-[100] flex items-center justify-center bg-[#0e1116]/60 backdrop-blur-sm">
+          <div className="bg-[#1a1d24] border border-zinc-800/80 rounded-2xl p-6 shadow-2xl max-w-sm w-full mx-4">
+            <h3 className="text-white text-lg font-semibold mb-2">
+              Clear Canvas
+            </h3>
+            <p className="text-zinc-400 text-sm mb-6">
+              Are you sure you want to clear the entire canvas for everyone?
+              This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowClearModal(false)}
+                className="px-4 py-2 text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmClearCanvas}
+                className="px-4 py-2 text-sm font-medium bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/20 rounded-lg transition-colors"
+              >
+                Clear Everything
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 rounded-xl px-1.5 py-1.5 flex items-center gap-0.5 shadow-2xl">
         {[
           { id: "select", icon: <FiMousePointer size={18} /> },
@@ -367,7 +392,7 @@ export default function CanvasBoard({ shapesMap, awareness }) {
 
       <div className="absolute top-6 right-6 z-50">
         <button
-          onClick={clearCanvas}
+          onClick={() => setShowClearModal(true)}
           className="px-4 py-2 bg-[#1a1d24]/95 backdrop-blur-md border border-red-900/50 text-red-400 text-xs font-semibold tracking-wide uppercase rounded-xl hover:bg-red-500/10 hover:border-red-500/80 transition-all shadow-xl flex items-center gap-2"
         >
           <FiTrash2 size={14} />
@@ -687,7 +712,7 @@ export default function CanvasBoard({ shapesMap, awareness }) {
                         {...commonProps}
                         text={shape.text}
                         fontSize={shape.fontSize}
-                        fill={shape.fill} // Texts use fill for their color in Konva
+                        fill={shape.fill}
                         fontFamily="sans-serif"
                         fontStyle="bold"
                         opacity={editingTextId === shape.id ? 0 : 1}
