@@ -40,11 +40,10 @@ export default function CanvasBoard({ shapesMap, awareness }) {
   const stageRef = useRef(null);
   const transformerRef = useRef(null);
   const containerRef = useRef(null);
-  const textareaRef = useRef(null); // <-- Added ref for the text editor
+  const textareaRef = useRef(null);
 
   const [size, setSize] = useState({ width: 0, height: 0 });
 
-  // Handle safe focusing of the textarea to prevent the instant-blur bug
   useEffect(() => {
     if (editingTextId && textareaRef.current) {
       setTimeout(() => {
@@ -130,6 +129,7 @@ export default function CanvasBoard({ shapesMap, awareness }) {
         stroke: activeTool === "highlighter" ? "#f59e0b" : "#ffffff",
         strokeWidth: activeTool === "highlighter" ? 14 : 3,
         opacity: activeTool === "highlighter" ? 0.4 : 1,
+        dash: [],
       });
       setDrawingShapeId(id);
     }
@@ -202,7 +202,10 @@ export default function CanvasBoard({ shapesMap, awareness }) {
       y: 200,
       width: 120,
       height: 120,
-      fill: "#3b82f6",
+      fill: "#20456b",
+      stroke: "#5ca4f8",
+      strokeWidth: 2,
+      dash: [],
     });
     setSelectedId(id);
     setActiveTool("select");
@@ -215,7 +218,10 @@ export default function CanvasBoard({ shapesMap, awareness }) {
       x: 450,
       y: 250,
       radius: 60,
-      fill: "#ef4444",
+      fill: "#63292b",
+      stroke: "#ff8a8a",
+      strokeWidth: 2,
+      dash: [],
     });
     setSelectedId(id);
     setActiveTool("select");
@@ -228,7 +234,10 @@ export default function CanvasBoard({ shapesMap, awareness }) {
       x: 500,
       y: 300,
       radius: 70,
-      fill: "#8b5cf6",
+      fill: "#523a10",
+      stroke: "#e67e22",
+      strokeWidth: 2,
+      dash: [],
     });
     setSelectedId(id);
     setActiveTool("select");
@@ -252,15 +261,12 @@ export default function CanvasBoard({ shapesMap, awareness }) {
     }
   };
 
-  const updateShapeColor = (newColor) => {
+  const updateShapeProperty = (property, value) => {
     if (!selectedId) return;
     const existing = shapesMap.get(selectedId);
-    if (existing)
-      shapesMap.set(selectedId, {
-        ...existing,
-        fill: newColor,
-        stroke: existing.type === "line" ? newColor : undefined,
-      });
+    if (existing) {
+      shapesMap.set(selectedId, { ...existing, [property]: value });
+    }
   };
 
   const updateShapePosition = (id, x, y) => {
@@ -320,7 +326,6 @@ export default function CanvasBoard({ shapesMap, awareness }) {
 
   return (
     <div className="canvas-board relative w-full h-full overflow-hidden">
-      {/* Top-Center Floating Toolbar */}
       <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 rounded-xl px-1.5 py-1.5 flex items-center gap-0.5 shadow-2xl">
         {[
           { id: "select", icon: <FiMousePointer size={18} /> },
@@ -360,7 +365,6 @@ export default function CanvasBoard({ shapesMap, awareness }) {
         })}
       </div>
 
-      {/* Top-Right Global Actions */}
       <div className="absolute top-6 right-6 z-50">
         <button
           onClick={clearCanvas}
@@ -371,10 +375,9 @@ export default function CanvasBoard({ shapesMap, awareness }) {
         </button>
       </div>
 
-      {/* Inline Text Editor */}
       {editingTextId && shapesMap.get(editingTextId) && (
         <textarea
-          ref={textareaRef} // <-- Ref linked here
+          ref={textareaRef}
           value={shapesMap.get(editingTextId).text}
           onChange={(e) => {
             const existing = shapesMap.get(editingTextId);
@@ -419,57 +422,179 @@ export default function CanvasBoard({ shapesMap, awareness }) {
         />
       )}
 
-      {/* Right-Side Properties Panel */}
       {selectedId && (
-        <div className="absolute right-6 top-24 z-50 bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 rounded-xl p-5 w-64 shadow-2xl text-white">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-widest">
-              Inspect Shape
-            </h3>
-            <FiMoreVertical className="text-zinc-500" />
-          </div>
-          <div className="space-y-5">
+        <div className="absolute right-6 top-24 z-50 bg-[#232329]/95 backdrop-blur-md border border-zinc-800/80 rounded-xl p-4 w-64 shadow-2xl text-white">
+          <div className="space-y-6">
+            {/* STROKE COLOR */}
             <div>
-              <p className="text-[11px] text-zinc-500 uppercase tracking-wider mb-2">
-                Color
-              </p>
+              <p className="text-[11px] text-zinc-300 mb-2.5">Stroke</p>
+              <div className="flex gap-2 items-center">
+                {["#e9e9e7", "#ff8a8a", "#6bcf70", "#5ca4f8", "#e67e22"].map(
+                  (color) => {
+                    const currentShape = shapes.find(
+                      (s) => s.id === selectedId,
+                    );
+                    const isActive =
+                      currentShape?.stroke === color ||
+                      (currentShape?.type === "line" &&
+                        currentShape?.fill === color);
+
+                    return (
+                      <button
+                        key={color}
+                        onClick={() => {
+                          if (currentShape?.type === "line")
+                            updateShapeProperty("fill", color);
+                          updateShapeProperty("stroke", color);
+                        }}
+                        className={`w-7 h-7 rounded-md transition-all flex items-center justify-center ${
+                          isActive
+                            ? "ring-2 ring-blue-500 ring-offset-2 ring-offset-[#232329]"
+                            : "hover:bg-white/10"
+                        }`}
+                      >
+                        <div
+                          className="w-6 h-6 rounded-md"
+                          style={{ backgroundColor: color }}
+                        />
+                      </button>
+                    );
+                  },
+                )}
+                <div className="w-px h-5 bg-zinc-700 mx-1"></div>
+                <button
+                  onClick={() => updateShapeProperty("stroke", "transparent")}
+                  className={`w-7 h-7 rounded-md border border-zinc-700 flex items-center justify-center relative overflow-hidden ${
+                    shapes.find((s) => s.id === selectedId)?.stroke ===
+                    "transparent"
+                      ? "ring-2 ring-blue-500 ring-offset-2 ring-offset-[#232329]"
+                      : ""
+                  }`}
+                >
+                  <div className="absolute inset-0 opacity-20 bg-[repeating-linear-gradient(45deg,transparent,transparent_2px,#fff_2px,#fff_4px)]"></div>
+                </button>
+              </div>
+            </div>
+
+            {/* BACKGROUND COLOR (Hide for lines/text) */}
+            {shapes.find((s) => s.id === selectedId)?.type !== "line" &&
+              shapes.find((s) => s.id === selectedId)?.type !== "text" && (
+                <div>
+                  <p className="text-[11px] text-zinc-300 mb-2.5">Background</p>
+                  <div className="flex gap-2 items-center">
+                    {[
+                      "#262627",
+                      "#63292b",
+                      "#1d4924",
+                      "#20456b",
+                      "#523a10",
+                    ].map((color) => {
+                      const isActive =
+                        shapes.find((s) => s.id === selectedId)?.fill === color;
+                      return (
+                        <button
+                          key={color}
+                          onClick={() => updateShapeProperty("fill", color)}
+                          className={`w-7 h-7 rounded-md transition-all flex items-center justify-center ${
+                            isActive
+                              ? "ring-2 ring-indigo-400 ring-offset-2 ring-offset-[#232329]"
+                              : "hover:bg-white/10"
+                          }`}
+                        >
+                          <div
+                            className="w-6 h-6 rounded-md"
+                            style={{ backgroundColor: color }}
+                          />
+                        </button>
+                      );
+                    })}
+                    <div className="w-px h-5 bg-zinc-700 mx-1"></div>
+                    <button
+                      onClick={() => updateShapeProperty("fill", "transparent")}
+                      className={`w-7 h-7 rounded-md border border-zinc-700 flex items-center justify-center relative overflow-hidden ${
+                        shapes.find((s) => s.id === selectedId)?.fill ===
+                        "transparent"
+                          ? "ring-2 ring-indigo-400 ring-offset-2 ring-offset-[#232329]"
+                          : ""
+                      }`}
+                    >
+                      <div className="absolute inset-0 opacity-20 bg-[repeating-linear-gradient(45deg,transparent,transparent_2px,#fff_2px,#fff_4px)]"></div>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+            {/* STROKE WIDTH */}
+            <div>
+              <p className="text-[11px] text-zinc-300 mb-2.5">Stroke width</p>
               <div className="flex gap-2">
                 {[
-                  "#ef4444",
-                  "#3b82f6",
-                  "#8b5cf6",
-                  "#f59e0b",
-                  "#10b981",
-                  "#ffffff",
-                ].map((color) => {
-                  const currentShape = shapes.find((s) => s.id === selectedId);
-                  const activeColor =
-                    currentShape?.type === "line"
-                      ? currentShape?.stroke
-                      : currentShape?.fill;
-                  const isActive = activeColor === color;
-
+                  { width: 2, label: "Thin", ui: "h-[2px]" },
+                  { width: 4, label: "Bold", ui: "h-[4px]" },
+                  { width: 6, label: "Extra Bold", ui: "h-[6px]" },
+                ].map((style) => {
+                  const isActive =
+                    (shapes.find((s) => s.id === selectedId)?.strokeWidth ||
+                      2) === style.width;
                   return (
                     <button
-                      key={color}
-                      onClick={() => updateShapeColor(color)}
-                      className={`w-6 h-6 rounded-md border transition-all hover:scale-110 ${
+                      key={style.width}
+                      onClick={() =>
+                        updateShapeProperty("strokeWidth", style.width)
+                      }
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
                         isActive
-                          ? "scale-110 border-white shadow-[0_0_8px_rgba(255,255,255,0.3)]"
-                          : "border-zinc-700/50"
+                          ? "bg-indigo-500/30 text-indigo-200"
+                          : "bg-zinc-800/50 hover:bg-zinc-700/50 text-white"
                       }`}
-                      style={{ backgroundColor: color }}
-                    />
+                    >
+                      <div
+                        className={`w-4 bg-current rounded-full ${style.ui}`}
+                      ></div>
+                    </button>
                   );
                 })}
               </div>
             </div>
-            <div className="pt-4 border-t border-zinc-800/80">
+
+            {/* STROKE STYLE */}
+            <div>
+              <p className="text-[11px] text-zinc-300 mb-2.5">Stroke style</p>
+              <div className="flex gap-2">
+                {[
+                  { dash: [], label: "Solid", ui: "border-solid" },
+                  { dash: [10, 8], label: "Dashed", ui: "border-dashed" },
+                  { dash: [2, 6], label: "Dotted", ui: "border-dotted" },
+                ].map((style, idx) => {
+                  const currentDash =
+                    shapes.find((s) => s.id === selectedId)?.dash || [];
+                  const isActive =
+                    JSON.stringify(currentDash) === JSON.stringify(style.dash);
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => updateShapeProperty("dash", style.dash)}
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+                        isActive
+                          ? "bg-indigo-500/30 text-indigo-200"
+                          : "bg-zinc-800/50 hover:bg-zinc-700/50 text-white"
+                      }`}
+                    >
+                      <div
+                        className={`w-5 border-t-2 border-current ${style.ui}`}
+                      ></div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-zinc-800/80 mt-2">
               <button
                 onClick={deleteSelected}
                 className="w-full flex items-center justify-between px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
               >
-                Remove element
+                Delete
                 <FiTrash2 size={14} />
               </button>
             </div>
@@ -477,7 +602,6 @@ export default function CanvasBoard({ shapesMap, awareness }) {
         </div>
       )}
 
-      {/* Konva Canvas */}
       <div
         ref={containerRef}
         className={`canvas-container relative w-full h-full ${
@@ -508,6 +632,11 @@ export default function CanvasBoard({ shapesMap, awareness }) {
                   x: shape.x,
                   y: shape.y,
                   fill: shape.fill,
+                  stroke:
+                    shape.stroke ||
+                    (shape.type === "line" ? "#ffffff" : "transparent"),
+                  strokeWidth: shape.strokeWidth || 2,
+                  dash: shape.dash || [],
                   draggable: activeTool === "select",
                   scaleX: shape.scaleX || 1,
                   scaleY: shape.scaleY || 1,
@@ -558,7 +687,7 @@ export default function CanvasBoard({ shapesMap, awareness }) {
                         {...commonProps}
                         text={shape.text}
                         fontSize={shape.fontSize}
-                        fill={shape.fill}
+                        fill={shape.fill} // Texts use fill for their color in Konva
                         fontFamily="sans-serif"
                         fontStyle="bold"
                         opacity={editingTextId === shape.id ? 0 : 1}
@@ -599,7 +728,6 @@ export default function CanvasBoard({ shapesMap, awareness }) {
                 boundBoxFunc={(oldBox, newBox) =>
                   newBox.width < 20 || newBox.height < 20 ? oldBox : newBox
                 }
-                // CRITICAL FIX: Allow double-clicking the blue transformer box to edit the text underneath
                 onDblClick={() => {
                   const shape = shapes.find((s) => s.id === selectedId);
                   if (shape?.type === "text") setEditingTextId(selectedId);
@@ -610,7 +738,6 @@ export default function CanvasBoard({ shapesMap, awareness }) {
                 }}
               />
 
-              {/* Render Remote Cursors */}
               {remoteUsers.map((u) => (
                 <Group key={u.clientId} x={u.cursor.x} y={u.cursor.y}>
                   <Path
