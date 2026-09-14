@@ -21,8 +21,13 @@ import {
   FiMoreVertical,
   FiPenTool,
   FiEdit3,
+  FiServer,
+  FiDatabase,
+  FiUser,
+  FiCloud,
 } from "react-icons/fi";
 import { LuHand, LuDiamond } from "react-icons/lu";
+import { ArchitectureNode } from "./ArchitectureNodes";
 import "./CanvasBoard.css";
 
 let idCounter = 0;
@@ -244,6 +249,23 @@ export default function CanvasBoard({ shapesMap, awareness }) {
     setActiveTool("select");
   };
 
+  const addArchitectureNode = (nodeType) => {
+    const id = nextId();
+    shapesMap.set(id, {
+      type: nodeType,
+      x: 350,
+      y: 250,
+      fill: "#262627",
+      stroke: "#5ca4f8",
+      strokeWidth: 2,
+      dash: [],
+      scaleX: 3,
+      scaleY: 3,
+    });
+    setSelectedId(id);
+    setActiveTool("select");
+  };
+
   const deleteSelected = () => {
     if (!selectedId) return;
     shapesMap.delete(selectedId);
@@ -355,6 +377,26 @@ export default function CanvasBoard({ shapesMap, awareness }) {
         {[
           { id: "select", icon: <FiMousePointer size={18} /> },
           { id: "pan", icon: <LuHand size={18} /> },
+          {
+            id: "server",
+            icon: <FiServer size={18} />,
+            action: () => addArchitectureNode("server"),
+          },
+          {
+            id: "database",
+            icon: <FiDatabase size={18} />,
+            action: () => addArchitectureNode("database"),
+          },
+          {
+            id: "client",
+            icon: <FiUser size={18} />,
+            action: () => addArchitectureNode("client"),
+          },
+          {
+            id: "cloud",
+            icon: <FiCloud size={18} />,
+            action: () => addArchitectureNode("cloud"),
+          },
           { id: "rect", icon: <FiSquare size={18} />, action: addRectangle },
           { id: "circle", icon: <FiCircle size={18} />, action: addCircle },
           { id: "diamond", icon: <LuDiamond size={18} />, action: addDiamond },
@@ -678,6 +720,17 @@ export default function CanvasBoard({ shapesMap, awareness }) {
                 };
 
                 switch (shape.type) {
+                  case "server":
+                  case "database":
+                  case "client":
+                  case "cloud":
+                    return (
+                      <ArchitectureNode
+                        key={shape.id}
+                        shape={shape}
+                        commonProps={commonProps}
+                      />
+                    );
                   case "rect":
                     return (
                       <Rect
