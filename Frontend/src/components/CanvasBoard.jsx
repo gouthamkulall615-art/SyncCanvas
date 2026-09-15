@@ -372,31 +372,11 @@ export default function CanvasBoard({ shapesMap, awareness }) {
           </div>
         </div>
       )}
-
+      {/* 1. Top-Center General Drawing Toolbar */}
       <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 rounded-xl px-1.5 py-1.5 flex items-center gap-0.5 shadow-2xl">
         {[
           { id: "select", icon: <FiMousePointer size={18} /> },
           { id: "pan", icon: <LuHand size={18} /> },
-          {
-            id: "server",
-            icon: <FiServer size={18} />,
-            action: () => addArchitectureNode("server"),
-          },
-          {
-            id: "database",
-            icon: <FiDatabase size={18} />,
-            action: () => addArchitectureNode("database"),
-          },
-          {
-            id: "client",
-            icon: <FiUser size={18} />,
-            action: () => addArchitectureNode("client"),
-          },
-          {
-            id: "cloud",
-            icon: <FiCloud size={18} />,
-            action: () => addArchitectureNode("cloud"),
-          },
           { id: "rect", icon: <FiSquare size={18} />, action: addRectangle },
           { id: "circle", icon: <FiCircle size={18} />, action: addCircle },
           { id: "diamond", icon: <LuDiamond size={18} />, action: addDiamond },
@@ -420,6 +400,54 @@ export default function CanvasBoard({ shapesMap, awareness }) {
                 if (tool.action) tool.action();
               }}
               className={`p-2.5 rounded-lg flex items-center justify-center transition-all ${
+                isActive
+                  ? "bg-blue-500/20 text-blue-400 border border-blue-500/50 shadow-sm"
+                  : "text-zinc-400 hover:text-white hover:bg-zinc-800/50 border border-transparent"
+              }`}
+              title={tool.id.charAt(0).toUpperCase() + tool.id.slice(1)}
+            >
+              {tool.icon}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 2. Left-Side Vertical Architecture Toolbar */}
+      <div className="absolute top-1/2 left-6 -translate-y-1/2 z-50 bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 rounded-xl p-1.5 flex flex-col items-center gap-1 shadow-2xl">
+        <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-1 mt-2 text-center">
+          Sys
+        </div>
+        {[
+          {
+            id: "server",
+            icon: <FiServer size={18} />,
+            action: () => addArchitectureNode("server"),
+          },
+          {
+            id: "database",
+            icon: <FiDatabase size={18} />,
+            action: () => addArchitectureNode("database"),
+          },
+          {
+            id: "client",
+            icon: <FiUser size={18} />,
+            action: () => addArchitectureNode("client"),
+          },
+          {
+            id: "cloud",
+            icon: <FiCloud size={18} />,
+            action: () => addArchitectureNode("cloud"),
+          },
+        ].map((tool) => {
+          const isActive = activeTool === tool.id;
+          return (
+            <button
+              key={tool.id}
+              onClick={() => {
+                setActiveTool(tool.id);
+                if (tool.action) tool.action();
+              }}
+              className={`p-3 rounded-lg flex items-center justify-center transition-all ${
                 isActive
                   ? "bg-blue-500/20 text-blue-400 border border-blue-500/50 shadow-sm"
                   : "text-zinc-400 hover:text-white hover:bg-zinc-800/50 border border-transparent"
