@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import ShapeGrid from "../components/ShapeGrid";
 import Navbar from "../components/LandingNavbar";
 import MiniCanvasDemo from "../components/MiniCanvasDemo";
-
+import WavyRibbon from "../components/WavyRibbon";
 export default function LandingPage() {
   const navigate = useNavigate();
 
@@ -77,6 +77,10 @@ export default function LandingPage() {
         <p className="text-lg md:text-xl text-zinc-400 text-center max-w-xl mx-auto mt-8">
           Sketch freely. Map out systems. Watch it happen together.
         </p>
+      </div>
+      <div className="relative z-10 w-full">
+        <WavyRibbon text="SYNCCANVAS" />{" "}
+        {/* check actual prop name in the code you copy */}
       </div>
     </div>
   );
