@@ -1,11 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import ShapeGrid from "../components/ShapeGrid";
-
+import Navbar from "../components/LandingNavbar";
 export default function LandingPage() {
   const navigate = useNavigate();
 
   return (
     <div className="relative min-h-screen w-full bg-[#0e1116] text-white overflow-hidden flex flex-col items-center justify-start pt-32 font-sans">
+      <Navbar />
       {/* Background Animated Purple Grid Layer */}
       <div className="absolute inset-0 z-0 opacity-40">
         <ShapeGrid

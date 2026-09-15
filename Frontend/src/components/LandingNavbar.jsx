@@ -1,99 +1,113 @@
-import { useState } from "react";
-import { Code2, Menu, X } from "lucide-react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useEffect, useState } from 'react';
+import SpecularButton from './SpecularButton';
+import './Navbar.css';
 
-export default function LandingNavbar() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const navigate = useNavigate();
-  const location = useLocation();
+const NAV_LINKS = [
+  { label: 'Features', href: '#features' },
+  { label: 'GitHub', href: 'https://github.com/your-username/synccanvas' }
+];
 
-  const handleNavClick = (id) => {
-    setMobileMenuOpen(false);
-    if (location.pathname !== "/") {
-      navigate("/", { state: { scrollTo: id } });
-    } else {
-      const element = document.getElementById(id);
-      if (element) {
-        element.scrollIntoView({ behavior: "smooth" });
-      }
-    }
-  };
+const Navbar = () => {
+  const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // Lock body scroll while the mobile menu is open
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [menuOpen]);
 
   return (
-    <nav className="w-full flex justify-center pt-6 px-4 fixed top-0 z-50">
-      <div className="flex items-center justify-between w-full max-w-5xl bg-[#0a0a0c]/85 backdrop-blur-xl border border-zinc-800/80 rounded-full px-6 py-3 shadow-2xl relative">
-        
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-2">
-          <div className="bg-blue-600/10 border border-blue-500/20 p-1.5 rounded-lg">
-            <Code2 className="w-5 h-5 text-blue-500" />
-          </div>
-          <span className="text-white font-semibold tracking-wide text-lg">SyncCanvas</span>
-        </Link>
+    <header className={`nav${scrolled ? ' nav--scrolled' : ''}`}>
+      <div className="nav__inner">
+        <a href="#top" className="nav__brand" onClick={() => setMenuOpen(false)}>
+          <span className="nav__mark" aria-hidden="true" />
+          SyncCanvas
+        </a>
 
-        {/* Desktop Links */}
-        <div className="hidden md:flex items-center gap-8">
-          <button onClick={() => handleNavClick("features")} className="text-sm font-medium text-zinc-400 hover:text-white transition-colors cursor-pointer">
-            Features
-          </button>
-          <button onClick={() => handleNavClick("docs")} className="text-sm font-medium text-zinc-400 hover:text-white transition-colors cursor-pointer">
-            Docs
-          </button>
-          <button onClick={() => handleNavClick("pricing")} className="text-sm font-medium text-zinc-400 hover:text-white transition-colors cursor-pointer">
-            Pricing
-          </button>
-          <button onClick={() => handleNavClick("enterprise")} className="text-sm font-medium text-zinc-400 hover:text-white transition-colors cursor-pointer">
-            Enterprise
-          </button>
-        </div>
+        <nav className="nav__links" aria-label="Primary">
+          {NAV_LINKS.map(link => (
+            <a
+              key={link.label}
+              href={link.href}
+              className="nav__link"
+              target={link.href.startsWith('http') ? '_blank' : undefined}
+              rel={link.href.startsWith('http') ? 'noreferrer' : undefined}
+            >
+              {link.label}
+            </a>
+          ))}
+        </nav>
 
-        {/* Right Actions */}
-        <div className="hidden md:flex items-center gap-5">
-          <Link to="/login" className="text-sm font-medium text-zinc-300 hover:text-white transition-colors">
-            Sign In
-          </Link>
-          <Link 
-            to="/register" 
-            className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-5 py-2 rounded-full transition-all shadow-[0_0_15px_rgba(37,99,235,0.25)] hover:shadow-[0_0_20px_rgba(37,99,235,0.4)]"
+        <div className="nav__cta">
+          <SpecularButton
+            size="sm"
+            radius={999}
+            baseColor="#3a3a3a"
+            lineColor="#7dd3c0"
+            textColor="#f5f5f5"
+            shineSize={12}
+            shineFade={45}
+            proximity={220}
+            onClick={() => {
+              window.location.href = '#try';
+            }}
           >
-            Get Started
-          </Link>
+            Try it live
+          </SpecularButton>
         </div>
 
-        {/* Mobile Menu Button */}
-        <button 
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
-          className="md:hidden text-zinc-400 hover:text-white p-1"
+        <button
+          type="button"
+          className={`nav__toggle${menuOpen ? ' nav__toggle--open' : ''}`}
+          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen(open => !open)}
         >
-          {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          <span />
+          <span />
         </button>
-
-        {/* Mobile Dropdown Menu */}
-        {mobileMenuOpen && (
-          <div className="absolute top-full left-0 right-0 mt-3 bg-[#0a0a0c]/95 border border-zinc-800 rounded-3xl p-6 flex flex-col gap-4 shadow-2xl md:hidden backdrop-blur-xl">
-            <button onClick={() => handleNavClick("features")} className="text-left text-sm font-medium text-zinc-300 hover:text-white py-1">
-              Features
-            </button>
-            <button onClick={() => handleNavClick("docs")} className="text-left text-sm font-medium text-zinc-300 hover:text-white py-1">
-              Docs
-            </button>
-            <button onClick={() => handleNavClick("pricing")} className="text-left text-sm font-medium text-zinc-300 hover:text-white py-1">
-              Pricing
-            </button>
-            <button onClick={() => handleNavClick("enterprise")} className="text-left text-sm font-medium text-zinc-300 hover:text-white py-1">
-              Enterprise
-            </button>
-            <div className="border-t border-zinc-800/80 my-1"></div>
-            <Link to="/login" className="text-sm font-medium text-zinc-300 hover:text-white py-1">
-              Sign In
-            </Link>
-            <Link to="/register" className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-5 py-2.5 rounded-full text-center">
-              Get Started
-            </Link>
-          </div>
-        )}
-
       </div>
-    </nav>
+
+      <div className={`nav__mobile${menuOpen ? ' nav__mobile--open' : ''}`}>
+        {NAV_LINKS.map(link => (
+          <a
+            key={link.label}
+            href={link.href}
+            className="nav__mobile-link"
+            onClick={() => setMenuOpen(false)}
+            target={link.href.startsWith('http') ? '_blank' : undefined}
+            rel={link.href.startsWith('http') ? 'noreferrer' : undefined}
+          >
+            {link.label}
+          </a>
+        ))}
+        <SpecularButton
+          size="md"
+          radius={999}
+          baseColor="#3a3a3a"
+          lineColor="#7dd3c0"
+          textColor="#f5f5f5"
+          className="nav__mobile-cta"
+          onClick={() => {
+            setMenuOpen(false);
+            window.location.href = '#try';
+          }}
+        >
+          Try it live
+        </SpecularButton>
+      </div>
+    </header>
   );
-}
+};
+
+export default Navbar;
