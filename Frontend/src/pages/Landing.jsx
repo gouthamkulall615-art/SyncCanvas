@@ -3,6 +3,8 @@ import ShapeGrid from "../components/ShapeGrid";
 import Navbar from "../components/LandingNavbar";
 import MiniCanvasDemo from "../components/MiniCanvasDemo";
 import WavyRibbon from "../components/WavyRibbon";
+import CollaborativeSection from "../components/CollaborativeSection";
+
 export default function LandingPage() {
   const navigate = useNavigate();
 
@@ -78,6 +80,8 @@ export default function LandingPage() {
           Sketch freely. Map out systems. Watch it happen together.
         </p>
       </div>
+
+      {/* Wavy Ribbon */}
       <div className="relative z-10 w-full -mt-16 md:-mt-24 pointer-events-none">
         <WavyRibbon
           text="Real-Time Collaboration  ✦  Sub-Millisecond Sync  ✦  CRDT Powered  ✦  "
@@ -87,8 +91,12 @@ export default function LandingPage() {
           ribbonWidth={70} /* Makes the ribbon strip a bit slimmer */
           color="#ffffff" /* White text color */
           speed={60}
-        />{" "}
-        {/* check actual prop name in the code you copy */}
+        />
+      </div>
+
+      {/* Collaborative Features Section */}
+      <div className="relative z-10 w-full mt-12 md:mt-24">
+        <CollaborativeSection />
       </div>
     </div>
   );
