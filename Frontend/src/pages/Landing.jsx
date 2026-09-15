@@ -5,6 +5,7 @@ import MiniCanvasDemo from "../components/MiniCanvasDemo";
 import WavyRibbon from "../components/WavyRibbon";
 import CollaborativeSection from "../components/CollaborativeSection";
 import SyncEngineSection from "../components/Syncenginesection";
+import HowItWorksSection from "../components/HowItWorksSection";
 export default function LandingPage() {
   const navigate = useNavigate();
 
@@ -101,6 +102,10 @@ export default function LandingPage() {
       {/* Sync Engine Architecture Section */}
       <div className="relative z-10 w-full mt-12 md:mt-24">
         <SyncEngineSection />
+      </div>
+      {/* . Add the How It Works Section here */}
+      <div className="relative z-10 w-full mt-12 md:mt-24 mb-32">
+        <HowItWorksSection />
       </div>
     </div>
   );

@@ -1,0 +1,128 @@
+:root {
+  --purple-glow: rgba(168, 85, 247, 0.2);
+  --border-color: #30363d;
+  --background-dark: #161b22;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* Updated to 3 columns */
+  gap: 24px;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.magic-bento-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  width: 100%;
+  padding: 40px 24px;
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  background: var(--background-dark);
+  font-weight: 300;
+  overflow: hidden;
+  transition: all 0.3s ease;
+
+  --glow-x: 50%;
+  --glow-y: 50%;
+  --glow-intensity: 0;
+  --glow-radius: 200px;
+}
+
+.hiw-card-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #ffffff;
+  z-index: 2;
+}
+
+/* User's glowing number icon style */
+.hiw-icon-wrapper {
+  background-color: #0d1117;
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  box-shadow:
+    0 0 25px rgba(168, 85, 247, 0.15),
+    inset 0 0 10px rgba(168, 85, 247, 0.1);
+}
+
+.hiw-number {
+  color: #d8b4fe;
+  font-size: 1.1rem;
+  font-weight: 700;
+  font-family: monospace;
+}
+
+.magic-bento-card__title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  margin: 0 0 12px 0;
+}
+
+.magic-bento-card__description {
+  color: #8b949e;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .card-grid {
+    grid-template-columns: repeat(1, 1fr);
+    gap: 32px;
+  }
+}
+
+/* Border glow effect */
+.magic-bento-card--border-glow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 2px; /* Thinned the border glow slightly for elegance */
+  background: radial-gradient(
+    var(--glow-radius) circle at var(--glow-x) var(--glow-y),
+    rgba(168, 85, 247, calc(var(--glow-intensity) * 0.8)) 0%,
+    rgba(168, 85, 247, calc(var(--glow-intensity) * 0.4)) 30%,
+    transparent 60%
+  );
+  border-radius: inherit;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+  z-index: 1;
+}
+
+.particle-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.global-spotlight {
+  mix-blend-mode: screen;
+  will-change: transform, opacity;
+  z-index: 200 !important;
+  pointer-events: none;
+}
