@@ -4,51 +4,153 @@
   left: 16px;
   right: 16px;
   z-index: 50;
+
   font-family: "Poppins", sans-serif;
+
   display: flex;
   justify-content: center;
+
   background: transparent;
 }
 
-.nav--scrolled {
-  background: rgba(10, 10, 10, 0.72);
-  border-bottom-color: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-}
-.nav--scrolled .nav__inner {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.16);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.32);
-}
-
+/* Main glass container */
 .nav__inner {
   position: relative;
   width: 100%;
   max-width: 1120px;
   margin: 0 auto;
+
   padding: 14px 24px;
+
   display: flex;
   align-items: center;
   gap: 32px;
 
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  border-radius: 20px;
+
+  /* liquid glass base */
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.14),
+    rgba(255, 255, 255, 0.045) 45%,
+    rgba(147, 51, 234, 0.06)
+  );
+
+  /* glass blur */
+  backdrop-filter: blur(24px) saturate(180%) contrast(105%);
+
+  -webkit-backdrop-filter: blur(24px) saturate(180%) contrast(105%);
+
+  /* glass border */
+  border: 1px solid rgba(255, 255, 255, 0.18);
+
+  /* depth */
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+
+  overflow: hidden;
+
+  transition:
+    background 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
 }
 
+/* Moving/reflected light inside the glass */
+.nav__inner::before {
+  content: "";
+
+  position: absolute;
+  top: -100%;
+  left: -20%;
+
+  width: 70%;
+  height: 300%;
+
+  background: linear-gradient(
+    110deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.07) 45%,
+    rgba(255, 255, 255, 0.16) 50%,
+    rgba(255, 255, 255, 0.04) 55%,
+    transparent 75%
+  );
+
+  transform: rotate(12deg);
+
+  pointer-events: none;
+
+  opacity: 0.7;
+
+  transition: transform 0.8s ease;
+}
+
+/* Purple ambient reflection */
+.nav__inner::after {
+  content: "";
+
+  position: absolute;
+
+  width: 180px;
+  height: 100px;
+
+  right: 60px;
+  top: -70px;
+
+  background: rgba(147, 51, 234, 0.18);
+
+  filter: blur(45px);
+
+  border-radius: 50%;
+
+  pointer-events: none;
+}
+
+/* Make sure navbar content stays above reflections */
+.nav__inner > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* Scrolled state */
+.nav--scrolled .nav__inner {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.16),
+    rgba(255, 255, 255, 0.055),
+    rgba(147, 51, 234, 0.08)
+  );
+
+  backdrop-filter: blur(30px) saturate(190%);
+
+  -webkit-backdrop-filter: blur(30px) saturate(190%);
+
+  border-color: rgba(255, 255, 255, 0.22);
+
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.38),
+    0 0 30px rgba(147, 51, 234, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* Brand */
 .nav__brand {
   display: flex;
   align-items: center;
   gap: 10px;
+
   color: #f5f5f5;
+
   font-weight: 600;
   font-size: 1.35rem;
+
   letter-spacing: -0.01em;
+
   text-decoration: none;
+
   margin-right: auto;
 }
 
@@ -58,14 +160,15 @@
 }
 
 .nav__mark-shape {
-  transition: transform 0.2s ease;
+  transition: transform 0.25s ease;
+
   transform-box: fill-box;
   transform-origin: center;
 }
 
 .nav__mark-shape--back {
-  fill: #2a1f3d;
-  stroke: #9333ea;
+  fill: rgba(42, 31, 61, 0.75);
+  stroke: #a855f7;
   stroke-width: 1.5;
 }
 
@@ -73,7 +176,6 @@
   fill: #9333ea;
 }
 
-/* the two shapes nudge apart on hover — like two cursors separating */
 .nav__brand:hover .nav__mark-shape--back {
   transform: translate(-1.5px, -1.5px);
 }
@@ -82,6 +184,7 @@
   transform: translate(1.5px, 1.5px);
 }
 
+/* Desktop links */
 .nav__links {
   display: flex;
   align-items: center;
@@ -90,15 +193,22 @@
 
 .nav__link {
   color: rgba(245, 245, 245, 0.72);
+
   font-weight: 400;
   font-size: 0.92rem;
+
   text-decoration: none;
-  transition: color 0.15s ease;
+
+  transition:
+    color 0.2s ease,
+    text-shadow 0.2s ease;
 }
 
 .nav__link:hover,
 .nav__link:focus-visible {
-  color: #f5f5f5;
+  color: #ffffff;
+
+  text-shadow: 0 0 15px rgba(255, 255, 255, 0.35);
 }
 
 .nav__link:focus-visible {
@@ -111,25 +221,35 @@
   display: flex;
 }
 
+/* Mobile button */
 .nav__toggle {
   display: none;
+
   flex-direction: column;
   justify-content: center;
   gap: 5px;
+
   width: 32px;
   height: 32px;
+
   background: none;
   border: none;
+
   cursor: pointer;
+
   padding: 0;
 }
 
 .nav__toggle span {
   display: block;
+
   height: 2px;
   width: 100%;
+
   background: #f5f5f5;
+
   border-radius: 2px;
+
   transition:
     transform 0.2s ease,
     opacity 0.2s ease;
@@ -143,15 +263,28 @@
   transform: translateY(-3.5px) rotate(-45deg);
 }
 
+/* Mobile menu */
 .nav__mobile {
   display: none;
+
   flex-direction: column;
   gap: 4px;
+
   padding: 0 24px;
+
   max-height: 0;
+
   overflow: hidden;
-  background: rgba(10, 10, 10, 0.96);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+
+  background: rgba(10, 10, 10, 0.55);
+
+  backdrop-filter: blur(25px) saturate(180%);
+  -webkit-backdrop-filter: blur(25px) saturate(180%);
+
+  border: 1px solid rgba(255, 255, 255, 0.12);
+
+  border-radius: 18px;
+
   transition:
     max-height 0.25s ease,
     padding 0.25s ease;
@@ -159,22 +292,29 @@
 
 .nav__mobile--open {
   max-height: 260px;
+
   padding: 12px 24px 20px;
 }
 
 .nav__mobile-link {
   color: rgba(245, 245, 245, 0.85);
+
   text-decoration: none;
+
   font-size: 0.98rem;
+
   padding: 12px 0;
+
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .nav__mobile-cta {
   margin-top: 16px;
+
   align-self: flex-start;
 }
 
+/* Mobile */
 @media (max-width: 720px) {
   .nav__links,
   .nav__cta {
@@ -184,5 +324,10 @@
   .nav__toggle,
   .nav__mobile {
     display: flex;
+  }
+
+  .nav__inner {
+    padding: 12px 18px;
+    border-radius: 17px;
   }
 }
