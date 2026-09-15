@@ -11,28 +11,12 @@ import {
   Label,
   Tag,
   Line,
+  Arrow,
   RegularPolygon,
 } from "react-konva";
-import {
-  FiMousePointer,
-  FiSquare,
-  FiCircle,
-  FiTrash2,
-  FiMoreVertical,
-  FiPenTool,
-  FiEdit3,
-  FiServer,
-  FiDatabase,
-  FiUser,
-  FiCloud,
-  FiLayers,
-  FiCpu,
-  FiGlobe,
-  FiSmartphone,
-  FiLock,
-} from "react-icons/fi";
-import { LuHand, LuDiamond } from "react-icons/lu";
 import { ArchitectureNode } from "./ArchitectureNodes";
+import Toolbars from "./Toolbars";
+import PropertiesPanel from "./PropertiesPanel";
 import "./CanvasBoard.css";
 
 let idCounter = 0;
@@ -110,7 +94,14 @@ export default function CanvasBoard({ shapesMap, awareness }) {
     if (!transformerRef.current) return;
     const stage = stageRef.current;
     const selectedNode = selectedId ? stage.findOne(`#${selectedId}`) : null;
-    if (selectedNode) {
+
+    const selectedShape = shapes.find((s) => s.id === selectedId);
+    if (
+      selectedNode &&
+      selectedShape &&
+      selectedShape.type !== "arrow" &&
+      selectedShape.type !== "line"
+    ) {
       transformerRef.current.nodes([selectedNode]);
     } else {
       transformerRef.current.nodes([]);
@@ -123,9 +114,32 @@ export default function CanvasBoard({ shapesMap, awareness }) {
 
     const stage = e.target.getStage();
     const pos = stage.getPointerPosition();
+    const clickedId = e.target.id();
 
     if (activeTool === "select") {
       if (e.target === stage) setSelectedId(null);
+      return;
+    }
+
+    if (activeTool === "arrow") {
+      if (clickedId && shapesMap.has(clickedId)) {
+        setIsDrawing(true);
+        setSelectedId(null);
+        const id = nextId();
+        shapesMap.set(id, {
+          type: "arrow",
+          startId: clickedId,
+          endId: null,
+          endX: pos.x,
+          endY: pos.y,
+          stroke: "#5ca4f8",
+          strokeWidth: 2,
+          dash: [],
+          x: 0,
+          y: 0,
+        });
+        setDrawingShapeId(id);
+      }
       return;
     }
 
@@ -175,14 +189,26 @@ export default function CanvasBoard({ shapesMap, awareness }) {
       }
     }
 
-    if (!isDrawing || (activeTool !== "pen" && activeTool !== "highlighter"))
-      return;
+    if (!isDrawing) return;
 
     const stage = e.target.getStage();
     const point = stage.getPointerPosition();
     const existing = shapesMap.get(drawingShapeId);
 
-    if (existing && existing.type === "line") {
+    if (activeTool === "arrow" && existing) {
+      shapesMap.set(drawingShapeId, {
+        ...existing,
+        endX: point.x,
+        endY: point.y,
+      });
+      return;
+    }
+
+    if (
+      (activeTool === "pen" || activeTool === "highlighter") &&
+      existing &&
+      existing.type === "line"
+    ) {
       shapesMap.set(drawingShapeId, {
         ...existing,
         points: [...existing.points, point.x, point.y],
@@ -190,8 +216,27 @@ export default function CanvasBoard({ shapesMap, awareness }) {
     }
   };
 
-  const handleStageMouseUp = () => {
+  const handleStageMouseUp = (e) => {
     if (isDrawing) {
+      if (activeTool === "arrow" && drawingShapeId) {
+        const dropTargetId = e.target.id();
+        const existing = shapesMap.get(drawingShapeId);
+
+        if (existing) {
+          if (
+            dropTargetId &&
+            dropTargetId !== existing.startId &&
+            shapesMap.has(dropTargetId)
+          ) {
+            shapesMap.set(drawingShapeId, {
+              ...existing,
+              endId: dropTargetId,
+            });
+          }
+        }
+        setActiveTool("select");
+      }
+
       setIsDrawing(false);
       setDrawingShapeId(null);
     }
@@ -203,6 +248,23 @@ export default function CanvasBoard({ shapesMap, awareness }) {
     const state = awareness.getLocalState();
     if (state?.user)
       awareness.setLocalStateField("user", { ...state.user, cursor: null });
+  };
+
+  const addArchitectureNode = (nodeType) => {
+    const id = nextId();
+    shapesMap.set(id, {
+      type: nodeType,
+      x: 350,
+      y: 250,
+      fill: "#262627",
+      stroke: "#5ca4f8",
+      strokeWidth: 2,
+      dash: [],
+      scaleX: 3,
+      scaleY: 3,
+    });
+    setSelectedId(id);
+    setActiveTool("select");
   };
 
   const addRectangle = () => {
@@ -254,23 +316,6 @@ export default function CanvasBoard({ shapesMap, awareness }) {
     setActiveTool("select");
   };
 
-  const addArchitectureNode = (nodeType) => {
-    const id = nextId();
-    shapesMap.set(id, {
-      type: nodeType,
-      x: 350,
-      y: 250,
-      fill: "#262627",
-      stroke: "#5ca4f8",
-      strokeWidth: 2,
-      dash: [],
-      scaleX: 3,
-      scaleY: 3,
-    });
-    setSelectedId(id);
-    setActiveTool("select");
-  };
-
   const deleteSelected = () => {
     if (!selectedId) return;
     shapesMap.delete(selectedId);
@@ -287,9 +332,7 @@ export default function CanvasBoard({ shapesMap, awareness }) {
   const updateShapeProperty = (property, value) => {
     if (!selectedId) return;
     const existing = shapesMap.get(selectedId);
-    if (existing) {
-      shapesMap.set(selectedId, { ...existing, [property]: value });
-    }
+    if (existing) shapesMap.set(selectedId, { ...existing, [property]: value });
   };
 
   const updateShapePosition = (id, x, y) => {
@@ -347,9 +390,20 @@ export default function CanvasBoard({ shapesMap, awareness }) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedId]);
 
+  const getShapeCenter = (s) => {
+    if (!s) return { x: 0, y: 0 };
+    if (s.type === "rect")
+      return {
+        x: s.x + (s.width * (s.scaleX || 1)) / 2,
+        y: s.y + (s.height * (s.scaleY || 1)) / 2,
+      };
+    if (s.type === "circle" || s.type === "diamond") return { x: s.x, y: s.y };
+    if (s.type === "text") return { x: s.x + 20, y: s.y + 15 };
+    return { x: s.x + 36, y: s.y + 36 };
+  };
+
   return (
     <div className="canvas-board relative w-full h-full overflow-hidden">
-      {/* Custom Clear Canvas Modal Overlay */}
       {showClearModal && (
         <div className="absolute inset-0 z-[100] flex items-center justify-center bg-[#0e1116]/60 backdrop-blur-sm">
           <div className="bg-[#1a1d24] border border-zinc-800/80 rounded-2xl p-6 shadow-2xl max-w-sm w-full mx-4">
@@ -377,129 +431,24 @@ export default function CanvasBoard({ shapesMap, awareness }) {
           </div>
         </div>
       )}
-      {/* 1. Top-Center General Drawing Toolbar */}
-      <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 rounded-xl px-1.5 py-1.5 flex items-center gap-0.5 shadow-2xl">
-        {[
-          { id: "select", icon: <FiMousePointer size={18} /> },
-          { id: "pan", icon: <LuHand size={18} /> },
-          { id: "rect", icon: <FiSquare size={18} />, action: addRectangle },
-          { id: "circle", icon: <FiCircle size={18} />, action: addCircle },
-          { id: "diamond", icon: <LuDiamond size={18} />, action: addDiamond },
-          { id: "pen", icon: <FiPenTool size={18} /> },
-          { id: "highlighter", icon: <FiEdit3 size={18} /> },
-          {
-            id: "text",
-            icon: (
-              <span className="text-[13px] font-bold font-serif leading-none tracking-tighter">
-                Aa
-              </span>
-            ),
-          },
-        ].map((tool) => {
-          const isActive = activeTool === tool.id;
-          return (
-            <button
-              key={tool.id}
-              onClick={() => {
-                setActiveTool(tool.id);
-                if (tool.action) tool.action();
-              }}
-              className={`p-2.5 rounded-lg flex items-center justify-center transition-all ${
-                isActive
-                  ? "bg-blue-500/20 text-blue-400 border border-blue-500/50 shadow-sm"
-                  : "text-zinc-400 hover:text-white hover:bg-zinc-800/50 border border-transparent"
-              }`}
-              title={tool.id.charAt(0).toUpperCase() + tool.id.slice(1)}
-            >
-              {tool.icon}
-            </button>
-          );
-        })}
-      </div>
 
-      {/* 2. Left-Side Vertical Architecture Toolbar */}
-      <div className="absolute top-1/2 left-6 -translate-y-1/2 z-50 bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 rounded-xl p-1.5 flex flex-col items-center gap-1 shadow-2xl">
-        <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-1 mt-2 text-center">
-          Sys
-        </div>
-        {[
-          {
-            id: "server",
-            icon: <FiServer size={18} />,
-            action: () => addArchitectureNode("server"),
-          },
-          {
-            id: "database",
-            icon: <FiDatabase size={18} />,
-            action: () => addArchitectureNode("database"),
-          },
-          {
-            id: "client",
-            icon: <FiUser size={18} />,
-            action: () => addArchitectureNode("client"),
-          },
-          {
-            id: "cloud",
-            icon: <FiCloud size={18} />,
-            action: () => addArchitectureNode("cloud"),
-          },
+      {/* RENDER EXTERNAL UI COMPONENTS */}
+      <Toolbars
+        activeTool={activeTool}
+        setActiveTool={setActiveTool}
+        addRectangle={addRectangle}
+        addCircle={addCircle}
+        addDiamond={addDiamond}
+        addArchitectureNode={addArchitectureNode}
+        setShowClearModal={setShowClearModal}
+      />
 
-          {
-            id: "queue",
-            icon: <FiLayers size={18} />,
-            action: () => addArchitectureNode("queue"),
-          },
-          {
-            id: "worker",
-            icon: <FiCpu size={18} />,
-            action: () => addArchitectureNode("worker"),
-          },
-          {
-            id: "internet",
-            icon: <FiGlobe size={18} />,
-            action: () => addArchitectureNode("internet"),
-          },
-          {
-            id: "mobile",
-            icon: <FiSmartphone size={18} />,
-            action: () => addArchitectureNode("mobile"),
-          },
-          {
-            id: "auth",
-            icon: <FiLock size={18} />,
-            action: () => addArchitectureNode("auth"),
-          },
-        ].map((tool) => {
-          const isActive = activeTool === tool.id;
-          return (
-            <button
-              key={tool.id}
-              onClick={() => {
-                setActiveTool(tool.id);
-                if (tool.action) tool.action();
-              }}
-              className={`p-3 rounded-lg flex items-center justify-center transition-all ${
-                isActive
-                  ? "bg-blue-500/20 text-blue-400 border border-blue-500/50 shadow-sm"
-                  : "text-zinc-400 hover:text-white hover:bg-zinc-800/50 border border-transparent"
-              }`}
-              title={tool.id.charAt(0).toUpperCase() + tool.id.slice(1)}
-            >
-              {tool.icon}
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="absolute top-6 right-6 z-50">
-        <button
-          onClick={() => setShowClearModal(true)}
-          className="px-4 py-2 bg-[#1a1d24]/95 backdrop-blur-md border border-red-900/50 text-red-400 text-xs font-semibold tracking-wide uppercase rounded-xl hover:bg-red-500/10 hover:border-red-500/80 transition-all shadow-xl flex items-center gap-2"
-        >
-          <FiTrash2 size={14} />
-          Clear Canvas
-        </button>
-      </div>
+      <PropertiesPanel
+        selectedId={selectedId}
+        shapes={shapes}
+        updateShapeProperty={updateShapeProperty}
+        deleteSelected={deleteSelected}
+      />
 
       {editingTextId && shapesMap.get(editingTextId) && (
         <textarea
@@ -507,18 +456,16 @@ export default function CanvasBoard({ shapesMap, awareness }) {
           value={shapesMap.get(editingTextId).text}
           onChange={(e) => {
             const existing = shapesMap.get(editingTextId);
-            if (existing) {
+            if (existing)
               shapesMap.set(editingTextId, {
                 ...existing,
                 text: e.target.value,
               });
-            }
           }}
           onBlur={() => {
             const existing = shapesMap.get(editingTextId);
-            if (existing && !existing.text.trim()) {
+            if (existing && !existing.text.trim())
               shapesMap.delete(editingTextId);
-            }
             setEditingTextId(null);
           }}
           onKeyDown={(e) => {
@@ -548,186 +495,6 @@ export default function CanvasBoard({ shapesMap, awareness }) {
         />
       )}
 
-      {selectedId && (
-        <div className="absolute right-6 top-24 z-50 bg-[#232329]/95 backdrop-blur-md border border-zinc-800/80 rounded-xl p-4 w-64 shadow-2xl text-white">
-          <div className="space-y-6">
-            {/* STROKE COLOR */}
-            <div>
-              <p className="text-[11px] text-zinc-300 mb-2.5">Stroke</p>
-              <div className="flex gap-2 items-center">
-                {["#e9e9e7", "#ff8a8a", "#6bcf70", "#5ca4f8", "#e67e22"].map(
-                  (color) => {
-                    const currentShape = shapes.find(
-                      (s) => s.id === selectedId,
-                    );
-                    const isActive =
-                      currentShape?.stroke === color ||
-                      (currentShape?.type === "line" &&
-                        currentShape?.fill === color);
-
-                    return (
-                      <button
-                        key={color}
-                        onClick={() => {
-                          if (currentShape?.type === "line")
-                            updateShapeProperty("fill", color);
-                          updateShapeProperty("stroke", color);
-                        }}
-                        className={`w-7 h-7 rounded-md transition-all flex items-center justify-center ${
-                          isActive
-                            ? "ring-2 ring-blue-500 ring-offset-2 ring-offset-[#232329]"
-                            : "hover:bg-white/10"
-                        }`}
-                      >
-                        <div
-                          className="w-6 h-6 rounded-md"
-                          style={{ backgroundColor: color }}
-                        />
-                      </button>
-                    );
-                  },
-                )}
-                <div className="w-px h-5 bg-zinc-700 mx-1"></div>
-                <button
-                  onClick={() => updateShapeProperty("stroke", "transparent")}
-                  className={`w-7 h-7 rounded-md border border-zinc-700 flex items-center justify-center relative overflow-hidden ${
-                    shapes.find((s) => s.id === selectedId)?.stroke ===
-                    "transparent"
-                      ? "ring-2 ring-blue-500 ring-offset-2 ring-offset-[#232329]"
-                      : ""
-                  }`}
-                >
-                  <div className="absolute inset-0 opacity-20 bg-[repeating-linear-gradient(45deg,transparent,transparent_2px,#fff_2px,#fff_4px)]"></div>
-                </button>
-              </div>
-            </div>
-
-            {/* BACKGROUND COLOR (Hide for lines/text) */}
-            {shapes.find((s) => s.id === selectedId)?.type !== "line" &&
-              shapes.find((s) => s.id === selectedId)?.type !== "text" && (
-                <div>
-                  <p className="text-[11px] text-zinc-300 mb-2.5">Background</p>
-                  <div className="flex gap-2 items-center">
-                    {[
-                      "#262627",
-                      "#63292b",
-                      "#1d4924",
-                      "#20456b",
-                      "#523a10",
-                    ].map((color) => {
-                      const isActive =
-                        shapes.find((s) => s.id === selectedId)?.fill === color;
-                      return (
-                        <button
-                          key={color}
-                          onClick={() => updateShapeProperty("fill", color)}
-                          className={`w-7 h-7 rounded-md transition-all flex items-center justify-center ${
-                            isActive
-                              ? "ring-2 ring-indigo-400 ring-offset-2 ring-offset-[#232329]"
-                              : "hover:bg-white/10"
-                          }`}
-                        >
-                          <div
-                            className="w-6 h-6 rounded-md"
-                            style={{ backgroundColor: color }}
-                          />
-                        </button>
-                      );
-                    })}
-                    <div className="w-px h-5 bg-zinc-700 mx-1"></div>
-                    <button
-                      onClick={() => updateShapeProperty("fill", "transparent")}
-                      className={`w-7 h-7 rounded-md border border-zinc-700 flex items-center justify-center relative overflow-hidden ${
-                        shapes.find((s) => s.id === selectedId)?.fill ===
-                        "transparent"
-                          ? "ring-2 ring-indigo-400 ring-offset-2 ring-offset-[#232329]"
-                          : ""
-                      }`}
-                    >
-                      <div className="absolute inset-0 opacity-20 bg-[repeating-linear-gradient(45deg,transparent,transparent_2px,#fff_2px,#fff_4px)]"></div>
-                    </button>
-                  </div>
-                </div>
-              )}
-
-            {/* STROKE WIDTH */}
-            <div>
-              <p className="text-[11px] text-zinc-300 mb-2.5">Stroke width</p>
-              <div className="flex gap-2">
-                {[
-                  { width: 2, label: "Thin", ui: "h-[2px]" },
-                  { width: 4, label: "Bold", ui: "h-[4px]" },
-                  { width: 6, label: "Extra Bold", ui: "h-[6px]" },
-                ].map((style) => {
-                  const isActive =
-                    (shapes.find((s) => s.id === selectedId)?.strokeWidth ||
-                      2) === style.width;
-                  return (
-                    <button
-                      key={style.width}
-                      onClick={() =>
-                        updateShapeProperty("strokeWidth", style.width)
-                      }
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
-                        isActive
-                          ? "bg-indigo-500/30 text-indigo-200"
-                          : "bg-zinc-800/50 hover:bg-zinc-700/50 text-white"
-                      }`}
-                    >
-                      <div
-                        className={`w-4 bg-current rounded-full ${style.ui}`}
-                      ></div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* STROKE STYLE */}
-            <div>
-              <p className="text-[11px] text-zinc-300 mb-2.5">Stroke style</p>
-              <div className="flex gap-2">
-                {[
-                  { dash: [], label: "Solid", ui: "border-solid" },
-                  { dash: [10, 8], label: "Dashed", ui: "border-dashed" },
-                  { dash: [2, 6], label: "Dotted", ui: "border-dotted" },
-                ].map((style, idx) => {
-                  const currentDash =
-                    shapes.find((s) => s.id === selectedId)?.dash || [];
-                  const isActive =
-                    JSON.stringify(currentDash) === JSON.stringify(style.dash);
-                  return (
-                    <button
-                      key={idx}
-                      onClick={() => updateShapeProperty("dash", style.dash)}
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
-                        isActive
-                          ? "bg-indigo-500/30 text-indigo-200"
-                          : "bg-zinc-800/50 hover:bg-zinc-700/50 text-white"
-                      }`}
-                    >
-                      <div
-                        className={`w-5 border-t-2 border-current ${style.ui}`}
-                      ></div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="pt-2 border-t border-zinc-800/80 mt-2">
-              <button
-                onClick={deleteSelected}
-                className="w-full flex items-center justify-between px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-              >
-                Delete
-                <FiTrash2 size={14} />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div
         ref={containerRef}
         className={`canvas-container relative w-full h-full ${
@@ -735,7 +502,8 @@ export default function CanvasBoard({ shapesMap, awareness }) {
             ? "cursor-grab"
             : activeTool === "pen" ||
                 activeTool === "highlighter" ||
-                activeTool === "text"
+                activeTool === "text" ||
+                activeTool === "arrow"
               ? "cursor-crosshair"
               : "cursor-default"
         }`}
@@ -753,6 +521,7 @@ export default function CanvasBoard({ shapesMap, awareness }) {
           >
             <Layer>
               {shapes.map((shape) => {
+                const isArrow = shape.type === "arrow";
                 const commonProps = {
                   id: shape.id,
                   x: shape.x,
@@ -760,10 +529,12 @@ export default function CanvasBoard({ shapesMap, awareness }) {
                   fill: shape.fill,
                   stroke:
                     shape.stroke ||
-                    (shape.type === "line" ? "#ffffff" : "transparent"),
+                    (shape.type === "line" || isArrow
+                      ? "#ffffff"
+                      : "transparent"),
                   strokeWidth: shape.strokeWidth || 2,
                   dash: shape.dash || [],
-                  draggable: activeTool === "select",
+                  draggable: activeTool === "select" && !isArrow,
                   scaleX: shape.scaleX || 1,
                   scaleY: shape.scaleY || 1,
                   onClick: () => {
@@ -779,22 +550,6 @@ export default function CanvasBoard({ shapesMap, awareness }) {
                 };
 
                 switch (shape.type) {
-                  case "server":
-                  case "database":
-                  case "client":
-                  case "cloud":
-                  case "queue":
-                  case "worker":
-                  case "internet":
-                  case "mobile":
-                  case "auth":
-                    return (
-                      <ArchitectureNode
-                        key={shape.id}
-                        shape={shape}
-                        commonProps={commonProps}
-                      />
-                    );
                   case "rect":
                     return (
                       <Rect
@@ -852,6 +607,48 @@ export default function CanvasBoard({ shapesMap, awareness }) {
                         fillEnabled={false}
                       />
                     );
+                  case "server":
+                  case "database":
+                  case "client":
+                  case "cloud":
+                  case "queue":
+                  case "worker":
+                  case "internet":
+                  case "mobile":
+                  case "auth":
+                    return (
+                      <ArchitectureNode
+                        key={shape.id}
+                        shape={shape}
+                        commonProps={commonProps}
+                      />
+                    );
+                  case "arrow": {
+                    const startShape = shapes.find(
+                      (s) => s.id === shape.startId,
+                    );
+                    const endShape = shape.endId
+                      ? shapes.find((s) => s.id === shape.endId)
+                      : null;
+                    if (!startShape) return null;
+
+                    const startP = getShapeCenter(startShape);
+                    const endP = endShape
+                      ? getShapeCenter(endShape)
+                      : { x: shape.endX, y: shape.endY };
+
+                    return (
+                      <Arrow
+                        key={shape.id}
+                        {...commonProps}
+                        points={[startP.x, startP.y, endP.x, endP.y]}
+                        fill={shape.stroke}
+                        pointerLength={12}
+                        pointerWidth={12}
+                        listening={drawingShapeId !== shape.id}
+                      />
+                    );
+                  }
                   default:
                     return null;
                 }
