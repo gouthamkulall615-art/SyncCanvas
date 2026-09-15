@@ -1,47 +1,79 @@
-import { useEffect, useState } from 'react';
-import SpecularButton from './SpecularButton';
-import './Navbar.css';
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import SpecularButton from "./SpecularButton";
+import "./Navbar.css";
 
 const NAV_LINKS = [
-  { label: 'Features', href: '#features' },
-  { label: 'GitHub', href: 'https://github.com/your-username/synccanvas' }
+  { label: "Features", href: "#features" },
+  {
+    label: "GitHub",
+    href: "https://github.com/gouthamkulall615-art/SyncCanvas",
+  },
 ];
 
 const Navbar = () => {
+  const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
     onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Lock body scroll while the mobile menu is open
   useEffect(() => {
-    document.body.style.overflow = menuOpen ? 'hidden' : '';
+    document.body.style.overflow = menuOpen ? "hidden" : "";
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     };
   }, [menuOpen]);
 
+  const handleCtaClick = () => {
+    const token = localStorage.getItem("token");
+    navigate(token ? "/dashboard" : "/register");
+  };
+
   return (
-    <header className={`nav${scrolled ? ' nav--scrolled' : ''}`}>
+    <header className={`nav${scrolled ? " nav--scrolled" : ""}`}>
       <div className="nav__inner">
-        <a href="#top" className="nav__brand" onClick={() => setMenuOpen(false)}>
-          <span className="nav__mark" aria-hidden="true" />
+        <a
+          href="#top"
+          className="nav__brand"
+          onClick={() => setMenuOpen(false)}
+        >
+          <span className="nav__mark" aria-hidden="true">
+            <svg viewBox="0 0 28 28" width="22" height="22">
+              <rect
+                x="3"
+                y="3"
+                width="16"
+                height="16"
+                rx="4"
+                className="nav__mark-shape nav__mark-shape--back"
+              />
+              <rect
+                x="9"
+                y="9"
+                width="16"
+                height="16"
+                rx="4"
+                className="nav__mark-shape nav__mark-shape--front"
+              />
+            </svg>
+          </span>
           SyncCanvas
         </a>
 
         <nav className="nav__links" aria-label="Primary">
-          {NAV_LINKS.map(link => (
+          {NAV_LINKS.map((link) => (
             <a
               key={link.label}
               href={link.href}
               className="nav__link"
-              target={link.href.startsWith('http') ? '_blank' : undefined}
-              rel={link.href.startsWith('http') ? 'noreferrer' : undefined}
+              target={link.href.startsWith("http") ? "_blank" : undefined}
+              rel={link.href.startsWith("http") ? "noreferrer" : undefined}
             >
               {link.label}
             </a>
@@ -53,14 +85,12 @@ const Navbar = () => {
             size="sm"
             radius={999}
             baseColor="#3a3a3a"
-            lineColor="#7dd3c0"
+            lineColor="#9333ea"
             textColor="#f5f5f5"
             shineSize={12}
             shineFade={45}
             proximity={220}
-            onClick={() => {
-              window.location.href = '#try';
-            }}
+            onClick={handleCtaClick}
           >
             Try it live
           </SpecularButton>
@@ -68,25 +98,25 @@ const Navbar = () => {
 
         <button
           type="button"
-          className={`nav__toggle${menuOpen ? ' nav__toggle--open' : ''}`}
-          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+          className={`nav__toggle${menuOpen ? " nav__toggle--open" : ""}`}
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
           aria-expanded={menuOpen}
-          onClick={() => setMenuOpen(open => !open)}
+          onClick={() => setMenuOpen((open) => !open)}
         >
           <span />
           <span />
         </button>
       </div>
 
-      <div className={`nav__mobile${menuOpen ? ' nav__mobile--open' : ''}`}>
-        {NAV_LINKS.map(link => (
+      <div className={`nav__mobile${menuOpen ? " nav__mobile--open" : ""}`}>
+        {NAV_LINKS.map((link) => (
           <a
             key={link.label}
             href={link.href}
             className="nav__mobile-link"
             onClick={() => setMenuOpen(false)}
-            target={link.href.startsWith('http') ? '_blank' : undefined}
-            rel={link.href.startsWith('http') ? 'noreferrer' : undefined}
+            target={link.href.startsWith("http") ? "_blank" : undefined}
+            rel={link.href.startsWith("http") ? "noreferrer" : undefined}
           >
             {link.label}
           </a>
@@ -95,12 +125,12 @@ const Navbar = () => {
           size="md"
           radius={999}
           baseColor="#3a3a3a"
-          lineColor="#7dd3c0"
+          lineColor="#9333ea"
           textColor="#f5f5f5"
           className="nav__mobile-cta"
           onClick={() => {
             setMenuOpen(false);
-            window.location.href = '#try';
+            handleCtaClick();
           }}
         >
           Try it live

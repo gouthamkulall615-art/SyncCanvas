@@ -1,12 +1,19 @@
 import { useNavigate } from "react-router-dom";
 import ShapeGrid from "../components/ShapeGrid";
 import Navbar from "../components/LandingNavbar";
+
 export default function LandingPage() {
   const navigate = useNavigate();
+
+  const handleLaunch = () => {
+    const token = localStorage.getItem("token");
+    navigate(token ? "/dashboard" : "/register");
+  };
 
   return (
     <div className="relative min-h-screen w-full bg-[#0e1116] text-white overflow-hidden flex flex-col items-center justify-start pt-32 font-sans">
       <Navbar />
+
       {/* Background Animated Purple Grid Layer */}
       <div className="absolute inset-0 z-0 opacity-40">
         <ShapeGrid
@@ -25,31 +32,33 @@ export default function LandingPage() {
         {/* Top Feature Pill */}
         <div className="mb-8 px-4 py-1.5 rounded-full border border-purple-500/20 bg-[#1a1d24]/90 backdrop-blur-md text-sm text-purple-300 flex items-center gap-2 shadow-sm cursor-default">
           <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span>
-          <span>Real-time collaborative workspace</span>
+          <span>Live now. Draw with anyone, instantly.</span>
         </div>
 
-        {/* Clean, Solid Text Headline (No AI Gradients) */}
-        <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 text-white leading-[1.1]">
-          Collaborate on a Whiteboard, <br />
-          <span className="text-purple-400">Together in Real-Time.</span>
+        <h1 className="mb-6 text-white leading-[1.05]">
+          <span className="block text-2xl md:text-3xl font-medium text-zinc-400 mb-2 tracking-tight">
+            This is SyncCanvas.
+          </span>
+          <span className="block text-5xl md:text-7xl font-bold tracking-tight text-purple-400">
+            One canvas. Everyone's hands on it.
+          </span>
         </h1>
 
         <p className="text-lg md:text-xl text-zinc-400 mb-10 max-w-2xl font-normal leading-relaxed">
-          Sketch ideas, draw diagrams, and brainstorm with your team instantly.
-          Powered by low-latency CRDT sync so everyone stays on the exact same
-          page.
+          Sketch ideas or map out a system with your team, all on one canvas,
+          all at once. No exporting, no waiting for someone to catch up.
         </p>
 
-        {/* Action Buttons (Subdued, Clean Glow) */}
+        {/* Action Buttons */}
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate("/workspace?pin=12345")}
+            onClick={handleLaunch}
             className="px-6 py-3.5 bg-purple-600 text-white font-medium rounded-xl hover:bg-purple-500 transition-all shadow-[0_4px_20px_rgba(147,51,234,0.2)]"
           >
-            Launch Workspace
+            Open a canvas
           </button>
           <button className="px-6 py-3.5 bg-[#1a1d24] border border-zinc-800 text-zinc-300 font-medium rounded-xl hover:bg-zinc-800 hover:text-white transition-colors">
-            View Documentation
+            See how it works
           </button>
         </div>
       </div>
