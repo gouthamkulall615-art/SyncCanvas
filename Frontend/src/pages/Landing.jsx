@@ -4,7 +4,7 @@ import Navbar from "../components/LandingNavbar";
 import MiniCanvasDemo from "../components/MiniCanvasDemo";
 import WavyRibbon from "../components/WavyRibbon";
 import CollaborativeSection from "../components/CollaborativeSection";
-
+import SyncEngineSection from "../components/Syncenginesection";
 export default function LandingPage() {
   const navigate = useNavigate();
 
@@ -97,6 +97,10 @@ export default function LandingPage() {
       {/* Collaborative Features Section */}
       <div className="relative z-10 w-full mt-12 md:mt-24">
         <CollaborativeSection />
+      </div>
+      {/* Sync Engine Architecture Section */}
+      <div className="relative z-10 w-full mt-12 md:mt-24">
+        <SyncEngineSection />
       </div>
     </div>
   );
