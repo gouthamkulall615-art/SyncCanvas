@@ -78,8 +78,16 @@ export default function LandingPage() {
           Sketch freely. Map out systems. Watch it happen together.
         </p>
       </div>
-      <div className="relative z-10 w-full">
-        <WavyRibbon text="SYNCCANVAS" />{" "}
+      <div className="relative z-10 w-full -mt-16 md:-mt-24 pointer-events-none">
+        <WavyRibbon
+          text="Real-Time Collaboration  ✦  Sub-Millisecond Sync  ✦  CRDT Powered  ✦  "
+          shape="wave" /* Gives it a slight, clean curve instead of a wild wave */
+          curviness={30} /* Keeps it mostly straight with a very gentle slope */
+          ribbonColor="#9333ea" /* Sets the ribbon background to purple */
+          ribbonWidth={70} /* Makes the ribbon strip a bit slimmer */
+          color="#ffffff" /* White text color */
+          speed={60}
+        />{" "}
         {/* check actual prop name in the code you copy */}
       </div>
     </div>
