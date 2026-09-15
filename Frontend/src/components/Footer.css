@@ -1,0 +1,50 @@
+.footer-wrapper {
+  background-color: #0e1116; /* Base dark color */
+  overflow: hidden;
+}
+
+/* Faint dot grid matching your design system */
+.footer-dotted-bg {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(
+    rgba(255, 255, 255, 0.03) 1px,
+    transparent 1px
+  );
+  background-size: 24px 24px;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* The massive, soft purple radial glow behind "Ready to sync?" */
+.footer-glow {
+  position: absolute;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 800px;
+  height: 400px;
+  background: radial-gradient(
+    circle,
+    rgba(168, 85, 247, 0.15) 0%,
+    rgba(168, 85, 247, 0) 60%
+  );
+  filter: blur(50px);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Link hover transitions */
+.footer-link {
+  color: #9ca3af; /* Tailwind zinc-400 equivalent */
+  font-size: 0.9rem;
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
+  display: inline-block;
+}
+
+.footer-link:hover {
+  color: #ffffff;
+  transform: translateX(4px); /* Slight bump to the right on hover */
+}

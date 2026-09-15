@@ -6,6 +6,7 @@ import WavyRibbon from "../components/WavyRibbon";
 import CollaborativeSection from "../components/CollaborativeSection";
 import SyncEngineSection from "../components/Syncenginesection";
 import HowItWorksSection from "../components/HowItWorksSection";
+import Footer from "../components/Footer";
 export default function LandingPage() {
   const navigate = useNavigate();
 
@@ -106,6 +107,9 @@ export default function LandingPage() {
       {/* . Add the How It Works Section here */}
       <div className="relative z-10 w-full mt-12 md:mt-24 mb-32">
         <HowItWorksSection />
+      </div>
+      <div className="relative z-10 w-full mt-auto">
+        <Footer />
       </div>
     </div>
   );
