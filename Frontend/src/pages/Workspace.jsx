@@ -34,6 +34,8 @@ export default function Workspace() {
   const ydoc = useMemo(() => new Y.Doc(), []);
   const shapesMap = useMemo(() => ydoc.getMap("shapes"), [ydoc]);
 
+  const undoManager = useMemo(() => new Y.UndoManager(shapesMap), [shapesMap]);
+
   useEffect(() => {
     if (!user) navigate("/login");
   }, [user, navigate]);
@@ -146,7 +148,11 @@ export default function Workspace() {
       </div>
 
       <section className="flex-1 w-full h-full relative">
-        <CanvasBoard shapesMap={shapesMap} awareness={awareness} />
+        <CanvasBoard
+          shapesMap={shapesMap}
+          awareness={awareness}
+          undoManager={undoManager}
+        />
       </section>
     </main>
   );

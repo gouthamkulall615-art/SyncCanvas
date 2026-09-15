@@ -22,7 +22,8 @@ import "./CanvasBoard.css";
 let idCounter = 0;
 const nextId = () => `shape-${Date.now()}-${idCounter++}`;
 
-export default function CanvasBoard({ shapesMap, awareness }) {
+// 1. Notice the undoManager is now safely added to the props here
+export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
   const [shapes, setShapes] = useState([]);
   const [remoteUsers, setRemoteUsers] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
@@ -111,7 +112,6 @@ export default function CanvasBoard({ shapesMap, awareness }) {
 
   const handleStageMouseDown = (e) => {
     if (activeTool === "pan") return;
-
     const stage = e.target.getStage();
     const pos = stage.getPointerPosition();
     const clickedId = e.target.id();
@@ -190,7 +190,6 @@ export default function CanvasBoard({ shapesMap, awareness }) {
     }
 
     if (!isDrawing) return;
-
     const stage = e.target.getStage();
     const point = stage.getPointerPosition();
     const existing = shapesMap.get(drawingShapeId);
@@ -221,22 +220,17 @@ export default function CanvasBoard({ shapesMap, awareness }) {
       if (activeTool === "arrow" && drawingShapeId) {
         const dropTargetId = e.target.id();
         const existing = shapesMap.get(drawingShapeId);
-
         if (existing) {
           if (
             dropTargetId &&
             dropTargetId !== existing.startId &&
             shapesMap.has(dropTargetId)
           ) {
-            shapesMap.set(drawingShapeId, {
-              ...existing,
-              endId: dropTargetId,
-            });
+            shapesMap.set(drawingShapeId, { ...existing, endId: dropTargetId });
           }
         }
         setActiveTool("select");
       }
-
       setIsDrawing(false);
       setDrawingShapeId(null);
     }
@@ -376,19 +370,38 @@ export default function CanvasBoard({ shapesMap, awareness }) {
     }
   };
 
+  // 2. Here is the exact Undo/Redo logic perfectly integrated
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (
-        (e.key === "Delete" || e.key === "Backspace") &&
-        document.activeElement.tagName !== "INPUT" &&
-        document.activeElement.tagName !== "TEXTAREA"
-      ) {
+      const isTyping =
+        document.activeElement.tagName === "INPUT" ||
+        document.activeElement.tagName === "TEXTAREA";
+      const isCmdOrCtrl = e.metaKey || e.ctrlKey;
+
+      if (isCmdOrCtrl && !isTyping) {
+        if (e.key.toLowerCase() === "z") {
+          e.preventDefault();
+          if (e.shiftKey) {
+            undoManager?.redo();
+          } else {
+            undoManager?.undo();
+          }
+          return;
+        }
+        if (e.key.toLowerCase() === "y") {
+          e.preventDefault();
+          undoManager?.redo();
+          return;
+        }
+      }
+
+      if ((e.key === "Delete" || e.key === "Backspace") && !isTyping) {
         deleteSelected();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedId]);
+  }, [selectedId, undoManager]);
 
   const getShapeCenter = (s) => {
     if (!s) return { x: 0, y: 0 };
@@ -432,7 +445,6 @@ export default function CanvasBoard({ shapesMap, awareness }) {
         </div>
       )}
 
-      {/* RENDER EXTERNAL UI COMPONENTS */}
       <Toolbars
         activeTool={activeTool}
         setActiveTool={setActiveTool}
@@ -442,7 +454,6 @@ export default function CanvasBoard({ shapesMap, awareness }) {
         addArchitectureNode={addArchitectureNode}
         setShowClearModal={setShowClearModal}
       />
-
       <PropertiesPanel
         selectedId={selectedId}
         shapes={shapes}
