@@ -25,6 +25,11 @@ import {
   FiDatabase,
   FiUser,
   FiCloud,
+  FiLayers,
+  FiCpu,
+  FiGlobe,
+  FiSmartphone,
+  FiLock,
 } from "react-icons/fi";
 import { LuHand, LuDiamond } from "react-icons/lu";
 import { ArchitectureNode } from "./ArchitectureNodes";
@@ -438,6 +443,32 @@ export default function CanvasBoard({ shapesMap, awareness }) {
             icon: <FiCloud size={18} />,
             action: () => addArchitectureNode("cloud"),
           },
+
+          {
+            id: "queue",
+            icon: <FiLayers size={18} />,
+            action: () => addArchitectureNode("queue"),
+          },
+          {
+            id: "worker",
+            icon: <FiCpu size={18} />,
+            action: () => addArchitectureNode("worker"),
+          },
+          {
+            id: "internet",
+            icon: <FiGlobe size={18} />,
+            action: () => addArchitectureNode("internet"),
+          },
+          {
+            id: "mobile",
+            icon: <FiSmartphone size={18} />,
+            action: () => addArchitectureNode("mobile"),
+          },
+          {
+            id: "auth",
+            icon: <FiLock size={18} />,
+            action: () => addArchitectureNode("auth"),
+          },
         ].map((tool) => {
           const isActive = activeTool === tool.id;
           return (
@@ -752,6 +783,11 @@ export default function CanvasBoard({ shapesMap, awareness }) {
                   case "database":
                   case "client":
                   case "cloud":
+                  case "queue":
+                  case "worker":
+                  case "internet":
+                  case "mobile":
+                  case "auth":
                     return (
                       <ArchitectureNode
                         key={shape.id}
