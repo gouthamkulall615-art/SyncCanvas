@@ -1,0 +1,109 @@
+.mcd-panel {
+  position: relative;
+  width: 100%;
+  max-width: 1053px;
+  aspect-ratio: 1053 / 577;
+  margin: 0 auto;
+  border-radius: 18px;
+  overflow: hidden;
+
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.mcd-dots {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(
+    rgba(255, 255, 255, 0.08) 1px,
+    transparent 1px
+  );
+  background-size: 24px 24px;
+  pointer-events: none;
+}
+
+.mcd-toolbar {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  z-index: 2;
+  display: flex;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 12px;
+  background: rgba(20, 20, 26, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mcd-tool {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  color: #8a8f98;
+  font-size: 14px;
+}
+
+.mcd-tool--active {
+  background: rgba(168, 85, 247, 0.18);
+  color: #c4b5fd;
+}
+
+.mcd-svg {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  display: block;
+  font-family: "Poppins", sans-serif;
+}
+
+.mcd-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  color: #fff;
+  font-family: "Poppins", sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.mcd-status {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 20px;
+  font-size: 11px;
+  color: #6b7280;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.mcd-status-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mcd-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #34d399;
+}
+
+@media (max-width: 720px) {
+  .mcd-svg text {
+    font-size: 9px;
+  }
+}

@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import ShapeGrid from "../components/ShapeGrid";
 import Navbar from "../components/LandingNavbar";
+import MiniCanvasDemo from "../components/MiniCanvasDemo";
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -15,7 +16,14 @@ export default function LandingPage() {
       <Navbar />
 
       {/* Background Animated Purple Grid Layer */}
-      <div className="absolute inset-0 z-0 opacity-40">
+      <div
+        className="absolute inset-0 z-0 opacity-40"
+        style={{
+          maskImage: "linear-gradient(to bottom, black 55%, transparent 95%)",
+          WebkitMaskImage:
+            "linear-gradient(to bottom, black 55%, transparent 95%)",
+        }}
+      >
         <ShapeGrid
           speed={0.4}
           squareSize={40}
@@ -61,6 +69,14 @@ export default function LandingPage() {
             See how it works
           </button>
         </div>
+      </div>
+
+      {/* Live mini-canvas demo */}
+      <div className="relative z-10 w-full max-w-5xl px-6 mt-20 mb-24">
+        <MiniCanvasDemo />
+        <p className="text-lg md:text-xl text-zinc-400 text-center max-w-xl mx-auto mt-8">
+          Sketch freely. Map out systems. Watch it happen together.
+        </p>
       </div>
     </div>
   );
