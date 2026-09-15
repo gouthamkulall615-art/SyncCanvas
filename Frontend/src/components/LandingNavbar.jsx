@@ -44,7 +44,7 @@ const Navbar = () => {
           onClick={() => setMenuOpen(false)}
         >
           <span className="nav__mark" aria-hidden="true">
-            <svg viewBox="0 0 28 28" width="22" height="22">
+            <svg viewBox="0 0 28 28" width="30" height="30">
               <rect
                 x="3"
                 y="3"
