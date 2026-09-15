@@ -51,12 +51,27 @@
 
 /* Panel */
 .ses-panel {
+  position: relative;
   border-radius: 20px;
   padding: 40px 32px 32px;
   background: rgba(255, 255, 255, 0.04);
   backdrop-filter: blur(16px) saturate(140%);
   -webkit-backdrop-filter: blur(16px) saturate(140%);
   border: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden; /* keeps the dot layer clipped to the rounded corners */
+}
+
+.ses-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(
+    rgba(255, 255, 255, 0.17) 1px,
+    transparent 1px
+  );
+  background-size: 22px 22px;
+  pointer-events: none;
+  z-index: 0;
 }
 
 /* Source cards */
