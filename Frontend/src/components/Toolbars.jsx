@@ -56,51 +56,15 @@ export default function Toolbars({
   }));
 
   const archItems = [
-    {
-      id: "server",
-      icon: <FiServer size="100%" />,
-      action: () => addArchitectureNode("server"),
-    },
-    {
-      id: "database",
-      icon: <FiDatabase size="100%" />,
-      action: () => addArchitectureNode("database"),
-    },
-    {
-      id: "client",
-      icon: <FiUser size="100%" />,
-      action: () => addArchitectureNode("client"),
-    },
-    {
-      id: "cloud",
-      icon: <FiCloud size="100%" />,
-      action: () => addArchitectureNode("cloud"),
-    },
-    {
-      id: "queue",
-      icon: <FiLayers size="100%" />,
-      action: () => addArchitectureNode("queue"),
-    },
-    {
-      id: "worker",
-      icon: <FiCpu size="100%" />,
-      action: () => addArchitectureNode("worker"),
-    },
-    {
-      id: "internet",
-      icon: <FiGlobe size="100%" />,
-      action: () => addArchitectureNode("internet"),
-    },
-    {
-      id: "mobile",
-      icon: <FiSmartphone size="100%" />,
-      action: () => addArchitectureNode("mobile"),
-    },
-    {
-      id: "auth",
-      icon: <FiLock size="100%" />,
-      action: () => addArchitectureNode("auth"),
-    },
+    { id: "server", icon: <FiServer size="100%" />, action: () => addArchitectureNode("server") },
+    { id: "database", icon: <FiDatabase size="100%" />, action: () => addArchitectureNode("database") },
+    { id: "client", icon: <FiUser size="100%" />, action: () => addArchitectureNode("client") },
+    { id: "cloud", icon: <FiCloud size="100%" />, action: () => addArchitectureNode("cloud") },
+    { id: "queue", icon: <FiLayers size="100%" />, action: () => addArchitectureNode("queue") },
+    { id: "worker", icon: <FiCpu size="100%" />, action: () => addArchitectureNode("worker") },
+    { id: "internet", icon: <FiGlobe size="100%" />, action: () => addArchitectureNode("internet") },
+    { id: "mobile", icon: <FiSmartphone size="100%" />, action: () => addArchitectureNode("mobile") },
+    { id: "auth", icon: <FiLock size="100%" />, action: () => addArchitectureNode("auth") },
   ].map((tool) => ({
     title: tool.id.charAt(0).toUpperCase() + tool.id.slice(1),
     icon: tool.icon,

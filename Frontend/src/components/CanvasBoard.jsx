@@ -22,7 +22,6 @@ import "./CanvasBoard.css";
 let idCounter = 0;
 const nextId = () => `shape-${Date.now()}-${idCounter++}`;
 
-// 1. Notice the undoManager is now safely added to the props here
 export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
   const [shapes, setShapes] = useState([]);
   const [remoteUsers, setRemoteUsers] = useState([]);
@@ -33,12 +32,37 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
   const [editingTextId, setEditingTextId] = useState(null);
   const [showClearModal, setShowClearModal] = useState(false);
 
+  // --- PAN AND ZOOM STATE ---
+  const [stageScale, setStageScale] = useState(1);
+  const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
+
   const stageRef = useRef(null);
   const transformerRef = useRef(null);
   const containerRef = useRef(null);
   const textareaRef = useRef(null);
 
   const [size, setSize] = useState({ width: 0, height: 0 });
+
+  // --- HELPER: Get True Pointer Position ---
+  // Converts screen mouse coordinates into the actual canvas coordinates based on zoom/pan
+  const getRelativePointerPosition = (stage) => {
+    const pointer = stage.getPointerPosition();
+    const scale = stage.scaleX();
+    const position = stage.position();
+    return {
+      x: (pointer.x - position.x) / scale,
+      y: (pointer.y - position.y) / scale,
+    };
+  };
+
+  // --- HELPER: Get Viewport Center ---
+  // Finds the exact middle of the screen in canvas coordinates so new shapes spawn visibly
+  const getViewportCenter = () => {
+    return {
+      x: (-stagePos.x + size.width / 2) / stageScale,
+      y: (-stagePos.y + size.height / 2) / stageScale,
+    };
+  };
 
   useEffect(() => {
     if (editingTextId && textareaRef.current) {
@@ -95,8 +119,8 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
     if (!transformerRef.current) return;
     const stage = stageRef.current;
     const selectedNode = selectedId ? stage.findOne(`#${selectedId}`) : null;
-
     const selectedShape = shapes.find((s) => s.id === selectedId);
+
     if (
       selectedNode &&
       selectedShape &&
@@ -110,10 +134,70 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
     transformerRef.current.getLayer().batchDraw();
   }, [selectedId, shapes]);
 
+  // --- ZOOM WHEEL HANDLER ---
+  const handleWheel = (e) => {
+    e.evt.preventDefault();
+    const stage = stageRef.current;
+    if (!stage) return;
+
+    if (e.evt.ctrlKey || e.evt.metaKey) {
+      // Zoom in/out
+      const scaleBy = 1.1;
+      const oldScale = stage.scaleX();
+      const pointer = stage.getPointerPosition();
+
+      const mousePointTo = {
+        x: (pointer.x - stage.x()) / oldScale,
+        y: (pointer.y - stage.y()) / oldScale,
+      };
+
+      const direction = e.evt.deltaY > 0 ? -1 : 1;
+      const newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
+      // Clamp zoom between 10% and 500%
+      const clampedScale = Math.max(0.1, Math.min(newScale, 5));
+
+      const newPos = {
+        x: pointer.x - mousePointTo.x * clampedScale,
+        y: pointer.y - mousePointTo.y * clampedScale,
+      };
+
+      setStageScale(clampedScale);
+      setStagePos(newPos);
+    } else {
+      // Pan with trackpad or mouse wheel
+      setStagePos((prev) => ({
+        x: prev.x - e.evt.deltaX,
+        y: prev.y - e.evt.deltaY,
+      }));
+    }
+  };
+
+  // --- ZOOM BUTTON HANDLER ---
+  const handleZoomButton = (direction) => {
+    const scaleBy = 1.2;
+    const oldScale = stageScale;
+    const newScale =
+      direction > 0
+        ? Math.min(oldScale * scaleBy, 5)
+        : Math.max(oldScale / scaleBy, 0.1);
+
+    const center = { x: size.width / 2, y: size.height / 2 };
+    const centerPointTo = {
+      x: (center.x - stagePos.x) / oldScale,
+      y: (center.y - stagePos.y) / oldScale,
+    };
+
+    setStageScale(newScale);
+    setStagePos({
+      x: center.x - centerPointTo.x * newScale,
+      y: center.y - centerPointTo.y * newScale,
+    });
+  };
+
   const handleStageMouseDown = (e) => {
     if (activeTool === "pan") return;
     const stage = e.target.getStage();
-    const pos = stage.getPointerPosition();
+    const pos = getRelativePointerPosition(stage); // Use relative position
     const clickedId = e.target.id();
 
     if (activeTool === "select") {
@@ -177,28 +261,27 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
   };
 
   const handleMouseMove = (e) => {
+    const stage = e.target.getStage();
+    const relativePoint = getRelativePointerPosition(stage);
+
     if (awareness) {
-      const stage = e.target.getStage();
-      const point = stage.getPointerPosition();
       const state = awareness.getLocalState();
-      if (state?.user && point) {
+      if (state?.user && relativePoint) {
         awareness.setLocalStateField("user", {
           ...state.user,
-          cursor: { x: point.x, y: point.y },
+          cursor: { x: relativePoint.x, y: relativePoint.y },
         });
       }
     }
 
     if (!isDrawing) return;
-    const stage = e.target.getStage();
-    const point = stage.getPointerPosition();
     const existing = shapesMap.get(drawingShapeId);
 
     if (activeTool === "arrow" && existing) {
       shapesMap.set(drawingShapeId, {
         ...existing,
-        endX: point.x,
-        endY: point.y,
+        endX: relativePoint.x,
+        endY: relativePoint.y,
       });
       return;
     }
@@ -210,7 +293,7 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
     ) {
       shapesMap.set(drawingShapeId, {
         ...existing,
-        points: [...existing.points, point.x, point.y],
+        points: [...existing.points, relativePoint.x, relativePoint.y],
       });
     }
   };
@@ -244,12 +327,14 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
       awareness.setLocalStateField("user", { ...state.user, cursor: null });
   };
 
+  // --- SPAWN SHAPES IN CENTER ---
   const addArchitectureNode = (nodeType) => {
+    const center = getViewportCenter();
     const id = nextId();
     shapesMap.set(id, {
       type: nodeType,
-      x: 350,
-      y: 250,
+      x: center.x - 40, // offset half roughly
+      y: center.y - 40,
       fill: "#262627",
       stroke: "#5ca4f8",
       strokeWidth: 2,
@@ -262,11 +347,12 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
   };
 
   const addRectangle = () => {
+    const center = getViewportCenter();
     const id = nextId();
     shapesMap.set(id, {
       type: "rect",
-      x: 300,
-      y: 200,
+      x: center.x - 60,
+      y: center.y - 60,
       width: 120,
       height: 120,
       fill: "#20456b",
@@ -279,11 +365,12 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
   };
 
   const addCircle = () => {
+    const center = getViewportCenter();
     const id = nextId();
     shapesMap.set(id, {
       type: "circle",
-      x: 450,
-      y: 250,
+      x: center.x,
+      y: center.y,
       radius: 60,
       fill: "#63292b",
       stroke: "#ff8a8a",
@@ -295,11 +382,12 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
   };
 
   const addDiamond = () => {
+    const center = getViewportCenter();
     const id = nextId();
     shapesMap.set(id, {
       type: "diamond",
-      x: 500,
-      y: 300,
+      x: center.x,
+      y: center.y,
       radius: 70,
       fill: "#523a10",
       stroke: "#e67e22",
@@ -370,7 +458,6 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
     }
   };
 
-  // 2. Here is the exact Undo/Redo logic perfectly integrated
   useEffect(() => {
     const handleKeyDown = (e) => {
       const isTyping =
@@ -417,6 +504,7 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
 
   return (
     <div className="canvas-board relative w-full h-full overflow-hidden">
+      {/* ... Clear Canvas Modal ... */}
       {showClearModal && (
         <div className="absolute inset-0 z-[100] flex items-center justify-center bg-[#0e1116]/60 backdrop-blur-sm">
           <div className="bg-[#1a1d24] border border-zinc-800/80 rounded-2xl p-6 shadow-2xl max-w-sm w-full mx-4">
@@ -461,6 +549,32 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
         deleteSelected={deleteSelected}
       />
 
+      {/* ZOOM CONTROLLER UI */}
+      <div className="absolute bottom-6 left-6 z-50 flex items-center gap-4 bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 text-zinc-300 rounded-xl px-3 py-2 shadow-xl">
+        <button
+          onClick={() => handleZoomButton(-1)}
+          className="w-6 h-6 flex items-center justify-center hover:bg-zinc-700/50 hover:text-white rounded transition-colors"
+        >
+          -
+        </button>
+        <span
+          className="text-xs font-mono font-medium tracking-wide w-12 text-center select-none cursor-pointer"
+          onClick={() => {
+            setStageScale(1);
+            setStagePos({ x: 0, y: 0 });
+          }}
+          title="Reset Zoom"
+        >
+          {Math.round(stageScale * 100)}%
+        </span>
+        <button
+          onClick={() => handleZoomButton(1)}
+          className="w-6 h-6 flex items-center justify-center hover:bg-zinc-700/50 hover:text-white rounded transition-colors"
+        >
+          +
+        </button>
+      </div>
+
       {editingTextId && shapesMap.get(editingTextId) && (
         <textarea
           ref={textareaRef}
@@ -487,11 +601,13 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
           }}
           style={{
             position: "absolute",
-            top: `${shapesMap.get(editingTextId).y}px`,
-            left: `${shapesMap.get(editingTextId).x}px`,
+            // Compute screen position based on zoom/pan state
+            top: `${shapesMap.get(editingTextId).y * stageScale + stagePos.y}px`,
+            left: `${shapesMap.get(editingTextId).x * stageScale + stagePos.x}px`,
             background: "transparent",
             color: shapesMap.get(editingTextId).fill,
-            fontSize: `${shapesMap.get(editingTextId).fontSize}px`,
+            // Scale font size accordingly
+            fontSize: `${shapesMap.get(editingTextId).fontSize * stageScale}px`,
             fontFamily: "sans-serif",
             fontWeight: "bold",
             border: "1px dashed #4b5563",
@@ -502,6 +618,7 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
             overflow: "hidden",
             whiteSpace: "pre",
             zIndex: 100,
+            transformOrigin: "top left",
           }}
         />
       )}
@@ -525,7 +642,24 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
             ref={stageRef}
             width={size.width}
             height={size.height}
+            // Bind Pan & Zoom state to Stage
+            scaleX={stageScale}
+            scaleY={stageScale}
+            x={stagePos.x}
+            y={stagePos.y}
+            onWheel={handleWheel}
             draggable={activeTool === "pan"}
+            // Sync state when panning tool is dragged
+            onDragMove={(e) => {
+              if (e.target === stageRef.current) {
+                setStagePos({ x: e.target.x(), y: e.target.y() });
+              }
+            }}
+            onDragEnd={(e) => {
+              if (e.target === stageRef.current) {
+                setStagePos({ x: e.target.x(), y: e.target.y() });
+              }
+            }}
             onMouseDown={handleStageMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleStageMouseUp}
