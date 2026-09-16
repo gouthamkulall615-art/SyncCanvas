@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import SpecularButton from "./SpecularButton";
-import "./Navbar.css";
+// You can delete or comment out Navbar.css since we are using Tailwind now!
+// import "./Navbar.css";
 
 const NAV_LINKS = [
   { label: "Features", href: "#features" },
@@ -36,42 +37,36 @@ const Navbar = () => {
   };
 
   return (
-    <header className={`nav${scrolled ? " nav--scrolled" : ""}`}>
-      <div className="nav__inner">
+    <header
+      className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 border-b ${
+        scrolled || menuOpen
+          ? "bg-[#0e1116]/80 backdrop-blur-md border-zinc-800"
+          : "bg-transparent border-transparent"
+      }`}
+    >
+      <div className="flex items-center justify-between px-6 py-4 max-w-6xl mx-auto">
+        {/* Brand Logo */}
         <a
           href="#top"
-          className="nav__brand"
+          className="flex items-center gap-3 text-white font-bold text-xl tracking-tight z-50"
           onClick={() => setMenuOpen(false)}
         >
-          <span className="nav__mark" aria-hidden="true">
-            <svg viewBox="0 0 28 28" width="30" height="30">
-              <rect
-                x="3"
-                y="3"
-                width="16"
-                height="16"
-                rx="4"
-                className="nav__mark-shape nav__mark-shape--back"
-              />
-              <rect
-                x="9"
-                y="9"
-                width="16"
-                height="16"
-                rx="4"
-                className="nav__mark-shape nav__mark-shape--front"
-              />
+          <span className="relative flex items-center justify-center text-[#9333ea]">
+            <svg viewBox="0 0 28 28" width="28" height="28" fill="currentColor">
+              <rect x="3" y="3" width="16" height="16" rx="4" opacity="0.5" />
+              <rect x="9" y="9" width="16" height="16" rx="4" />
             </svg>
           </span>
           SyncCanvas
         </a>
 
-        <nav className="nav__links" aria-label="Primary">
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex items-center gap-8">
           {NAV_LINKS.map((link) => (
             <a
               key={link.label}
               href={link.href}
-              className="nav__link"
+              className="text-sm font-medium text-zinc-400 hover:text-white transition-colors"
               target={link.href.startsWith("http") ? "_blank" : undefined}
               rel={link.href.startsWith("http") ? "noreferrer" : undefined}
             >
@@ -80,11 +75,12 @@ const Navbar = () => {
           ))}
         </nav>
 
-        <div className="nav__cta">
+        {/* Desktop CTA Button */}
+        <div className="hidden md:block">
           <SpecularButton
             size="sm"
             radius={999}
-            baseColor="#3a3a3a"
+            baseColor="#1a1d24"
             lineColor="#9333ea"
             textColor="#f5f5f5"
             shineSize={12}
@@ -96,45 +92,78 @@ const Navbar = () => {
           </SpecularButton>
         </div>
 
+        {/* Mobile Hamburger Toggle */}
         <button
           type="button"
-          className={`nav__toggle${menuOpen ? " nav__toggle--open" : ""}`}
+          className="md:hidden relative z-50 p-2 text-zinc-400 hover:text-white transition-colors"
+          onClick={() => setMenuOpen(!menuOpen)}
           aria-label={menuOpen ? "Close menu" : "Open menu"}
-          aria-expanded={menuOpen}
-          onClick={() => setMenuOpen((open) => !open)}
         >
-          <span />
-          <span />
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            {menuOpen ? (
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            ) : (
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            )}
+          </svg>
         </button>
       </div>
 
-      <div className={`nav__mobile${menuOpen ? " nav__mobile--open" : ""}`}>
-        {NAV_LINKS.map((link) => (
-          <a
-            key={link.label}
-            href={link.href}
-            className="nav__mobile-link"
-            onClick={() => setMenuOpen(false)}
-            target={link.href.startsWith("http") ? "_blank" : undefined}
-            rel={link.href.startsWith("http") ? "noreferrer" : undefined}
-          >
-            {link.label}
-          </a>
-        ))}
-        <SpecularButton
-          size="md"
-          radius={999}
-          baseColor="#3a3a3a"
-          lineColor="#9333ea"
-          textColor="#f5f5f5"
-          className="nav__mobile-cta"
-          onClick={() => {
-            setMenuOpen(false);
-            handleCtaClick();
-          }}
-        >
-          Try it live
-        </SpecularButton>
+      {/* Mobile Dropdown Menu */}
+      <div
+        className={`md:hidden absolute top-full left-0 w-full bg-[#0e1116]/95 backdrop-blur-xl border-b border-zinc-800 overflow-hidden transition-all duration-300 ease-in-out ${
+          menuOpen ? "max-h-[400px] opacity-100" : "max-h-0 opacity-0"
+        }`}
+      >
+        <div className="flex flex-col px-6 py-6 space-y-6">
+          {NAV_LINKS.map((link) => (
+            <a
+              key={link.label}
+              href={link.href}
+              className="text-lg font-medium text-zinc-300 hover:text-white transition-colors"
+              onClick={() => setMenuOpen(false)}
+              target={link.href.startsWith("http") ? "_blank" : undefined}
+              rel={link.href.startsWith("http") ? "noreferrer" : undefined}
+            >
+              {link.label}
+            </a>
+          ))}
+
+          <div className="pt-4 border-t border-zinc-800/80 flex flex-col w-full">
+            {/* Wrapping the SpecularButton to force it full-width */}
+            <div className="w-full flex *:w-full">
+              <SpecularButton
+                size="md"
+                radius={12}
+                baseColor="#1a1d24"
+                lineColor="#9333ea"
+                textColor="#f5f5f5"
+                className="w-full flex justify-center py-4"
+                onClick={() => {
+                  setMenuOpen(false);
+                  handleCtaClick();
+                }}
+              >
+                Try it live
+              </SpecularButton>
+            </div>
+          </div>
+        </div>
       </div>
     </header>
   );
