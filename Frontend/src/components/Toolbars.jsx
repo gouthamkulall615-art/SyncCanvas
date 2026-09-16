@@ -17,6 +17,7 @@ import {
   FiArrowUpRight,
 } from "react-icons/fi";
 import { LuHand, LuDiamond } from "react-icons/lu";
+import { FloatingDock, FloatingDockVertical } from "./FloatingDock";
 
 export default function Toolbars({
   activeTool,
@@ -27,84 +28,106 @@ export default function Toolbars({
   addArchitectureNode,
   setShowClearModal,
 }) {
+  const drawItems = [
+    { id: "select", icon: <FiMousePointer size="100%" /> },
+    { id: "pan", icon: <LuHand size="100%" /> },
+    { id: "arrow", icon: <FiArrowUpRight size="100%" /> },
+    { id: "rect", icon: <FiSquare size="100%" />, action: addRectangle },
+    { id: "circle", icon: <FiCircle size="100%" />, action: addCircle },
+    { id: "diamond", icon: <LuDiamond size="100%" />, action: addDiamond },
+    { id: "pen", icon: <FiPenTool size="100%" /> },
+    { id: "highlighter", icon: <FiEdit3 size="100%" /> },
+    {
+      id: "text",
+      icon: (
+        <span className="text-[13px] font-bold font-serif leading-none tracking-tighter">
+          Aa
+        </span>
+      ),
+    },
+  ].map((tool) => ({
+    title: tool.id.charAt(0).toUpperCase() + tool.id.slice(1),
+    icon: tool.icon,
+    isActive: activeTool === tool.id,
+    onClick: () => {
+      setActiveTool(tool.id);
+      if (tool.action) tool.action();
+    },
+  }));
+
+  const archItems = [
+    {
+      id: "server",
+      icon: <FiServer size="100%" />,
+      action: () => addArchitectureNode("server"),
+    },
+    {
+      id: "database",
+      icon: <FiDatabase size="100%" />,
+      action: () => addArchitectureNode("database"),
+    },
+    {
+      id: "client",
+      icon: <FiUser size="100%" />,
+      action: () => addArchitectureNode("client"),
+    },
+    {
+      id: "cloud",
+      icon: <FiCloud size="100%" />,
+      action: () => addArchitectureNode("cloud"),
+    },
+    {
+      id: "queue",
+      icon: <FiLayers size="100%" />,
+      action: () => addArchitectureNode("queue"),
+    },
+    {
+      id: "worker",
+      icon: <FiCpu size="100%" />,
+      action: () => addArchitectureNode("worker"),
+    },
+    {
+      id: "internet",
+      icon: <FiGlobe size="100%" />,
+      action: () => addArchitectureNode("internet"),
+    },
+    {
+      id: "mobile",
+      icon: <FiSmartphone size="100%" />,
+      action: () => addArchitectureNode("mobile"),
+    },
+    {
+      id: "auth",
+      icon: <FiLock size="100%" />,
+      action: () => addArchitectureNode("auth"),
+    },
+  ].map((tool) => ({
+    title: tool.id.charAt(0).toUpperCase() + tool.id.slice(1),
+    icon: tool.icon,
+    isActive: activeTool === tool.id,
+    onClick: () => {
+      setActiveTool(tool.id);
+      if (tool.action) tool.action();
+    },
+  }));
+
   return (
     <>
       {/* 1. Top-Center General Drawing Toolbar */}
-      <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 rounded-xl px-1.5 py-1.5 flex items-center gap-0.5 shadow-2xl">
-        {[
-          { id: "select", icon: <FiMousePointer size={18} /> },
-          { id: "pan", icon: <LuHand size={18} /> },
-          { id: "arrow", icon: <FiArrowUpRight size={18} /> },
-          { id: "rect", icon: <FiSquare size={18} />, action: addRectangle },
-          { id: "circle", icon: <FiCircle size={18} />, action: addCircle },
-          { id: "diamond", icon: <LuDiamond size={18} />, action: addDiamond },
-          { id: "pen", icon: <FiPenTool size={18} /> },
-          { id: "highlighter", icon: <FiEdit3 size={18} /> },
-          {
-            id: "text",
-            icon: (
-              <span className="text-[13px] font-bold font-serif leading-none tracking-tighter">
-                Aa
-              </span>
-            ),
-          },
-        ].map((tool) => {
-          const isActive = activeTool === tool.id;
-          return (
-            <button
-              key={tool.id}
-              onClick={() => {
-                setActiveTool(tool.id);
-                if (tool.action) tool.action();
-              }}
-              className={`p-2.5 rounded-lg flex items-center justify-center transition-all ${
-                isActive
-                  ? "bg-blue-500/20 text-blue-400 border border-blue-500/50 shadow-sm"
-                  : "text-zinc-400 hover:text-white hover:bg-zinc-800/50 border border-transparent"
-              }`}
-              title={tool.id.charAt(0).toUpperCase() + tool.id.slice(1)}
-            >
-              {tool.icon}
-            </button>
-          );
-        })}
-      </div>
+      <FloatingDock
+        items={drawItems}
+        className="absolute top-6 left-1/2 -translate-x-1/2 z-50 mx-auto flex h-16 items-end gap-4 rounded-2xl bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 px-4 pb-3 shadow-2xl"
+      />
 
       {/* 2. Left-Side Vertical Architecture Toolbar */}
-      <div className="absolute top-1/2 left-6 -translate-y-1/2 z-50 bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 rounded-xl p-1.5 flex flex-col items-center gap-1 shadow-2xl">
-        <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-1 mt-2 text-center">
+      <div className="absolute top-1/2 left-6 -translate-y-1/2 z-50 flex flex-col items-center">
+        <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-2 text-center">
           Sys
         </div>
-        {[
-          { id: "server", icon: <FiServer size={18} />, action: () => addArchitectureNode("server") },
-          { id: "database", icon: <FiDatabase size={18} />, action: () => addArchitectureNode("database") },
-          { id: "client", icon: <FiUser size={18} />, action: () => addArchitectureNode("client") },
-          { id: "cloud", icon: <FiCloud size={18} />, action: () => addArchitectureNode("cloud") },
-          { id: "queue", icon: <FiLayers size={18} />, action: () => addArchitectureNode("queue") },
-          { id: "worker", icon: <FiCpu size={18} />, action: () => addArchitectureNode("worker") },
-          { id: "internet", icon: <FiGlobe size={18} />, action: () => addArchitectureNode("internet") },
-          { id: "mobile", icon: <FiSmartphone size={18} />, action: () => addArchitectureNode("mobile") },
-          { id: "auth", icon: <FiLock size={18} />, action: () => addArchitectureNode("auth") },
-        ].map((tool) => {
-          const isActive = activeTool === tool.id;
-          return (
-            <button
-              key={tool.id}
-              onClick={() => {
-                setActiveTool(tool.id);
-                if (tool.action) tool.action();
-              }}
-              className={`p-3 rounded-lg flex items-center justify-center transition-all ${
-                isActive
-                  ? "bg-blue-500/20 text-blue-400 border border-blue-500/50 shadow-sm"
-                  : "text-zinc-400 hover:text-white hover:bg-zinc-800/50 border border-transparent"
-              }`}
-              title={tool.id.charAt(0).toUpperCase() + tool.id.slice(1)}
-            >
-              {tool.icon}
-            </button>
-          );
-        })}
+        <FloatingDockVertical
+          items={archItems}
+          className="flex w-16 flex-col items-end gap-4 rounded-2xl bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 py-4 pr-3 shadow-2xl"
+        />
       </div>
 
       {/* 3. Top-Right Global Actions */}
