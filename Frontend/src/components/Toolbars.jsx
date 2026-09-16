@@ -116,17 +116,20 @@ export default function Toolbars({
       {/* 1. Top-Center General Drawing Toolbar */}
       <FloatingDock
         items={drawItems}
-        className="absolute top-6 left-1/2 -translate-x-1/2 z-50 mx-auto flex h-16 items-end gap-4 rounded-2xl bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 px-4 pb-3 shadow-2xl"
+        // Adjusted pb-2 to work with the new max height of 56px inside a 64px (h-16) container
+        className="absolute top-6 left-1/2 -translate-x-1/2 z-50 mx-auto flex h-16 items-end gap-4 rounded-2xl bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 px-4 pb-2 shadow-2xl"
       />
 
       {/* 2. Left-Side Vertical Architecture Toolbar */}
-      <div className="absolute top-1/2 left-6 -translate-y-1/2 z-50 flex flex-col items-center">
+      {/* Changed top-1/2 -translate-y-1/2 to top-48 to clear the top-left SyncCanvas profile widget completely */}
+      <div className="absolute top-48 left-6 z-50 flex flex-col items-center">
         <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-2 text-center">
           Sys
         </div>
         <FloatingDockVertical
           items={archItems}
-          className="flex w-16 flex-col items-end gap-4 rounded-2xl bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 py-4 pr-3 shadow-2xl"
+          // Adjusted pr-2 to balance the padding with the new max widths
+          className="flex w-16 flex-col items-end gap-4 rounded-2xl bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 py-4 pr-2 shadow-2xl"
         />
       </div>
 

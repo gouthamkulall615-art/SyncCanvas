@@ -9,18 +9,8 @@ import {
   useTransform,
 } from "framer-motion";
 
-/**
- * This is the same mechanics as Aceternity's FloatingDock:
- * - one motion value tracks the cursor position along the dock's axis
- * - every icon measures its own center and asks "how far am I from the cursor"
- * - that distance maps to a width/height range, smoothed by a spring
- * Nothing here changes that math — only the item shape (onClick + isActive
- * instead of href) and axis (x for a row, y for a column) differ.
- */
-
 export function FloatingDock({ items, className }) {
   const mouseX = useMotionValue(Infinity);
-
   return (
     <motion.div
       onMouseMove={(e) => mouseX.set(e.pageX)}
@@ -36,7 +26,6 @@ export function FloatingDock({ items, className }) {
 
 export function FloatingDockVertical({ items, className }) {
   const mouseY = useMotionValue(Infinity);
-
   return (
     <motion.div
       onMouseMove={(e) => mouseY.set(e.pageY)}
@@ -75,18 +64,20 @@ function IconContainer({
     return val - center;
   });
 
-  // Same range/spring constants as the original Aceternity component.
-  const widthTransform = useTransform(distance, [-150, 0, 150], [40, 80, 40]);
-  const heightTransform = useTransform(distance, [-150, 0, 150], [40, 80, 40]);
+  // Reduced the peak magnification from 80 to 56 so it fits elegantly in the h-16/w-16 containers
+  const widthTransform = useTransform(distance, [-150, 0, 150], [40, 56, 40]);
+  const heightTransform = useTransform(distance, [-150, 0, 150], [40, 56, 40]);
+
+  // Reduced the peak icon magnification from 40 to 28 so they don't look excessively huge
   const widthTransformIcon = useTransform(
     distance,
     [-150, 0, 150],
-    [20, 40, 20],
+    [20, 28, 20],
   );
   const heightTransformIcon = useTransform(
     distance,
     [-150, 0, 150],
-    [20, 40, 20],
+    [20, 28, 20],
   );
 
   const springConfig = { mass: 0.1, stiffness: 150, damping: 12 };
@@ -128,7 +119,8 @@ function IconContainer({
             className={`absolute w-fit whitespace-pre rounded-md border border-zinc-800 bg-[#1a1d24] px-2 py-0.5 text-xs text-zinc-200 pointer-events-none ${
               axis === "x"
                 ? "-top-8 left-1/2"
-                : "left-full ml-2 top-1/2 -translate-y-1/2"
+                : "left-full ml-4 top-1/2 -translate-y-1/2"
+              /* Added slightly more margin (ml-4 instead of ml-2) for vertical tooltips to ensure they clear the UI comfortably */
             }`}
           >
             {title}
