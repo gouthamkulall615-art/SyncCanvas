@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Code2, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { useGoogleLogin } from "@react-oauth/google";
 import api from "../api/axios";
+import Beams from "../components/Beams/Beams"; // Adjust this path if necessary
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -35,45 +36,59 @@ export default function Login() {
         navigate("/dashboard");
       } catch (error) {
         setError(
-          error.response?.data?.message || "google authentication failed",
+          error.response?.data?.message || "Google authentication failed",
         );
       }
     },
-    onError: () => setError("google login failed"),
+    onError: () => setError("Google login failed"),
   });
 
   return (
     <div className="min-h-screen bg-[#050505] text-white flex items-center justify-center relative overflow-hidden font-sans p-4">
-      <div className="absolute inset-0 bg-[radial-gradient(#27272a_1px,transparent_1px)] [background-size:32px_32px] opacity-30"></div>
-
-      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[100px] pointer-events-none translate-x-1/4 -translate-y-1/4"></div>
-
-      <div className="absolute top-6 right-8 flex items-center gap-3">
-        <span className="text-zinc-500 text-xs font-mono">v1.4.2</span>
-        <span className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-2 py-1 rounded text-[10px] font-bold tracking-wider">
-          SYSTEM ONLINE
-        </span>
+      {/* The Custom Beams Background */}
+      <div className="absolute overflow-hidden opacity-100 z-0 inset-0 pointer-events-none">
+        <Beams lightColor="#9333ea" rotation={45}></Beams>
       </div>
 
-      <div className="relative z-10 w-full max-w-[400px] bg-[#0a0a0c]/80 backdrop-blur-xl border border-zinc-800/60 rounded-3xl p-8 sm:p-10 shadow-2xl flex flex-col">
+      {/* Glassmorphism Auth Card */}
+      <div className="relative z-10 w-full max-w-[400px] bg-[#0a0a0c]/80 backdrop-blur-2xl border border-zinc-800/80 rounded-3xl p-8 sm:p-10 shadow-2xl flex flex-col">
+        {/* Header Section */}
         <div className="flex flex-col items-center mb-8">
-          <div className="bg-blue-600/20 border border-blue-500/30 p-3.5 rounded-2xl mb-5 shadow-[0_0_15px_rgba(37,99,235,0.15)]">
-            <Code2 className="text-blue-500 w-6 h-6" />
-          </div>
-          <h1 className="text-xl font-semibold tracking-wide mb-6">SyncCanvas</h1>
-          <h2 className="text-2xl font-bold mb-2">Welcome back</h2>
-          <p className="text-sm text-zinc-400">Sign in to your workspace</p>
+          <Link
+            to="/"
+            className="flex items-center gap-2 text-zinc-300 font-bold tracking-tight mb-6 hover:text-white transition-colors"
+          >
+            <span className="relative flex items-center justify-center text-[#9333ea]">
+              <svg
+                viewBox="0 0 28 28"
+                width="24"
+                height="24"
+                fill="currentColor"
+              >
+                <rect x="3" y="3" width="16" height="16" rx="4" opacity="0.5" />
+                <rect x="9" y="9" width="16" height="16" rx="4" />
+              </svg>
+            </span>
+            SyncCanvas
+          </Link>
+
+          <h2 className="text-2xl font-bold mb-2 tracking-tight text-white">
+            Welcome back
+          </h2>
+          <p className="text-sm text-zinc-400 text-center">
+            Sign in to your workspace
+          </p>
         </div>
 
         {error && (
-          <p className="text-red-500 text-sm mb-4 text-center bg-red-500/10 py-2 rounded border border-red-500/20">
+          <p className="text-red-400 text-sm mb-5 text-center bg-red-500/10 py-2.5 rounded-lg border border-red-500/20">
             {error}
           </p>
         )}
 
-        <form onSubmit={handleLogin} className="space-y-5">
+        <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-zinc-400 mb-1.5 ml-1">
+            <label className="block text-xs font-medium text-zinc-300 mb-1.5 ml-1">
               Email Address
             </label>
             <div className="relative">
@@ -83,7 +98,7 @@ export default function Login() {
                 placeholder="name@domain.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-[#050505] border border-zinc-800/80 rounded-xl pl-11 pr-4 py-3 text-sm text-zinc-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-zinc-600"
+                className="w-full bg-[#050505] border border-zinc-800/80 rounded-xl pl-11 pr-4 py-3 text-sm text-zinc-100 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all placeholder:text-zinc-600"
                 required
               />
             </div>
@@ -91,12 +106,12 @@ export default function Login() {
 
           <div>
             <div className="flex justify-between items-center mb-1.5 ml-1 mr-1">
-              <label className="block text-xs font-medium text-zinc-400">
+              <label className="block text-xs font-medium text-zinc-300">
                 Password
               </label>
               <Link
                 to="#"
-                className="text-xs font-medium text-blue-500 hover:text-blue-400 transition-colors"
+                className="text-xs font-medium text-purple-500 hover:text-purple-400 transition-colors"
               >
                 Forgot?
               </Link>
@@ -108,7 +123,7 @@ export default function Login() {
                 placeholder="••••••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-[#050505] border border-zinc-800/80 rounded-xl pl-11 pr-11 py-3 text-sm text-zinc-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-zinc-600"
+                className="w-full bg-[#050505] border border-zinc-800/80 rounded-xl pl-11 pr-11 py-3 text-sm text-zinc-100 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all placeholder:text-zinc-600"
                 required
               />
               <button
@@ -127,20 +142,22 @@ export default function Login() {
 
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-xl transition-all shadow-[0_0_15px_rgba(37,99,235,0.25)] hover:shadow-[0_0_20px_rgba(37,99,235,0.4)] mt-2"
+            className="w-full bg-purple-600 hover:bg-purple-500 text-white font-medium py-3 rounded-xl transition-all shadow-[0_0_15px_rgba(147,51,234,0.25)] hover:shadow-[0_0_25px_rgba(147,51,234,0.4)] mt-2"
           >
             Sign In
           </button>
         </form>
 
+        {/* Divider */}
         <div className="flex items-center my-6">
           <div className="flex-grow border-t border-zinc-800"></div>
-          <span className="px-3 text-[10px] text-zinc-600 font-medium tracking-widest">
-            OR
+          <span className="px-3 text-[10px] text-zinc-600 font-medium tracking-widest uppercase">
+            Or
           </span>
           <div className="flex-grow border-t border-zinc-800"></div>
         </div>
 
+        {/* Google Login Button */}
         <button
           type="button"
           onClick={() => loginWithGoogle()}
@@ -167,18 +184,20 @@ export default function Login() {
           Continue with Google
         </button>
 
+        {/* Footer Link */}
         <p className="text-center text-xs text-zinc-500 mt-auto">
           New to SyncCanvas?{" "}
           <Link
             to="/register"
-            className="text-blue-500 hover:text-blue-400 font-medium transition-colors"
+            className="text-purple-500 hover:text-purple-400 font-medium transition-colors"
           >
             Create an account
           </Link>
         </p>
       </div>
 
-      <div className="absolute bottom-8 flex gap-8 text-xs text-zinc-600">
+      {/* Bottom Footer Links */}
+      <div className="absolute bottom-8 flex gap-8 text-xs text-zinc-600 z-10">
         <Link to="#" className="hover:text-zinc-400 transition-colors">
           Privacy Policy
         </Link>
