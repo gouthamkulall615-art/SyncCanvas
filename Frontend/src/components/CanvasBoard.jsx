@@ -62,8 +62,18 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
   const transformerRef = useRef(null);
   const containerRef = useRef(null);
   const textareaRef = useRef(null);
+  // Refs keep pinch calculations in sync even when React batches state updates
+  // from consecutive touchmove events.
+  const stageTransformRef = useRef({ scale: 1, position: { x: 0, y: 0 } });
+  const touchGestureRef = useRef(null);
 
   const [size, setSize] = useState({ width: 0, height: 0 });
+
+  const setStageTransform = (scale, position) => {
+    stageTransformRef.current = { scale, position };
+    setStageScale(scale);
+    setStagePos(position);
+  };
 
   // --- HELPER: Get True Pointer Position ---
   // Converts screen mouse/touch coordinates into the actual canvas coordinates
@@ -185,14 +195,14 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
         y: pointer.y - mousePointTo.y * clampedScale,
       };
 
-      setStageScale(clampedScale);
-      setStagePos(newPos);
+      setStageTransform(clampedScale, newPos);
     } else {
       // Pan with trackpad or mouse wheel
-      setStagePos((prev) => ({
-        x: prev.x - e.evt.deltaX,
-        y: prev.y - e.evt.deltaY,
-      }));
+      const { scale, position } = stageTransformRef.current;
+      setStageTransform(scale, {
+        x: position.x - e.evt.deltaX,
+        y: position.y - e.evt.deltaY,
+      });
     }
   };
 
@@ -211,11 +221,89 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
       y: (center.y - stagePos.y) / oldScale,
     };
 
-    setStageScale(newScale);
-    setStagePos({
+    setStageTransform(newScale, {
       x: center.x - centerPointTo.x * newScale,
       y: center.y - centerPointTo.y * newScale,
     });
+  };
+
+  // --- MOBILE PINCH ZOOM + TWO-FINGER PAN ---
+  const getTouchMetrics = (touches, stage) => {
+    const rect = stage.container().getBoundingClientRect();
+    const first = touches[0];
+    const second = touches[1];
+    const firstPoint = { x: first.clientX - rect.left, y: first.clientY - rect.top };
+    const secondPoint = {
+      x: second.clientX - rect.left,
+      y: second.clientY - rect.top,
+    };
+
+    return {
+      center: {
+        x: (firstPoint.x + secondPoint.x) / 2,
+        y: (firstPoint.y + secondPoint.y) / 2,
+      },
+      distance: Math.hypot(
+        secondPoint.x - firstPoint.x,
+        secondPoint.y - firstPoint.y,
+      ),
+    };
+  };
+
+  const handleTouchStart = (e) => {
+    const touches = e.evt.touches;
+    if (touches.length < 2) return;
+
+    e.evt.preventDefault();
+    const stage = e.target.getStage();
+    const { center, distance } = getTouchMetrics(touches, stage);
+    touchGestureRef.current = { center, distance };
+    // A stage drag may have begun with the first finger. Pinching owns the
+    // interaction from here, so stop it before applying our own transform.
+    stage.stopDrag();
+  };
+
+  const handleTouchMove = (e) => {
+    const touches = e.evt.touches;
+    if (touches.length < 2) return;
+
+    e.evt.preventDefault();
+    const stage = e.target.getStage();
+    const previous = touchGestureRef.current;
+    const { center, distance } = getTouchMetrics(touches, stage);
+
+    if (!previous || !previous.distance) {
+      touchGestureRef.current = { center, distance };
+      return;
+    }
+
+    const { scale: oldScale, position: oldPosition } =
+      stageTransformRef.current;
+    const newScale = Math.max(
+      0.1,
+      Math.min(5, oldScale * (distance / previous.distance)),
+    );
+    // Preserve the canvas point beneath the previous midpoint. Moving the
+    // midpoint therefore pans, and changing its finger distance zooms.
+    const canvasPoint = {
+      x: (previous.center.x - oldPosition.x) / oldScale,
+      y: (previous.center.y - oldPosition.y) / oldScale,
+    };
+    const newPosition = {
+      x: center.x - canvasPoint.x * newScale,
+      y: center.y - canvasPoint.y * newScale,
+    };
+
+    stage.stopDrag();
+    setStageTransform(newScale, newPosition);
+    touchGestureRef.current = { center, distance };
+  };
+
+  const handleTouchEnd = (e) => {
+    if (e.evt.touches.length < 2) {
+      touchGestureRef.current = null;
+      e.target.getStage().stopDrag();
+    }
   };
 
   // --- POINTER HANDLERS (mouse + touch + stylus, unified) ---
@@ -599,8 +687,7 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
         <span
           className="text-xs font-mono font-medium tracking-wide w-12 text-center select-none cursor-pointer"
           onClick={() => {
-            setStageScale(1);
-            setStagePos({ x: 0, y: 0 });
+            setStageTransform(1, { x: 0, y: 0 });
           }}
           title="Reset Zoom"
         >
@@ -664,7 +751,7 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
 
       <div
         ref={containerRef}
-        className={`canvas-container relative w-full h-full transition-colors duration-300 ${
+        className={`canvas-container relative w-full h-full touch-none transition-colors duration-300 ${
           activeTool === "pan"
             ? "cursor-grab"
             : activeTool === "pen" ||
@@ -699,18 +786,29 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
             x={stagePos.x}
             y={stagePos.y}
             onWheel={handleWheel}
-            draggable={activeTool === "pan"}
+            // The Stage remains draggable for mouse and touch input. Two-finger
+            // gestures stop its native drag and apply their own pan/zoom below.
+            draggable={true}
             // Sync state when panning tool is dragged
             onDragMove={(e) => {
               if (e.target === stageRef.current) {
-                setStagePos({ x: e.target.x(), y: e.target.y() });
+                setStageTransform(stageTransformRef.current.scale, {
+                  x: e.target.x(),
+                  y: e.target.y(),
+                });
               }
             }}
             onDragEnd={(e) => {
               if (e.target === stageRef.current) {
-                setStagePos({ x: e.target.x(), y: e.target.y() });
+                setStageTransform(stageTransformRef.current.scale, {
+                  x: e.target.x(),
+                  y: e.target.y(),
+                });
               }
             }}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
             // Pointer events (not Mouse events) so touch on phones/tablets
             // actually drives drawing/arrows/selection, not just clicks/taps.
             onPointerDown={handleStageMouseDown}
