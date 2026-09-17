@@ -66,7 +66,9 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
   const [size, setSize] = useState({ width: 0, height: 0 });
 
   // --- HELPER: Get True Pointer Position ---
-  // Converts screen mouse coordinates into the actual canvas coordinates based on zoom/pan
+  // Converts screen mouse/touch coordinates into the actual canvas coordinates
+  // based on zoom/pan. Konva normalizes touch input through the same
+  // getPointerPosition() API, so this works unchanged for mobile.
   const getRelativePointerPosition = (stage) => {
     const pointer = stage.getPointerPosition();
     const scale = stage.scaleX();
@@ -216,7 +218,15 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
     });
   };
 
+  // --- POINTER HANDLERS (mouse + touch + stylus, unified) ---
+  // Swapped from onMouse* to onPointer* so touch input on phones actually
+  // triggers these — Konva's pointer events fire for mouse, touch, and pen
+  // alike, whereas onMouseDown/Move/Up never fire for touch at all.
   const handleStageMouseDown = (e) => {
+    // Stop the browser from turning a single-finger drag into a page
+    // scroll/selection gesture before our own drawing logic runs.
+    e.evt.preventDefault();
+
     if (activeTool === "pan") return;
     const stage = e.target.getStage();
     const pos = getRelativePointerPosition(stage); // Use relative position
@@ -671,6 +681,10 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
           backgroundColor: themeConfig.background,
           backgroundImage: `radial-gradient(${themeConfig.dot} 1px, transparent 1px)`,
           backgroundSize: "22px 22px",
+          // Prevents the browser's own touch gestures (scroll, pinch-zoom,
+          // pull-to-refresh) from hijacking single/multi-finger input meant
+          // for drawing, panning, or zooming the canvas itself.
+          touchAction: "none",
         }}
         onMouseLeave={handleMouseLeave}
       >
@@ -697,9 +711,12 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
                 setStagePos({ x: e.target.x(), y: e.target.y() });
               }
             }}
-            onMouseDown={handleStageMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleStageMouseUp}
+            // Pointer events (not Mouse events) so touch on phones/tablets
+            // actually drives drawing/arrows/selection, not just clicks/taps.
+            onPointerDown={handleStageMouseDown}
+            onPointerMove={handleMouseMove}
+            onPointerUp={handleStageMouseUp}
+            onPointerLeave={handleMouseLeave}
           >
             <Layer>
               {shapes.map((shape) => {
