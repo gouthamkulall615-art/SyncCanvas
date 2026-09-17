@@ -549,8 +549,10 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
         deleteSelected={deleteSelected}
       />
 
-      {/* ZOOM CONTROLLER UI */}
-      <div className="absolute bottom-6 left-6 z-50 flex items-center gap-4 bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 text-zinc-300 rounded-xl px-3 py-2 shadow-xl">
+      {/* ZOOM CONTROLLER UI
+          Mobile: bottom-right, lifted above the bottom tool dock.
+          Desktop (md+): back to its original bottom-left spot. */}
+      <div className="absolute z-50 flex items-center gap-3 md:gap-4 bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 text-zinc-300 rounded-xl px-2.5 md:px-3 py-2 shadow-xl bottom-24 right-4 md:bottom-6 md:left-6 md:right-auto">
         <button
           onClick={() => handleZoomButton(-1)}
           className="w-6 h-6 flex items-center justify-center hover:bg-zinc-700/50 hover:text-white rounded transition-colors"
