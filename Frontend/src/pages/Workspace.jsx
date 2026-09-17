@@ -45,12 +45,13 @@ export default function Workspace() {
 
     const myUsername = user.name || user.username || "Peer";
 
-    const provider = new SocketIOProvider(
-      "http://localhost:5000",
-      roomId,
-      ydoc,
-      { autoConnect: true },
-    );
+    const backendUrl = import.meta.env.VITE_API_URL
+      ? import.meta.env.VITE_API_URL.replace("/api", "")
+      : "http://localhost:5000";
+
+    const provider = new SocketIOProvider(backendUrl, roomId, ydoc, {
+      autoConnect: true,
+    });
 
     const updateUsers = () => {
       // 1. Grab everyone currently in the Yjs network
