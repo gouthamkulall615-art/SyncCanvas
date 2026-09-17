@@ -1,5 +1,5 @@
 import { Atom, GitBranch, Radio, Server } from "lucide-react";
-import "./Syncenginesection.css";
+import "./SyncEngineSection.css";
 
 const SOURCES = [
   { user: "USER A", label: "Local Vector Doc", meta: "WebRTC / wss:443" },

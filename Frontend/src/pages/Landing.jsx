@@ -4,7 +4,7 @@ import Navbar from "../components/LandingNavbar";
 import MiniCanvasDemo from "../components/MiniCanvasDemo";
 import WavyRibbon from "../components/WavyRibbon";
 import CollaborativeSection from "../components/CollaborativeSection";
-import SyncEngineSection from "../components/Syncenginesection";
+import SyncEngineSection from "../components/SyncEngineSection";
 import HowItWorksSection from "../components/HowItWorksSection";
 import Footer from "../components/Footer";
 export default function LandingPage() {
