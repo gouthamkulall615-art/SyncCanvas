@@ -22,6 +22,23 @@ import "./CanvasBoard.css";
 let idCounter = 0;
 const nextId = () => `shape-${Date.now()}-${idCounter++}`;
 
+// Canvas surface look for each theme — background color, dot-grid color,
+// and the default stroke/fill new pen/text shapes get so they stay visible.
+const CANVAS_THEMES = {
+  dark: {
+    background: "#0e1116",
+    dot: "rgba(255,255,255,0.08)",
+    penStroke: "#ffffff",
+    textFill: "#ffffff",
+  },
+  light: {
+    background: "#f5f6f8",
+    dot: "rgba(15,23,42,0.10)",
+    penStroke: "#111827",
+    textFill: "#111827",
+  },
+};
+
 export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
   const [shapes, setShapes] = useState([]);
   const [remoteUsers, setRemoteUsers] = useState([]);
@@ -31,6 +48,11 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
   const [isDrawing, setIsDrawing] = useState(false);
   const [editingTextId, setEditingTextId] = useState(null);
   const [showClearModal, setShowClearModal] = useState(false);
+
+  // --- CANVAS THEME STATE ---
+  const [theme, setTheme] = useState("dark");
+  const toggleTheme = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
+  const themeConfig = CANVAS_THEMES[theme];
 
   // --- PAN AND ZOOM STATE ---
   const [stageScale, setStageScale] = useState(1);
@@ -235,7 +257,10 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
         type: "line",
         points: [pos.x, pos.y],
         fill: "transparent",
-        stroke: activeTool === "highlighter" ? "#f59e0b" : "#ffffff",
+        // Highlighter stays amber on either theme; pen adapts to the canvas theme
+        // so it isn't invisible (e.g. white ink disappearing on a white canvas).
+        stroke:
+          activeTool === "highlighter" ? "#f59e0b" : themeConfig.penStroke,
         strokeWidth: activeTool === "highlighter" ? 14 : 3,
         opacity: activeTool === "highlighter" ? 0.4 : 1,
         dash: [],
@@ -250,7 +275,7 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
         x: pos.x,
         y: pos.y,
         text: "",
-        fill: "#ffffff",
+        fill: themeConfig.textFill,
         fontSize: 24,
       });
       setSelectedId(id);
@@ -541,6 +566,8 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
         addDiamond={addDiamond}
         addArchitectureNode={addArchitectureNode}
         setShowClearModal={setShowClearModal}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
       <PropertiesPanel
         selectedId={selectedId}
@@ -627,7 +654,7 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
 
       <div
         ref={containerRef}
-        className={`canvas-container relative w-full h-full ${
+        className={`canvas-container relative w-full h-full transition-colors duration-300 ${
           activeTool === "pan"
             ? "cursor-grab"
             : activeTool === "pen" ||
@@ -637,6 +664,14 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
               ? "cursor-crosshair"
               : "cursor-default"
         }`}
+        style={{
+          // Overrides whatever static background CanvasBoard.css sets, so the
+          // theme toggle actually takes effect. Dot-grid pattern here is purely
+          // cosmetic — drop the backgroundImage lines if you don't want it.
+          backgroundColor: themeConfig.background,
+          backgroundImage: `radial-gradient(${themeConfig.dot} 1px, transparent 1px)`,
+          backgroundSize: "22px 22px",
+        }}
         onMouseLeave={handleMouseLeave}
       >
         {size.width > 0 && (

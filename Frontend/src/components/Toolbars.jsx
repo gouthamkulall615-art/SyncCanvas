@@ -18,6 +18,8 @@ import {
   FiArrowUpRight,
   FiGrid,
   FiX,
+  FiSun,
+  FiMoon,
 } from "react-icons/fi";
 import { LuHand, LuDiamond } from "react-icons/lu";
 import { FloatingDock, FloatingDockVertical } from "./FloatingDock";
@@ -30,6 +32,8 @@ export default function Toolbars({
   addDiamond,
   addArchitectureNode,
   setShowClearModal,
+  theme,
+  onToggleTheme,
 }) {
   // Controls the mobile-only architecture drawer (there's no left column on
   // small screens, so these tools live behind a toggle instead).
@@ -135,8 +139,20 @@ export default function Toolbars({
         />
       </div>
 
-      {/* Clear Canvas — full pill on desktop, icon-only circle on mobile */}
-      <div className="absolute top-4 right-4 md:top-6 md:right-6 z-50">
+      {/* Theme toggle + Clear Canvas — icon-only circles on mobile, full pill on desktop */}
+      <div className="absolute top-4 right-4 md:top-6 md:right-6 z-50 flex items-center gap-2">
+        <button
+          onClick={onToggleTheme}
+          title={
+            theme === "dark"
+              ? "Switch canvas to light"
+              : "Switch canvas to dark"
+          }
+          className="flex items-center justify-center w-10 h-10 md:w-auto md:h-auto md:px-3 md:py-2 rounded-full md:rounded-xl bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 text-zinc-300 hover:text-white shadow-xl transition-all"
+        >
+          {theme === "dark" ? <FiSun size={16} /> : <FiMoon size={16} />}
+        </button>
+
         <button
           onClick={() => setShowClearModal(true)}
           title="Clear Canvas"
