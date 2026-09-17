@@ -2,7 +2,8 @@ import axios from "axios";
 
 const api = axios.create({
   // Replace 5000 with whatever port your Node/Express backend is running on
-  baseURL: "http://localhost:5000/api",
+  baseURL:
+    import.meta.env.VITE_API_URL || "https://synccanvas-yerl.onrender.com/api",
   headers: {
     "Content-Type": "application/json",
   },
