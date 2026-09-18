@@ -65,7 +65,7 @@ const TextLoop = ({
   uppercase = true,
   color = "#ffffff",
   ribbon = true,
-  ribbonColor = "#5227FF",
+  ribbonColor = "#9333ea",
   ribbonWidth = 86,
   pauseOnHover = true,
   className = "",
@@ -78,9 +78,23 @@ const TextLoop = ({
   const tailRef = useRef(null);
 
   const [metrics, setMetrics] = useState({ length: 0, reps: 1 });
+  const [isMobile, setIsMobile] = useState(false);
 
   const rawId = useId();
   const pathId = `text-loop-${rawId.replace(/:/g, "")}`;
+
+  // Mobile detection for dynamic SVG scaling
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    handleResize(); // Check on mount
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Dynamically adjust font properties based on screen size
+  const activeFontSize = isMobile ? fontSize * 1.6 : fontSize;
+  const activeLetterSpacing = isMobile ? 0 : letterSpacing;
+  const activeStrokeWidth = isMobile ? 1.5 : 0; // Forces text thickness on mobile
 
   const d = useMemo(
     () => path || buildPath(shape, curviness, ribbonWidth),
@@ -89,17 +103,22 @@ const TextLoop = ({
 
   const unit = useMemo(() => {
     const base = uppercase ? String(text).toUpperCase() : String(text);
-    const gap = separator ? `\u00A0${separator}\u00A0` : "\u00A0\u00A0\u00A0";
+    // Reduce gap spacing heavily on mobile to prevent disjointed words
+    const gap = separator
+      ? `\u00A0${separator}\u00A0`
+      : isMobile
+        ? "\u00A0"
+        : "\u00A0\u00A0\u00A0";
     return `${base}${gap}`;
-  }, [text, separator, uppercase]);
+  }, [text, separator, uppercase, isMobile]);
 
   const textStyle = useMemo(
     () => ({
-      fontSize: `${fontSize}px`,
-      fontWeight,
-      letterSpacing: `${letterSpacing}px`,
+      fontSize: `${activeFontSize}px`,
+      fontWeight: fontWeight,
+      letterSpacing: `${activeLetterSpacing}px`,
     }),
-    [fontSize, fontWeight, letterSpacing],
+    [activeFontSize, fontWeight, activeLetterSpacing],
   );
 
   useLayoutEffect(() => {
@@ -136,7 +155,7 @@ const TextLoop = ({
     return () => {
       cancelled = true;
     };
-  }, [d, unit, fontSize, fontWeight, letterSpacing]);
+  }, [d, unit, activeFontSize, fontWeight, activeLetterSpacing]);
 
   useEffect(() => {
     const { length } = metrics;
@@ -224,6 +243,9 @@ const TextLoop = ({
           className="text-loop-text"
           style={textStyle}
           fill={color}
+          stroke={color}
+          strokeWidth={activeStrokeWidth}
+          paintOrder="stroke fill"
           dominantBaseline="central"
           aria-hidden="true"
           textLength={fitLength}
@@ -238,6 +260,9 @@ const TextLoop = ({
           className="text-loop-text"
           style={textStyle}
           fill={color}
+          stroke={color}
+          strokeWidth={activeStrokeWidth}
+          paintOrder="stroke fill"
           dominantBaseline="central"
           aria-hidden="true"
           textLength={fitLength}
