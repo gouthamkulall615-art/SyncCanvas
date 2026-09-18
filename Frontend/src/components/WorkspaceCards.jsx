@@ -20,18 +20,58 @@ export default function WorkspaceCards() {
   const [pin, setPin] = useState(["", "", "", "", "", ""]);
   const pinRefs = useRef([]);
 
-  const handleCopy = () => {
-    if (roomUrl.includes("######")) return;
-    navigator.clipboard.writeText(roomUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = async () => {
+    let finalUrl = roomUrl;
+
+    if (roomUrl.includes("######")) {
+      try {
+        const response = await api.post("/rooms/create");
+        const { pin } = response.data;
+        finalUrl = `${window.location.origin}/workspace?pin=${pin}`;
+        setRoomUrl(finalUrl);
+      } catch (error) {
+        console.error("Failed to create room for copy:", error);
+        return;
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(finalUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy to clipboard:", err);
+      // Fallback for older mobile browsers
+      const textArea = document.createElement("textarea");
+      textArea.value = finalUrl;
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand("copy");
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (fallbackErr) {
+        console.error("Fallback copy failed:", fallbackErr);
+      }
+      document.body.removeChild(textArea);
+    }
   };
 
   const handleGenerateLink = async () => {
     try {
       const response = await api.post("/rooms/create");
       const { pin } = response.data;
-      setRoomUrl(`${window.location.origin}/workspace?pin=${pin}`);
+      const finalUrl = `${window.location.origin}/workspace?pin=${pin}`;
+
+      setRoomUrl(finalUrl);
+
+      try {
+        await navigator.clipboard.writeText(finalUrl);
+      } catch (copyErr) {
+        console.error("Auto-copy prevented by browser", copyErr);
+      }
+
+      // Navigate to the live workspace
       navigate(`/workspace?pin=${pin}`);
     } catch (error) {
       console.error("Failed to create room:", error);
@@ -214,9 +254,6 @@ export default function WorkspaceCards() {
           </div>
         </div>
       </div>
-
-      
-      
     </div>
   );
 }
