@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import ShapeGrid from "../components/ShapeGrid";
 import Navbar from "../components/LandingNavbar";
@@ -7,12 +8,20 @@ import CollaborativeSection from "../components/CollaborativeSection";
 import SyncEngineSection from "../components/SyncEngineSection";
 import HowItWorksSection from "../components/HowItWorksSection";
 import Footer from "../components/Footer";
+
 export default function LandingPage() {
   const navigate = useNavigate();
+  // 1. Create a reference for the section you want to scroll to
+  const howItWorksRef = useRef(null);
 
   const handleLaunch = () => {
     const token = localStorage.getItem("token");
     navigate(token ? "/dashboard" : "/register");
+  };
+
+  // 2. Create the scroll handler with smooth behavior
+  const scrollToHowItWorks = () => {
+    howItWorksRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   return (
@@ -69,7 +78,12 @@ export default function LandingPage() {
           >
             Open a canvas
           </button>
-          <button className="px-6 py-3.5 bg-[#1a1d24] border border-zinc-800 text-zinc-300 font-medium rounded-xl hover:bg-zinc-800 hover:text-white transition-colors">
+
+          {/* 3. Attach the scroll handler to the button */}
+          <button
+            onClick={scrollToHowItWorks}
+            className="px-6 py-3.5 bg-[#1a1d24] border border-zinc-800 text-zinc-300 font-medium rounded-xl hover:bg-zinc-800 hover:text-white transition-colors"
+          >
             See how it works
           </button>
         </div>
@@ -85,7 +99,6 @@ export default function LandingPage() {
 
       {/* Wavy Ribbon */}
       <div className="relative z-10 w-full pointer-events-none">
-       
         <div className="block md:hidden">
           <WavyRibbon
             text="Real-Time Collaboration  ✦  Sub-Millisecond Sync  ✦  CRDT Powered  ✦  "
@@ -100,13 +113,11 @@ export default function LandingPage() {
         <div className="hidden md:block">
           <WavyRibbon
             text="Real-Time Collaboration  ✦  Sub-Millisecond Sync  ✦  CRDT Powered  ✦  "
-            shape="wave" /* Gives it a slight, clean curve instead of a wild wave */
-            curviness={
-              30
-            } /* Keeps it mostly straight with a very gentle slope */
-            ribbonColor="#9333ea" /* Sets the ribbon background to purple */
-            ribbonWidth={70} /* Makes the ribbon strip a bit slimmer */
-            color="#ffffff" /* White text color */
+            shape="wave"
+            curviness={30}
+            ribbonColor="#9333ea"
+            ribbonWidth={70}
+            color="#ffffff"
             speed={60}
           />
         </div>
@@ -116,14 +127,20 @@ export default function LandingPage() {
       <div className="relative z-10 w-full mt-10 md:mt-16">
         <CollaborativeSection />
       </div>
+
       {/* Sync Engine Architecture Section */}
       <div className="relative z-10 w-full mt-10 md:mt-16">
         <SyncEngineSection />
       </div>
-      {/* . Add the How It Works Section here */}
-      <div className="relative z-10 w-full mt-10 md:mt-16 mb-20">
+
+      {/* 4. Attach the ref to the target section wrapper */}
+      <div
+        ref={howItWorksRef}
+        className="relative z-10 w-full mt-10 md:mt-16 mb-20 scroll-mt-24"
+      >
         <HowItWorksSection />
       </div>
+
       <div className="relative z-10 w-full mt-auto">
         <Footer />
       </div>
