@@ -76,7 +76,7 @@ export default function LandingPage() {
       </div>
 
       {/* Live mini-canvas demo */}
-      <div className="relative z-10 w-full max-w-5xl px-6 mt-20 mb-24">
+      <div className="relative z-10 w-full max-w-5xl px-6 mt-20 mb-16 md:mb-20">
         <MiniCanvasDemo />
         <p className="text-lg md:text-xl text-zinc-400 text-center max-w-xl mx-auto mt-8">
           Sketch freely. Map out systems. Watch it happen together.
@@ -84,28 +84,44 @@ export default function LandingPage() {
       </div>
 
       {/* Wavy Ribbon */}
-      <div className="relative z-10 w-full -mt-16 md:-mt-24 pointer-events-none">
-        <WavyRibbon
-          text="Real-Time Collaboration  ✦  Sub-Millisecond Sync  ✦  CRDT Powered  ✦  "
-          shape="wave" /* Gives it a slight, clean curve instead of a wild wave */
-          curviness={30} /* Keeps it mostly straight with a very gentle slope */
-          ribbonColor="#9333ea" /* Sets the ribbon background to purple */
-          ribbonWidth={70} /* Makes the ribbon strip a bit slimmer */
-          color="#ffffff" /* White text color */
-          speed={60}
-        />
+      <div className="relative z-10 w-full pointer-events-none">
+       
+        <div className="block md:hidden">
+          <WavyRibbon
+            text="Real-Time Collaboration  ✦  Sub-Millisecond Sync  ✦  CRDT Powered  ✦  "
+            shape="wave"
+            curviness={20}
+            ribbonColor="#9333ea"
+            ribbonWidth={110}
+            color="#ffffff"
+            speed={45}
+          />
+        </div>
+        <div className="hidden md:block">
+          <WavyRibbon
+            text="Real-Time Collaboration  ✦  Sub-Millisecond Sync  ✦  CRDT Powered  ✦  "
+            shape="wave" /* Gives it a slight, clean curve instead of a wild wave */
+            curviness={
+              30
+            } /* Keeps it mostly straight with a very gentle slope */
+            ribbonColor="#9333ea" /* Sets the ribbon background to purple */
+            ribbonWidth={70} /* Makes the ribbon strip a bit slimmer */
+            color="#ffffff" /* White text color */
+            speed={60}
+          />
+        </div>
       </div>
 
       {/* Collaborative Features Section */}
-      <div className="relative z-10 w-full mt-12 md:mt-24">
+      <div className="relative z-10 w-full mt-10 md:mt-16">
         <CollaborativeSection />
       </div>
       {/* Sync Engine Architecture Section */}
-      <div className="relative z-10 w-full mt-12 md:mt-24">
+      <div className="relative z-10 w-full mt-10 md:mt-16">
         <SyncEngineSection />
       </div>
       {/* . Add the How It Works Section here */}
-      <div className="relative z-10 w-full mt-12 md:mt-24 mb-32">
+      <div className="relative z-10 w-full mt-10 md:mt-16 mb-20">
         <HowItWorksSection />
       </div>
       <div className="relative z-10 w-full mt-auto">
