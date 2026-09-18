@@ -14,6 +14,8 @@ import {
   Arrow,
   RegularPolygon,
 } from "react-konva";
+import { useNavigate } from "react-router-dom";
+import { FiLogOut } from "react-icons/fi";
 import { ArchitectureNode } from "./ArchitectureNodes";
 import Toolbars from "./Toolbars";
 import PropertiesPanel from "./PropertiesPanel";
@@ -22,8 +24,6 @@ import "./CanvasBoard.css";
 let idCounter = 0;
 const nextId = () => `shape-${Date.now()}-${idCounter++}`;
 
-// Canvas surface look for each theme — background color, dot-grid color,
-// and the default stroke/fill new pen/text shapes get so they stay visible.
 const CANVAS_THEMES = {
   dark: {
     background: "#0e1116",
@@ -40,6 +40,7 @@ const CANVAS_THEMES = {
 };
 
 export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
+  const navigate = useNavigate();
   const [shapes, setShapes] = useState([]);
   const [remoteUsers, setRemoteUsers] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
@@ -47,14 +48,15 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
   const [activeTool, setActiveTool] = useState("select");
   const [isDrawing, setIsDrawing] = useState(false);
   const [editingTextId, setEditingTextId] = useState(null);
-  const [showClearModal, setShowClearModal] = useState(false);
 
-  // --- CANVAS THEME STATE ---
+  // Modals state
+  const [showClearModal, setShowClearModal] = useState(false);
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
+
   const [theme, setTheme] = useState("dark");
   const toggleTheme = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
   const themeConfig = CANVAS_THEMES[theme];
 
-  // --- PAN AND ZOOM STATE ---
   const [stageScale, setStageScale] = useState(1);
   const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
 
@@ -62,8 +64,6 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
   const transformerRef = useRef(null);
   const containerRef = useRef(null);
   const textareaRef = useRef(null);
-  // Refs keep pinch calculations in sync even when React batches state updates
-  // from consecutive touchmove events.
   const stageTransformRef = useRef({ scale: 1, position: { x: 0, y: 0 } });
   const touchGestureRef = useRef(null);
 
@@ -75,10 +75,6 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
     setStagePos(position);
   };
 
-  // --- HELPER: Get True Pointer Position ---
-  // Converts screen mouse/touch coordinates into the actual canvas coordinates
-  // based on zoom/pan. Konva normalizes touch input through the same
-  // getPointerPosition() API, so this works unchanged for mobile.
   const getRelativePointerPosition = (stage) => {
     const pointer = stage.getPointerPosition();
     const scale = stage.scaleX();
@@ -89,8 +85,6 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
     };
   };
 
-  // --- HELPER: Get Viewport Center ---
-  // Finds the exact middle of the screen in canvas coordinates so new shapes spawn visibly
   const getViewportCenter = () => {
     return {
       x: (-stagePos.x + size.width / 2) / stageScale,
@@ -168,14 +162,12 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
     transformerRef.current.getLayer().batchDraw();
   }, [selectedId, shapes]);
 
-  // --- ZOOM WHEEL HANDLER ---
   const handleWheel = (e) => {
     e.evt.preventDefault();
     const stage = stageRef.current;
     if (!stage) return;
 
     if (e.evt.ctrlKey || e.evt.metaKey) {
-      // Zoom in/out
       const scaleBy = 1.1;
       const oldScale = stage.scaleX();
       const pointer = stage.getPointerPosition();
@@ -187,7 +179,6 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
 
       const direction = e.evt.deltaY > 0 ? -1 : 1;
       const newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
-      // Clamp zoom between 10% and 500%
       const clampedScale = Math.max(0.1, Math.min(newScale, 5));
 
       const newPos = {
@@ -197,7 +188,6 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
 
       setStageTransform(clampedScale, newPos);
     } else {
-      // Pan with trackpad or mouse wheel
       const { scale, position } = stageTransformRef.current;
       setStageTransform(scale, {
         x: position.x - e.evt.deltaX,
@@ -206,7 +196,6 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
     }
   };
 
-  // --- ZOOM BUTTON HANDLER ---
   const handleZoomButton = (direction) => {
     const scaleBy = 1.2;
     const oldScale = stageScale;
@@ -227,12 +216,14 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
     });
   };
 
-  // --- MOBILE PINCH ZOOM + TWO-FINGER PAN ---
   const getTouchMetrics = (touches, stage) => {
     const rect = stage.container().getBoundingClientRect();
     const first = touches[0];
     const second = touches[1];
-    const firstPoint = { x: first.clientX - rect.left, y: first.clientY - rect.top };
+    const firstPoint = {
+      x: first.clientX - rect.left,
+      y: first.clientY - rect.top,
+    };
     const secondPoint = {
       x: second.clientX - rect.left,
       y: second.clientY - rect.top,
@@ -258,8 +249,6 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
     const stage = e.target.getStage();
     const { center, distance } = getTouchMetrics(touches, stage);
     touchGestureRef.current = { center, distance };
-    // A stage drag may have begun with the first finger. Pinching owns the
-    // interaction from here, so stop it before applying our own transform.
     stage.stopDrag();
   };
 
@@ -283,8 +272,6 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
       0.1,
       Math.min(5, oldScale * (distance / previous.distance)),
     );
-    // Preserve the canvas point beneath the previous midpoint. Moving the
-    // midpoint therefore pans, and changing its finger distance zooms.
     const canvasPoint = {
       x: (previous.center.x - oldPosition.x) / oldScale,
       y: (previous.center.y - oldPosition.y) / oldScale,
@@ -306,18 +293,12 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
     }
   };
 
-  // --- POINTER HANDLERS (mouse + touch + stylus, unified) ---
-  // Swapped from onMouse* to onPointer* so touch input on phones actually
-  // triggers these — Konva's pointer events fire for mouse, touch, and pen
-  // alike, whereas onMouseDown/Move/Up never fire for touch at all.
   const handleStageMouseDown = (e) => {
-    // Stop the browser from turning a single-finger drag into a page
-    // scroll/selection gesture before our own drawing logic runs.
     e.evt.preventDefault();
 
     if (activeTool === "pan") return;
     const stage = e.target.getStage();
-    const pos = getRelativePointerPosition(stage); // Use relative position
+    const pos = getRelativePointerPosition(stage);
     const clickedId = e.target.id();
 
     if (activeTool === "select") {
@@ -355,8 +336,6 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
         type: "line",
         points: [pos.x, pos.y],
         fill: "transparent",
-        // Highlighter stays amber on either theme; pen adapts to the canvas theme
-        // so it isn't invisible (e.g. white ink disappearing on a white canvas).
         stroke:
           activeTool === "highlighter" ? "#f59e0b" : themeConfig.penStroke,
         strokeWidth: activeTool === "highlighter" ? 14 : 3,
@@ -450,13 +429,12 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
       awareness.setLocalStateField("user", { ...state.user, cursor: null });
   };
 
-  // --- SPAWN SHAPES IN CENTER ---
   const addArchitectureNode = (nodeType) => {
     const center = getViewportCenter();
     const id = nextId();
     shapesMap.set(id, {
       type: nodeType,
-      x: center.x - 40, // offset half roughly
+      x: center.x - 40,
       y: center.y - 40,
       fill: "#262627",
       stroke: "#5ca4f8",
@@ -627,7 +605,45 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
 
   return (
     <div className="canvas-board relative w-full h-full overflow-hidden">
-      {/* ... Clear Canvas Modal ... */}
+      {/* Leave Room Button - Added right gap to separate it from Clear Canvas */}
+      <button
+        onClick={() => setShowLeaveModal(true)}
+        className="absolute top-20 right-4 md:top-6 md:right-44 z-[60] px-4 py-2 bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 text-zinc-300 text-xs font-semibold tracking-wide uppercase rounded-xl hover:bg-zinc-800 hover:text-white transition-all shadow-xl flex items-center gap-2"
+      >
+        <FiLogOut size={14} />
+        <span className="hidden sm:inline">Leave Room</span>
+      </button>
+
+      {/* Leave Room Confirmation Modal */}
+      {showLeaveModal && (
+        <div className="absolute inset-0 z-[100] flex items-center justify-center bg-[#0e1116]/60 backdrop-blur-sm">
+          <div className="bg-[#1a1d24] border border-zinc-800/80 rounded-2xl p-6 shadow-2xl max-w-sm w-full mx-4">
+            <h3 className="text-white text-lg font-semibold mb-2">
+              Leave Room
+            </h3>
+            <p className="text-zinc-400 text-sm mb-6">
+              Are you sure you want to leave this workspace? You can rejoin
+              anytime using the room PIN.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowLeaveModal(false)}
+                className="px-4 py-2 text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => navigate("/dashboard")}
+                className="px-4 py-2 text-sm font-medium bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 border border-purple-500/20 rounded-lg transition-colors"
+              >
+                Leave Room
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Clear Canvas Modal */}
       {showClearModal && (
         <div className="absolute inset-0 z-[100] flex items-center justify-center bg-[#0e1116]/60 backdrop-blur-sm">
           <div className="bg-[#1a1d24] border border-zinc-800/80 rounded-2xl p-6 shadow-2xl max-w-sm w-full mx-4">
@@ -674,9 +690,6 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
         deleteSelected={deleteSelected}
       />
 
-      {/* ZOOM CONTROLLER UI
-          Mobile: bottom-right, lifted above the bottom tool dock.
-          Desktop (md+): back to its original bottom-left spot. */}
       <div className="absolute z-50 flex items-center gap-3 md:gap-4 bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 text-zinc-300 rounded-xl px-2.5 md:px-3 py-2 shadow-xl bottom-24 right-4 md:bottom-6 md:left-6 md:right-auto">
         <button
           onClick={() => handleZoomButton(-1)}
@@ -727,12 +740,10 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
           }}
           style={{
             position: "absolute",
-            // Compute screen position based on zoom/pan state
             top: `${shapesMap.get(editingTextId).y * stageScale + stagePos.y}px`,
             left: `${shapesMap.get(editingTextId).x * stageScale + stagePos.x}px`,
             background: "transparent",
             color: shapesMap.get(editingTextId).fill,
-            // Scale font size accordingly
             fontSize: `${shapesMap.get(editingTextId).fontSize * stageScale}px`,
             fontFamily: "sans-serif",
             fontWeight: "bold",
@@ -762,15 +773,9 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
               : "cursor-default"
         }`}
         style={{
-          // Overrides whatever static background CanvasBoard.css sets, so the
-          // theme toggle actually takes effect. Dot-grid pattern here is purely
-          // cosmetic — drop the backgroundImage lines if you don't want it.
           backgroundColor: themeConfig.background,
           backgroundImage: `radial-gradient(${themeConfig.dot} 1px, transparent 1px)`,
           backgroundSize: "22px 22px",
-          // Prevents the browser's own touch gestures (scroll, pinch-zoom,
-          // pull-to-refresh) from hijacking single/multi-finger input meant
-          // for drawing, panning, or zooming the canvas itself.
           touchAction: "none",
         }}
         onMouseLeave={handleMouseLeave}
@@ -780,16 +785,12 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
             ref={stageRef}
             width={size.width}
             height={size.height}
-            // Bind Pan & Zoom state to Stage
             scaleX={stageScale}
             scaleY={stageScale}
             x={stagePos.x}
             y={stagePos.y}
             onWheel={handleWheel}
-            // The Stage remains draggable for mouse and touch input. Two-finger
-            // gestures stop its native drag and apply their own pan/zoom below.
             draggable={true}
-            // Sync state when panning tool is dragged
             onDragMove={(e) => {
               if (e.target === stageRef.current) {
                 setStageTransform(stageTransformRef.current.scale, {
@@ -809,8 +810,6 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
-            // Pointer events (not Mouse events) so touch on phones/tablets
-            // actually drives drawing/arrows/selection, not just clicks/taps.
             onPointerDown={handleStageMouseDown}
             onPointerMove={handleMouseMove}
             onPointerUp={handleStageMouseUp}
