@@ -1,7 +1,6 @@
 import { motion, useReducedMotion } from "framer-motion";
 import "./MiniCanvasDemo.css";
 
-
 const RECT = { x: 690, y: 119, w: 130, h: 87 };
 const CIRCLE = { cx: 547, cy: 362, r: 40 };
 
@@ -13,7 +12,6 @@ const rectCursorPath = [
   { x: RECT.x, y: RECT.y },
 ];
 
-// Roughly evenly spaced points around the circle, starting at the top.
 const circleCursorPath = Array.from({ length: 9 }, (_, i) => {
   const angle = -Math.PI / 2 + (i / 8) * Math.PI * 2;
   return {
@@ -24,7 +22,6 @@ const circleCursorPath = Array.from({ length: 9 }, (_, i) => {
 
 const DRAW_DURATION = 1.8;
 const HOLD_DURATION = 1.6;
-const CYCLE = DRAW_DURATION + HOLD_DURATION;
 
 function Cursor({ label, color, path, delay, reduceMotion }) {
   if (reduceMotion) {
@@ -93,7 +90,8 @@ export default function MiniCanvasDemo() {
         <span className="mcd-tool">🗒</span>
       </div>
 
-      <svg viewBox="0 0 1053 577" className="mcd-svg" aria-hidden="true">
+      {/* CHANGED: viewBox shifted by -100 on the Y-axis and height increased by 100 to add top padding */}
+      <svg viewBox="0 -100 1053 677" className="mcd-svg" aria-hidden="true">
         {/* Sticky note */}
         <g transform="translate(170, 122) rotate(-1)">
           <rect
