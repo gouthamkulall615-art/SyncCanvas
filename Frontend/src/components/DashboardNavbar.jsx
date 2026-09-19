@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Search, ArrowRight, Plus, Settings, Moon, LogOut } from "lucide-react";
+import { Search, Settings, Moon, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function DashboardNavbar() {
@@ -68,24 +68,6 @@ export default function DashboardNavbar() {
           </span>
         </div>
 
-        {/* Quick Join Input */}
-        <div className="hidden sm:flex relative">
-          <input
-            type="text"
-            placeholder="JOIN VIA CODE..."
-            maxLength={6}
-            className="w-36 bg-[#121214] border border-zinc-800/85 rounded-lg pl-3 pr-8 py-2 text-xs font-mono uppercase text-zinc-200 focus:outline-none focus:border-purple-500 transition-all placeholder:text-zinc-600 tracking-wider"
-          />
-          <button className="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-zinc-500 hover:text-zinc-200 transition-colors bg-zinc-800/50 hover:bg-zinc-700/50 rounded-md">
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        {/* Host Room CTA Button */}
-        <button className="flex items-center gap-1.5 bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-[0_0_15px_rgba(147,51,234,0.25)] hover:shadow-[0_0_20px_rgba(147,51,234,0.4)]">
-          <Plus className="w-4 h-4 stroke-[2.5]" />
-          Host Room
-        </button>
 
         {/* User Profile Dropdown */}
         <div className="relative" ref={dropdownRef}>
