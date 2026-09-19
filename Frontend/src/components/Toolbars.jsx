@@ -129,7 +129,12 @@ export default function Toolbars({
         className="hidden md:flex absolute top-6 left-1/2 -translate-x-1/2 z-50 mx-auto h-16 items-end gap-4 rounded-2xl bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 px-4 pb-2 shadow-2xl"
       />
 
-      <div className="hidden md:flex absolute top-1/2 -translate-y-1/2 left-6 z-50 flex-col items-center">
+      {/* Pinned between the header card (~top-48) and the zoom bar
+          (~bottom-28), then centered WITHIN that gap via flexbox — not
+          centered on the full viewport, which is what let this dock drift
+          up into the header card on tall screens. Adjust top-48/bottom-28
+          if the header card or zoom bar's own height ever changes. */}
+      <div className="hidden md:flex absolute left-6 top-48 bottom-28 z-40 flex-col items-center justify-center">
         <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-2 text-center">
           Sys
         </div>
@@ -200,11 +205,10 @@ export default function Toolbars({
                   if (tool.action) tool.action();
                   setArchOpen(false);
                 }}
-                className={`flex flex-col items-center justify-center gap-1 rounded-xl p-2.5 text-[9px] font-medium transition-colors ${
-                  activeTool === tool.id
+                className={`flex flex-col items-center justify-center gap-1 rounded-xl p-2.5 text-[9px] font-medium transition-colors ${activeTool === tool.id
                     ? "bg-blue-500/20 text-blue-400 border border-blue-500/50"
                     : "bg-zinc-800/50 text-zinc-400 border border-transparent"
-                }`}
+                  }`}
               >
                 <span className="w-5 h-5 flex items-center justify-center">
                   {tool.icon}
@@ -226,11 +230,10 @@ export default function Toolbars({
                 setActiveTool(tool.id);
                 if (tool.action) tool.action();
               }}
-              className={`flex-none flex items-center justify-center w-10 h-10 rounded-xl transition-colors ${
-                activeTool === tool.id
+              className={`flex-none flex items-center justify-center w-10 h-10 rounded-xl transition-colors ${activeTool === tool.id
                   ? "bg-blue-500/20 text-blue-400 border border-blue-500/50"
                   : "text-zinc-400 border border-transparent"
-              }`}
+                }`}
             >
               <span className="w-[18px] h-[18px] flex items-center justify-center">
                 {tool.icon}
@@ -243,11 +246,10 @@ export default function Toolbars({
           <button
             onClick={() => setArchOpen((v) => !v)}
             title="Architecture tools"
-            className={`flex-none flex items-center justify-center w-10 h-10 rounded-xl transition-colors ${
-              archOpen
+            className={`flex-none flex items-center justify-center w-10 h-10 rounded-xl transition-colors ${archOpen
                 ? "bg-blue-500/20 text-blue-400 border border-blue-500/50"
                 : "text-zinc-400 border border-transparent"
-            }`}
+              }`}
           >
             <FiGrid size={18} />
           </button>
