@@ -1,69 +1,86 @@
 import express from "express";
-import Room from "../models/Room.js";
-import User from "../models/user.js";
-
-import { protect } from "../middlewares/authMiddleware.js";
+import rateLimit from "express-rate-limit";
+import crypto from "crypto";
+import Room from "../models/Room.js"; // adjust path to wherever you place the model
 
 const router = express.Router();
 
-router.post("/create", protect, async (req, res) => {
+const MAX_ATTEMPTS = 5;
+const LOCK_DURATION_MS = 10 * 60 * 1000; // 10 minutes
+
+const pinJoinLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many attempts. Try again in a few minutes." },
+});
+
+const generatePin = () =>
+  Math.floor(100000 + Math.random() * 900000).toString();
+
+router.post("/create", async (req, res) => {
   try {
-    let pin;
-    let isUnique = false;
-    while (!isUnique) {
-      pin = Math.floor(100000 + Math.random() * 900000).toString();
-      const existingRoom = await Room.findOne({ pin });
-      if (!existingRoom) isUnique = true;
-    }
-
-    const newRoom = new Room({
-      pin,
-      host: req.user._id,
-      allowedUsers: [req.user._id],
-    });
-
-    await newRoom.save();
-
-    await User.findByIdAndUpdate(req.user._id, {
-      $push: { hostedRooms: newRoom._id },
-    });
-
-    res.status(201).json({ success: true, pin });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Failed to create room" });
+    const token = crypto.randomBytes(24).toString("base64url");
+    const pin = generatePin();
+    const room = await Room.create({ token, pin });
+    res.json({ token: room.token, pin });
+  } catch (err) {
+    console.error("Room creation failed:", err);
+    res.status(500).json({ error: "Failed to create room." });
   }
 });
 
-// 2. PEER: Verify access to a room
-router.post("/verify", protect, async (req, res) => {
+router.get("/:token", async (req, res) => {
+  try {
+    const room = await Room.findOne({ token: req.params.token });
+    if (!room) return res.status(404).json({ error: "Room not found." });
+    res.json({ exists: true });
+  } catch (err) {
+    res.status(500).json({ error: "Lookup failed." });
+  }
+});
+
+router.post("/:token/verify", async (req, res) => {
+  try {
+    const { pin } = req.body;
+    const room = await Room.findOne({ token: req.params.token });
+    if (!room) return res.status(404).json({ error: "Room not found." });
+
+    if (room.lockedUntil && room.lockedUntil > new Date()) {
+      return res
+        .status(429)
+        .json({ error: "Too many attempts. Try again later." });
+    }
+
+    if (room.pin !== pin) {
+      room.attempts += 1;
+      if (room.attempts >= MAX_ATTEMPTS) {
+        room.lockedUntil = new Date(Date.now() + LOCK_DURATION_MS);
+        room.attempts = 0;
+      }
+      await room.save();
+      return res.status(401).json({ error: "Incorrect PIN." });
+    }
+
+    room.attempts = 0;
+    room.lockedUntil = null;
+    await room.save();
+    res.json({ ok: true, token: room.token });
+  } catch (err) {
+    console.error("Verify failed:", err);
+    res.status(500).json({ error: "Verification failed." });
+  }
+});
+
+router.post("/join-by-pin", pinJoinLimiter, async (req, res) => {
   try {
     const { pin } = req.body;
     const room = await Room.findOne({ pin });
-
-    if (!room) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Room not found or invalid PIN" });
-    }
-
-    if (!room.isActive) {
-      return res
-        .status(403)
-        .json({ success: false, message: "This session has been closed" });
-    }
-
-    if (!room.allowedUsers.includes(req.user._id)) {
-      room.allowedUsers.push(req.user._id);
-      await room.save();
-
-      await User.findByIdAndUpdate(req.user._id, {
-        $push: { accessibleRooms: room._id },
-      });
-    }
-
-    res.status(200).json({ success: true, message: "Access granted" });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Verification failed" });
+    if (!room) return res.status(401).json({ error: "Invalid PIN." });
+    res.json({ token: room.token });
+  } catch (err) {
+    res.status(500).json({ error: "Join failed." });
   }
 });
 

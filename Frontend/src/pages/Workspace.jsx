@@ -1,8 +1,9 @@
 import { useMemo, useState, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import * as Y from "yjs";
 import { SocketIOProvider } from "y-socket.io";
 import CanvasBoard from "../components/CanvasBoard";
+import api from "../api/axios";
 
 const CURSOR_COLORS = [
   "#3b82f6",
@@ -15,8 +16,7 @@ const CURSOR_COLORS = [
 
 export default function Workspace() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const roomId = searchParams.get("pin");
+  const { token } = useParams();
 
   const [user] = useState(() => {
     const savedUser = localStorage.getItem("user");
@@ -31,6 +31,61 @@ export default function Workspace() {
   const [users, setUsers] = useState([]);
   const [awareness, setAwareness] = useState(null);
 
+  // --- PIN GATE ---
+  // The host who just generated this link skips the gate (sessionStorage flag
+  // set by WorkspaceCards.jsx at creation time). Everyone else — including
+  // the host on a refresh — has to prove they know the pin before we ever
+  // open a Yjs/socket connection. This is the check that was missing before:
+  // previously the token in the URL was treated as sufficient on its own.
+  const [verified, setVerified] = useState(
+    () => sessionStorage.getItem(`host:${token}`) === "true",
+  );
+  const [pinInput, setPinInput] = useState(["", "", "", "", "", ""]);
+  const [gateError, setGateError] = useState(null);
+  const [checking, setChecking] = useState(false);
+
+  const handlePinChange = (index, value) => {
+    if (!/^\d*$/.test(value)) return;
+    const next = [...pinInput];
+    next[index] = value.slice(-1);
+    setPinInput(next);
+    setGateError(null);
+    if (value && index < 5) {
+      document.getElementById(`gate-pin-${index + 1}`)?.focus();
+    }
+  };
+
+  const handleGateKeyDown = (index, e) => {
+    if (e.key === "Backspace" && !pinInput[index] && index > 0) {
+      document.getElementById(`gate-pin-${index - 1}`)?.focus();
+    }
+  };
+
+  const handleVerifyPin = async () => {
+    const fullPin = pinInput.join("");
+    if (fullPin.length !== 6) return;
+    setChecking(true);
+    setGateError(null);
+    try {
+      await api.post(`/rooms/${token}/verify`, { pin: fullPin });
+      sessionStorage.setItem(`host:${token}`, "true");
+      setVerified(true);
+    } catch (error) {
+      const status = error.response?.status;
+      if (status === 404) {
+        setGateError("This room doesn't exist or has expired.");
+      } else if (status === 429) {
+        setGateError("Too many attempts. Try again in a few minutes.");
+      } else {
+        setGateError("Incorrect PIN.");
+      }
+      setPinInput(["", "", "", "", "", ""]);
+      document.getElementById("gate-pin-0")?.focus();
+    } finally {
+      setChecking(false);
+    }
+  };
+
   const ydoc = useMemo(() => new Y.Doc(), []);
   const shapesMap = useMemo(() => ydoc.getMap("shapes"), [ydoc]);
 
@@ -41,7 +96,10 @@ export default function Workspace() {
   }, [user, navigate]);
 
   useEffect(() => {
-    if (!user || !roomId) return;
+    // Only open the collaboration session once the pin has actually been
+    // verified (or the host flag was already set) — this is the gate that
+    // was missing before.
+    if (!user || !token || !verified) return;
 
     const myUsername = user.name || user.username || "Peer";
 
@@ -49,7 +107,11 @@ export default function Workspace() {
       ? import.meta.env.VITE_API_URL.replace("/api", "")
       : "http://localhost:5000";
 
-    const provider = new SocketIOProvider(backendUrl, roomId, ydoc, {
+    // The token is now what identifies the Yjs/socket room, in place of the
+    // old pin — a nice side effect of this change is that the room name
+    // peers actually connect to is the long opaque token, not the guessable
+    // 6-digit pin.
+    const provider = new SocketIOProvider(backendUrl, token, ydoc, {
       autoConnect: true,
     });
 
@@ -111,9 +173,66 @@ export default function Workspace() {
       setUsers([]);
       setAwareness(null);
     };
-  }, [user, ydoc, roomId, userColor]);
+  }, [user, ydoc, token, userColor, verified]);
 
   if (!user) return null;
+
+  // --- PIN GATE UI ---
+  if (!verified) {
+    return (
+      <main className="h-screen w-full bg-[#0e1116] flex items-center justify-center font-sans">
+        <div className="bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 rounded-2xl p-8 w-full max-w-sm shadow-2xl">
+          <h1 className="text-lg font-bold text-white mb-1">Enter Room PIN</h1>
+          <p className="text-sm text-zinc-400 mb-6">
+            This workspace is protected. Enter the 6-digit PIN the host shared
+            with you.
+          </p>
+
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-mono font-semibold uppercase tracking-widest text-zinc-500">
+              PIN
+            </span>
+            {gateError && (
+              <span className="text-[10px] font-medium text-red-400">
+                {gateError}
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-6 gap-2 mb-6">
+            {pinInput.map((digit, index) => (
+              <input
+                key={index}
+                id={`gate-pin-${index}`}
+                type="text"
+                inputMode="numeric"
+                maxLength={1}
+                value={digit}
+                onChange={(e) => handlePinChange(index, e.target.value)}
+                onKeyDown={(e) => handleGateKeyDown(index, e)}
+                placeholder="•"
+                className={`w-full h-12 text-center text-lg font-mono font-bold rounded-xl bg-[#06080c] border transition-all duration-150 text-white placeholder-zinc-700 outline-none ${
+                  gateError
+                    ? "border-red-500/70 ring-1 ring-red-500/30"
+                    : digit
+                      ? "border-purple-500 ring-1 ring-purple-500/40 bg-purple-950/10"
+                      : "border-zinc-800 focus:border-purple-500/70 focus:ring-1 focus:ring-purple-500/40"
+                }`}
+              />
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={handleVerifyPin}
+            disabled={pinInput.join("").length !== 6 || checking}
+            className="w-full py-3 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:bg-zinc-800 disabled:text-zinc-600 text-white font-medium text-sm transition-all duration-200"
+          >
+            {checking ? "Checking..." : "Enter Workspace"}
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="h-screen w-full bg-[#0e1116] flex overflow-hidden font-sans relative select-none">

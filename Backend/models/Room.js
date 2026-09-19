@@ -1,34 +1,20 @@
 import mongoose from "mongoose";
 
-const roomSchema = new mongoose.Schema(
-  {
-    pin: {
-      type: String,
-      required: true,
-      unique: true,
-      index: true,
-    },
-    host: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    allowedUsers: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      },
-    ],
-    documentState: {
-      type: String,
-      default: "//write your c logic here...",
-    },
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
+const roomSchema = new mongoose.Schema({
+  token: { type: String, required: true, unique: true, index: true },
+
+  pin: { type: String, required: true, index: true },
+
+  attempts: { type: Number, default: 0 },
+  lockedUntil: { type: Date, default: null },
+
+  createdAt: { type: Date, default: Date.now },
+
+  expiresAt: {
+    type: Date,
+    default: () => new Date(Date.now() + 24 * 60 * 60 * 1000),
+    index: { expires: 0 },
   },
-  { timestamps: true },
-);
+});
 
 export default mongoose.model("Room", roomSchema);

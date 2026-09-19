@@ -19,7 +19,7 @@ export default function App() {
       <Route path="/register" element={<Register />} />
 
       {/* Collaborative Workspace */}
-      <Route path="/workspace" element={<Workspace />} />
+      <Route path="/workspace/:token" element={<Workspace />} />
     </Routes>
   );
 }
