@@ -294,7 +294,15 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
   };
 
   const handleStageMouseDown = (e) => {
-    e.evt.preventDefault();
+    // Only prevent default for drawing tools — not for select (which needs
+    // native pointer events for shape dragging, especially on mobile/touch)
+    // and not for pan (which is handled by Stage.draggable).
+    if (
+      activeTool !== "select" &&
+      activeTool !== "pan"
+    ) {
+      e.evt.preventDefault();
+    }
 
     if (activeTool === "pan") return;
     const stage = e.target.getStage();
@@ -790,7 +798,7 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
             x={stagePos.x}
             y={stagePos.y}
             onWheel={handleWheel}
-            draggable={true}
+            draggable={activeTool === "pan"}
             onDragMove={(e) => {
               if (e.target === stageRef.current) {
                 setStageTransform(stageTransformRef.current.scale, {
