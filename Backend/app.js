@@ -38,4 +38,4 @@ io.on("connection", (socket) => {
   });
 });
 
-export { app, httpServer };
+export { app, httpServer, ysocketio };

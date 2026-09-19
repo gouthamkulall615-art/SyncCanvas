@@ -10,6 +10,7 @@ import {
 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
+import CreateRoomModal from "./CreateRoomModal";
 
 export default function WorkspaceCards() {
   const navigate = useNavigate();
@@ -19,8 +20,14 @@ export default function WorkspaceCards() {
   const [roomToken, setRoomToken] = useState(null);
   const [roomUrl, setRoomUrl] = useState(null);
   const [generatedPin, setGeneratedPin] = useState(null);
+  const [roomDetails, setRoomDetails] = useState(null); // { roomName, maxParticipants }
   const [copied, setCopied] = useState(false);
   const [pinCopied, setPinCopied] = useState(false);
+
+  // Modal states for room customization
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState(null);
 
   const [pin, setPin] = useState(["", "", "", "", "", ""]);
   const [joinError, setJoinError] = useState(null);
@@ -40,31 +47,43 @@ export default function WorkspaceCards() {
     setTimeout(() => setPinCopied(false), 2000);
   };
 
-  const handleGenerateLink = async () => {
+  const handleCreateRoomSubmit = async ({ roomName, maxParticipants }) => {
+    setIsCreating(true);
+    setCreateError(null);
     try {
-      const response = await api.post("/rooms/create");
-      const { token, pin: newPin } = response.data;
+      const response = await api.post("/rooms/create", {
+        roomName,
+        maxParticipants,
+      });
+      const { token, pin: newPin, roomName: savedName, maxParticipants: savedMax } = response.data;
 
       if (!token) {
-        // Backend responded without a token — most likely still serving an
-        // older deploy. Surfacing this clearly instead of silently building
-        // a broken "/workspace/undefined" link.
         console.error(
           "Room creation response is missing a token:",
           response.data,
         );
+        setCreateError("Failed to create room: missing token in response.");
         return;
       }
 
       setRoomToken(token);
       setRoomUrl(`${window.location.origin}/workspace/${token}`);
       setGeneratedPin(newPin);
-      // Host created this room, so they can skip the pin gate on this
-      // browser. Set now, used when they click through below — not
-      // navigating automatically anymore, so there's time to copy first.
+      setRoomDetails({
+        roomName: savedName || roomName,
+        maxParticipants: savedMax || maxParticipants,
+      });
+
+      // Host created this room, so they can skip the pin gate on this browser
       sessionStorage.setItem(`host:${token}`, "true");
+      setIsModalOpen(false);
     } catch (error) {
       console.error("Failed to create room:", error);
+      const errorMsg =
+        error.response?.data?.error || "Failed to create room. Please try again.";
+      setCreateError(errorMsg);
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -116,10 +135,12 @@ export default function WorkspaceCards() {
       navigate(`/workspace/${token}`);
     } catch (error) {
       const status = error.response?.status;
-      if (status === 429) {
+      if (status === 403) {
+        setJoinError(error.response?.data?.error || "Room is full.");
+      } else if (status === 429) {
         setJoinError("Too many attempts. Try again in a few minutes.");
       } else {
-        setJoinError("Invalid PIN.");
+        setJoinError(error.response?.data?.error || "Invalid PIN.");
       }
       setPin(["", "", "", "", "", ""]);
       pinRefs.current[0]?.focus();
@@ -219,13 +240,34 @@ export default function WorkspaceCards() {
                   </p>
                 </div>
               )}
+
+              {roomDetails && (
+                <div className="mb-4 p-3 rounded-xl bg-purple-500/10 border border-purple-500/25 flex items-center justify-between">
+                  <div className="truncate pr-2">
+                    <span className="text-[10px] font-mono text-purple-400 uppercase tracking-widest block mb-0.5">
+                      Room Name
+                    </span>
+                    <span className="text-xs font-semibold text-white truncate block">
+                      {roomDetails.roomName}
+                    </span>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest block mb-0.5">
+                      Capacity
+                    </span>
+                    <span className="text-xs font-semibold text-purple-300">
+                      Up to {roomDetails.maxParticipants} peers
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {!roomUrl ? (
               <button
                 type="button"
-                onClick={handleGenerateLink}
-                className="w-full py-3.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-sm transition-all duration-200 shadow-[0_0_20px_rgba(147,51,234,0.25)] hover:shadow-[0_0_25px_rgba(147,51,234,0.4)] active:scale-[0.99] flex items-center justify-center gap-2"
+                onClick={() => setIsModalOpen(true)}
+                className="w-full py-3.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-sm transition-all duration-200 shadow-[0_0_20px_rgba(147,51,234,0.25)] hover:shadow-[0_0_25px_rgba(147,51,234,0.4)] active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>+ Generate Room Link</span>
               </button>
@@ -314,6 +356,17 @@ export default function WorkspaceCards() {
           </div>
         </div>
       </div>
+
+      <CreateRoomModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setCreateError(null);
+        }}
+        onSubmit={handleCreateRoomSubmit}
+        isSubmitting={isCreating}
+        error={createError}
+      />
     </div>
   );
 }

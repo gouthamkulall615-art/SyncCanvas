@@ -43,6 +43,28 @@ export default function Workspace() {
   const [pinInput, setPinInput] = useState(["", "", "", "", "", ""]);
   const [gateError, setGateError] = useState(null);
   const [checking, setChecking] = useState(false);
+  const [roomInfo, setRoomInfo] = useState({ roomName: "", maxParticipants: 20 });
+  const [roomNotFound, setRoomNotFound] = useState(false);
+
+  useEffect(() => {
+    if (!token) return;
+    const fetchRoomInfo = async () => {
+      try {
+        const res = await api.get(`/rooms/${token}`);
+        if (res.data) {
+          setRoomInfo({
+            roomName: res.data.roomName || "SyncCanvas",
+            maxParticipants: res.data.maxParticipants || 20,
+          });
+        }
+      } catch (err) {
+        if (err.response?.status === 404) {
+          setRoomNotFound(true);
+        }
+      }
+    };
+    fetchRoomInfo();
+  }, [token]);
 
   const handlePinChange = (index, value) => {
     if (!/^\d*$/.test(value)) return;
@@ -72,12 +94,14 @@ export default function Workspace() {
       setVerified(true);
     } catch (error) {
       const status = error.response?.status;
-      if (status === 404) {
+      if (status === 403) {
+        setGateError(error.response?.data?.error || "Room is full.");
+      } else if (status === 404) {
         setGateError("This room doesn't exist or has expired.");
       } else if (status === 429) {
         setGateError("Too many attempts. Try again in a few minutes.");
       } else {
-        setGateError("Incorrect PIN.");
+        setGateError(error.response?.data?.error || "Incorrect PIN.");
       }
       setPinInput(["", "", "", "", "", ""]);
       document.getElementById("gate-pin-0")?.focus();
@@ -177,12 +201,35 @@ export default function Workspace() {
 
   if (!user) return null;
 
+  // --- ROOM NOT FOUND UI ---
+  if (roomNotFound) {
+    return (
+      <main className="h-screen w-full bg-[#0e1116] flex items-center justify-center font-sans">
+        <div className="bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 rounded-2xl p-8 w-full max-w-sm shadow-2xl text-center">
+          <h1 className="text-lg font-bold text-white mb-2">Room Not Found</h1>
+          <p className="text-sm text-zinc-400 mb-6">
+            This workspace does not exist or has expired after 24 hours.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate("/dashboard")}
+            className="w-full py-3 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-sm transition-all duration-200"
+          >
+            Return to Dashboard
+          </button>
+        </div>
+      </main>
+    );
+  }
+
   // --- PIN GATE UI ---
   if (!verified) {
     return (
       <main className="h-screen w-full bg-[#0e1116] flex items-center justify-center font-sans">
         <div className="bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 rounded-2xl p-8 w-full max-w-sm shadow-2xl">
-          <h1 className="text-lg font-bold text-white mb-1">Enter Room PIN</h1>
+          <h1 className="text-lg font-bold text-white mb-1">
+            {roomInfo.roomName ? `Join "${roomInfo.roomName}"` : "Enter Room PIN"}
+          </h1>
           <p className="text-sm text-zinc-400 mb-6">
             This workspace is protected. Enter the 6-digit PIN the host shared
             with you.
@@ -225,7 +272,7 @@ export default function Workspace() {
             type="button"
             onClick={handleVerifyPin}
             disabled={pinInput.join("").length !== 6 || checking}
-            className="w-full py-3 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:bg-zinc-800 disabled:text-zinc-600 text-white font-medium text-sm transition-all duration-200"
+            className="w-full py-3 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:bg-zinc-800 disabled:text-zinc-600 text-white font-medium text-sm transition-all duration-200 cursor-pointer disabled:cursor-not-allowed"
           >
             {checking ? "Checking..." : "Enter Workspace"}
           </button>
@@ -236,20 +283,28 @@ export default function Workspace() {
 
   return (
     <main className="h-screen w-full bg-[#0e1116] flex overflow-hidden font-sans relative select-none">
-      <div className="absolute top-6 left-6 z-50 bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 rounded-2xl p-4 w-60 shadow-2xl">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-white shadow-[0_0_12px_rgba(37,99,235,0.4)]">
+      <div className="absolute top-6 left-6 z-50 bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 rounded-2xl p-4 w-64 shadow-2xl">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-white shadow-[0_0_12px_rgba(37,99,235,0.4)] shrink-0">
             S
           </div>
-          <h1 className="text-sm font-bold tracking-wide text-white">
-            SyncCanvas
-          </h1>
+          <div className="min-w-0 flex-1">
+            <h1
+              className="text-sm font-bold tracking-wide text-white truncate"
+              title={roomInfo.roomName || "SyncCanvas"}
+            >
+              {roomInfo.roomName || "SyncCanvas"}
+            </h1>
+            <p className="text-[10px] text-zinc-400 font-mono tracking-wider uppercase">
+              Room Session
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-2 mb-3">
           <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
           <span className="text-[11px] text-zinc-400 font-medium uppercase tracking-wider">
-            {users.length} Active Now
+            {users.length} / {roomInfo.maxParticipants} Active Now
           </span>
         </div>
 
