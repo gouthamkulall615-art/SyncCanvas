@@ -1,5 +1,5 @@
 import React from 'react';
-import MagicBento from './MagicBento';
+import MagicBento from '../ReactBits/MagicBento';
 import './HowItWorksSection.css'; // Keep this for the header styles
 
 const steps = [

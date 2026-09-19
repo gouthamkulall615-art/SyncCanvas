@@ -1,6 +1,6 @@
-import Navbar from "../components/DashboardNavbar";
-import WorkspaceCards from "../components/WorkspaceCards";
-import GradientWaves from "../components/DashboardUI/GradientWaves"; // Adjust path if needed
+import Navbar from "../components/dashboard/DashboardNavbar";
+import WorkspaceCards from "../components/dashboard/WorkspaceCards";
+import GradientWaves from "../components/ReactBits/GradientWaves";
 
 export default function Dashboard() {
   return (

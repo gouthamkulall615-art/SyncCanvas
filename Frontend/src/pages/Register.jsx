@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { User, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import api from "../api/axios";
-import Beams from "../components/Beams/Beams"; // Adjust this path to wherever you saved Beams.jsx
+import Beams from "../components/ReactBits/Beams";
 
 export default function Register() {
   const [name, setName] = useState("");

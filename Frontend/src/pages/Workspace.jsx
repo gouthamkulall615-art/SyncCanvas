@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import * as Y from "yjs";
 import { SocketIOProvider } from "y-socket.io";
-import CanvasBoard from "../components/CanvasBoard";
+import CanvasBoard from "../components/canvas/CanvasBoard";
 import api from "../api/axios";
 
 const CURSOR_COLORS = [

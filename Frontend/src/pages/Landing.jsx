@@ -1,13 +1,13 @@
 import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import ShapeGrid from "../components/ShapeGrid";
-import Navbar from "../components/LandingNavbar";
-import MiniCanvasDemo from "../components/MiniCanvasDemo";
-import WavyRibbon from "../components/WavyRibbon";
-import CollaborativeSection from "../components/CollaborativeSection";
-import SyncEngineSection from "../components/SyncEngineSection";
-import HowItWorksSection from "../components/HowItWorksSection";
-import Footer from "../components/Footer";
+import ShapeGrid from "../components/ReactBits/ShapeGrid";
+import Navbar from "../components/landing/LandingNavbar";
+import MiniCanvasDemo from "../components/landing/MiniCanvasDemo";
+import WavyRibbon from "../components/ReactBits/WavyRibbon";
+import CollaborativeSection from "../components/landing/CollaborativeSection";
+import SyncEngineSection from "../components/landing/SyncEngineSection";
+import HowItWorksSection from "../components/landing/HowItWorksSection";
+import Footer from "../components/landing/Footer";
 
 export default function LandingPage() {
   const navigate = useNavigate();

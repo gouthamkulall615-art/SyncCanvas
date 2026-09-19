@@ -22,7 +22,7 @@ import {
   FiMoon,
 } from "react-icons/fi";
 import { LuHand, LuDiamond } from "react-icons/lu";
-import { FloatingDock, FloatingDockVertical } from "./FloatingDock";
+import { FloatingDock, FloatingDockVertical } from "../ReactBits/FloatingDock";
 
 export default function Toolbars({
   activeTool,

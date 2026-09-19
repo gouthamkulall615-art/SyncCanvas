@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import SpecularButton from "./SpecularButton";
+import SpecularButton from "../ReactBits/SpecularButton";
 import "./Footer.css";
 
 const Footer = () => {

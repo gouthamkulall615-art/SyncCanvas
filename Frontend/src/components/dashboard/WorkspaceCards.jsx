@@ -9,7 +9,7 @@ import {
   FiCpu,
 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
-import api from "../api/axios";
+import api from "../../api/axios";
 
 export default function WorkspaceCards() {
   const navigate = useNavigate();

@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { useGoogleLogin } from "@react-oauth/google";
 import api from "../api/axios";
-import Beams from "../components/Beams/Beams"; // Adjust this path if necessary
+import Beams from "../components/ReactBits/Beams";
 
 export default function Login() {
   const [email, setEmail] = useState("");

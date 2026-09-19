@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import SpecularButton from "./SpecularButton";
+import SpecularButton from "../ReactBits/SpecularButton";
 // You can delete or comment out Navbar.css since we are using Tailwind now!
 // import "./Navbar.css";
 
