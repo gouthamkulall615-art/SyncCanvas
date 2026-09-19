@@ -129,7 +129,7 @@ export default function Toolbars({
         className="hidden md:flex absolute top-6 left-1/2 -translate-x-1/2 z-50 mx-auto h-16 items-end gap-4 rounded-2xl bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 px-4 pb-2 shadow-2xl"
       />
 
-      <div className="hidden md:flex absolute top-28 left-6 z-50 flex-col items-center">
+      <div className="hidden md:flex absolute top-1/2 -translate-y-1/2 left-6 z-50 flex-col items-center">
         <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-2 text-center">
           Sys
         </div>
