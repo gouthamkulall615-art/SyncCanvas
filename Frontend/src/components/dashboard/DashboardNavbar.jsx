@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Search, Settings, Moon, LogOut } from "lucide-react";
+import { Search, Settings, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function DashboardNavbar() {
@@ -95,14 +95,6 @@ export default function DashboardNavbar() {
               >
                 <Settings className="w-4 h-4 text-zinc-500" />
                 Settings
-              </button>
-
-              <button
-                onClick={() => setDropdownOpen(false)}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50 transition-colors"
-              >
-                <Moon className="w-4 h-4 text-zinc-500" />
-                Theme (Dark)
               </button>
 
               <div className="border-t border-zinc-800/80 my-1"></div>
