@@ -12,3 +12,8 @@ textarea,
 select {
   font-family: 'Poppins', sans-serif !important;
 }
+
+.font-bodoni-italic {
+  font-family: 'Bodoni Moda', Georgia, serif !important;
+  font-style: italic !important;
+}

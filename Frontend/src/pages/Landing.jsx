@@ -61,7 +61,7 @@ export default function LandingPage() {
             This is SyncCanvas.
           </span>
           <span className="block text-5xl md:text-7xl font-bold tracking-tight text-purple-400">
-            One canvas. Everyone's hands on it.
+            One canvas. <span className="font-bodoni-italic">Everyone’s</span> hands on it.
           </span>
         </h1>
 
