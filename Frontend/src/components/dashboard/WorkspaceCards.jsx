@@ -192,19 +192,20 @@ export default function WorkspaceCards() {
                   {roomUrl ||
                     `${window.location.origin}/workspace/••••••••••••••••••••••`}
                 </span>
-                <button
-                  type="button"
-                  onClick={handleCopy}
-                  disabled={!roomUrl}
-                  className="text-zinc-400 hover:text-white transition-colors ml-3 p-1 shrink-0 bg-zinc-900/50 hover:bg-zinc-800 rounded-lg border border-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed"
-                  title="Copy link"
-                >
-                  {copied ? (
-                    <FiCheck className="text-emerald-400" size={16} />
-                  ) : (
-                    <FiCopy size={16} />
-                  )}
-                </button>
+                {roomUrl && (
+                  <button
+                    type="button"
+                    onClick={handleCopy}
+                    className="text-zinc-400 hover:text-white transition-colors ml-3 p-1 shrink-0 bg-zinc-900/50 hover:bg-zinc-800 rounded-lg border border-zinc-800 cursor-pointer"
+                    title="Copy link"
+                  >
+                    {copied ? (
+                      <FiCheck className="text-emerald-400" size={16} />
+                    ) : (
+                      <FiCopy size={16} />
+                    )}
+                  </button>
+                )}
               </div>
 
               {/* PIN is shown and copied separately from the link on purpose —
