@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import SpecularButton from "../ReactBits/SpecularButton";
-// You can delete or comment out Navbar.css since we are using Tailwind now!
-// import "./Navbar.css";
 
 const NAV_LINKS = [
-  { label: "Features", href: "#features" },
+  { label: "Features", href: "/features" },
+  { label: "Integrations", href: "/integrations" },
+  { label: "Roadmap", href: "/roadmap" },
+  { label: "Docs", href: "/docs" },
   {
     label: "GitHub",
     href: "https://github.com/gouthamkulall615-art/SyncCanvas",
@@ -62,17 +63,28 @@ const Navbar = () => {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-8">
-          {NAV_LINKS.map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              className="text-sm font-medium text-zinc-400 hover:text-white transition-colors"
-              target={link.href.startsWith("http") ? "_blank" : undefined}
-              rel={link.href.startsWith("http") ? "noreferrer" : undefined}
-            >
-              {link.label}
-            </a>
-          ))}
+          {NAV_LINKS.map((link) =>
+            link.href.startsWith("http") ? (
+              <a
+                key={link.label}
+                href={link.href}
+                className="text-sm font-medium text-zinc-400 hover:text-white transition-colors flex items-center gap-1"
+                target="_blank"
+                rel="noreferrer"
+              >
+                {link.label}
+                <span className="text-xs text-zinc-600">↗</span>
+              </a>
+            ) : (
+              <Link
+                key={link.label}
+                to={link.href}
+                className="text-sm font-medium text-zinc-400 hover:text-white transition-colors"
+              >
+                {link.label}
+              </Link>
+            ),
+          )}
         </nav>
 
         {/* Desktop CTA Button */}
@@ -130,19 +142,31 @@ const Navbar = () => {
           menuOpen ? "max-h-[400px] opacity-100" : "max-h-0 opacity-0"
         }`}
       >
-        <div className="flex flex-col px-6 py-6 space-y-6">
-          {NAV_LINKS.map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              className="text-lg font-medium text-zinc-300 hover:text-white transition-colors"
-              onClick={() => setMenuOpen(false)}
-              target={link.href.startsWith("http") ? "_blank" : undefined}
-              rel={link.href.startsWith("http") ? "noreferrer" : undefined}
-            >
-              {link.label}
-            </a>
-          ))}
+        <div className="flex flex-col px-6 py-6 space-y-4">
+          {NAV_LINKS.map((link) =>
+            link.href.startsWith("http") ? (
+              <a
+                key={link.label}
+                href={link.href}
+                className="text-base font-medium text-zinc-300 hover:text-white transition-colors flex items-center justify-between"
+                onClick={() => setMenuOpen(false)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <span>{link.label}</span>
+                <span className="text-xs text-zinc-600">↗</span>
+              </a>
+            ) : (
+              <Link
+                key={link.label}
+                to={link.href}
+                className="text-base font-medium text-zinc-300 hover:text-white transition-colors"
+                onClick={() => setMenuOpen(false)}
+              >
+                {link.label}
+              </Link>
+            ),
+          )}
 
           <div className="pt-4 border-t border-zinc-800/80 flex flex-col w-full">
             {/* Wrapping the SpecularButton to force it full-width */}

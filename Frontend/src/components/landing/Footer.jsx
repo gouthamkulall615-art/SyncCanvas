@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import SpecularButton from "../ReactBits/SpecularButton";
 import "./Footer.css";
 
@@ -84,30 +84,25 @@ const Footer = () => {
           {/* Links Columns */}
           <div className="flex flex-col gap-4">
             <h4 className="text-white font-semibold mb-2">Product</h4>
-            <a href="#" className="footer-link">
+            <Link to="/features" className="footer-link">
               Features
-            </a>
-            <a href="#" className="footer-link">
+            </Link>
+            <Link to="/integrations" className="footer-link">
               Integrations
-            </a>
-            <a href="#" className="footer-link">
+            </Link>
+            <Link to="/changelog" className="footer-link">
               Changelog
-            </a>
-            <a href="#" className="footer-link">
+            </Link>
+            <Link to="/roadmap" className="footer-link">
               Roadmap
-            </a>
+            </Link>
           </div>
 
           <div className="flex flex-col gap-4">
             <h4 className="text-white font-semibold mb-2">Resources</h4>
-            <a
-              href="https://github.com/gouthamkulall615-art/SyncCanvas"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="footer-link"
-            >
+            <Link to="/docs" className="footer-link">
               Documentation
-            </a>
+            </Link>
             <a
               href="https://github.com/gouthamkulall615-art/SyncCanvas"
               target="_blank"
@@ -116,22 +111,22 @@ const Footer = () => {
             >
               GitHub
             </a>
-            <a href="#" className="footer-link">
+            <Link to="/community" className="footer-link">
               Community
-            </a>
-            <a href="#" className="footer-link">
+            </Link>
+            <Link to="/support" className="footer-link">
               Support
-            </a>
+            </Link>
           </div>
 
           <div className="flex flex-col gap-4">
             <h4 className="text-white font-semibold mb-2">Legal</h4>
-            <a href="#" className="footer-link">
+            <Link to="/privacy" className="footer-link">
               Privacy Policy
-            </a>
-            <a href="#" className="footer-link">
+            </Link>
+            <Link to="/terms" className="footer-link">
               Terms of Service
-            </a>
+            </Link>
           </div>
         </div>
 
