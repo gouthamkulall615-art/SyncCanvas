@@ -53,8 +53,15 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
   const [showClearModal, setShowClearModal] = useState(false);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
 
-  const [theme, setTheme] = useState("dark");
-  const toggleTheme = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
+  const [theme, setTheme] = useState(
+    () => localStorage.getItem("canvasTheme") || "dark",
+  );
+  const toggleTheme = () =>
+    setTheme((t) => {
+      const next = t === "dark" ? "light" : "dark";
+      localStorage.setItem("canvasTheme", next);
+      return next;
+    });
   const themeConfig = CANVAS_THEMES[theme];
 
   const [stageScale, setStageScale] = useState(1);

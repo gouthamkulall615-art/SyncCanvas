@@ -66,8 +66,14 @@ export default function WorkspaceCards() {
         return;
       }
 
+      const fullUrl = `${window.location.origin}/workspace/${token}`;
       setRoomToken(token);
-      setRoomUrl(`${window.location.origin}/workspace/${token}`);
+      setRoomUrl(fullUrl);
+      if (localStorage.getItem("autoCopyLink") === "true") {
+        navigator.clipboard.writeText(fullUrl);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
       setGeneratedPin(newPin);
       setRoomDetails({
         roomName: savedName || roomName,

@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect } from "react";
 import { Search, Settings, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import SettingsModal from "./SettingsModal";
 
 export default function DashboardNavbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
 
@@ -90,8 +92,11 @@ export default function DashboardNavbar() {
               </div>
 
               <button
-                onClick={() => setDropdownOpen(false)}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50 transition-colors"
+                onClick={() => {
+                  setDropdownOpen(false);
+                  setIsSettingsOpen(true);
+                }}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50 transition-colors cursor-pointer"
               >
                 <Settings className="w-4 h-4 text-zinc-500" />
                 Settings
@@ -101,7 +106,7 @@ export default function DashboardNavbar() {
 
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-red-400 hover:bg-red-500/10 transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
               >
                 <LogOut className="w-4 h-4 text-red-400" />
                 Logout
@@ -110,6 +115,11 @@ export default function DashboardNavbar() {
           )}
         </div>
       </div>
+
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
     </nav>
   );
 }

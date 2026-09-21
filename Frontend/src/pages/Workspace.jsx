@@ -24,7 +24,9 @@ export default function Workspace() {
   });
 
   const userColor = useMemo(
-    () => CURSOR_COLORS[Math.floor(Math.random() * CURSOR_COLORS.length)],
+    () =>
+      localStorage.getItem("userColor") ||
+      CURSOR_COLORS[Math.floor(Math.random() * CURSOR_COLORS.length)],
     [],
   );
 
