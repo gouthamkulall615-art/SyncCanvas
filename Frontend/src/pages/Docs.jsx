@@ -1,13 +1,6 @@
 import { useState } from "react";
 import PageLayout from "../components/layout/PageLayout";
-import {
-  FiBookOpen,
-  FiTerminal,
-  FiCommand,
-  FiServer,
-  FiCheck,
-  FiCopy,
-} from "react-icons/fi";
+import { FiBookOpen, FiTerminal, FiServer } from "react-icons/fi";
 
 const DOCS_SECTIONS = [
   {
@@ -54,42 +47,6 @@ const DOCS_SECTIONS = [
               live collaborator cursors with sub-millisecond CRDT updates.
             </p>
           </div>
-        </div>
-      </div>
-    ),
-  },
-  {
-    id: "shortcuts",
-    title: "Keyboard Shortcuts",
-    icon: <FiCommand className="w-4 h-4" />,
-    content: (
-      <div className="space-y-4">
-        <p className="text-sm text-zinc-400 mb-4">
-          Navigate and manipulate diagrams at speed using canvas hotkeys:
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {[
-            { key: "V", action: "Select / Pointer Tool" },
-            { key: "H", action: "Pan Hand Tool (Hold to Drag)" },
-            { key: "R", action: "Draw Rectangle Node" },
-            { key: "O", action: "Draw Circle Node" },
-            { key: "P", action: "Pen / Freehand Stroke" },
-            { key: "T", action: "Text Box Overlay" },
-            { key: "Delete / Backspace", action: "Delete Selected Node" },
-            { key: "Ctrl / Cmd + Z", action: "Undo Local Action" },
-            { key: "Ctrl / Cmd + Scroll", action: "Zoom into Cursor Point" },
-            { key: "Space + Drag", action: "Pan Canvas Quickly" },
-          ].map((item, idx) => (
-            <div
-              key={idx}
-              className="flex items-center justify-between p-3 rounded-lg bg-[#090c10] border border-zinc-800/80"
-            >
-              <span className="text-xs text-zinc-300">{item.action}</span>
-              <kbd className="px-2 py-1 rounded bg-[#161920] border border-zinc-700 text-zinc-300 font-mono text-[11px]">
-                {item.key}
-              </kbd>
-            </div>
-          ))}
         </div>
       </div>
     ),

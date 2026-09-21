@@ -62,7 +62,7 @@ export default function DashboardNavbar() {
       <div className="flex items-center gap-4">
         {/* Room Active Indicator */}
         <div className="hidden lg:flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-full cursor-default">
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
           <span className="text-emerald-500 text-xs font-semibold tracking-wide">
             Room Active
           </span>

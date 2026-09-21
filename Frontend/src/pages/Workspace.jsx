@@ -302,7 +302,7 @@ export default function Workspace() {
         </div>
 
         <div className="flex items-center gap-2 mb-3">
-          <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
+          <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
           <span className="text-[11px] text-zinc-400 font-medium uppercase tracking-wider">
             {users.length} / {roomInfo.maxParticipants} Active Now
           </span>

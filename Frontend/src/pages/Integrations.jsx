@@ -156,7 +156,7 @@ export default function Integrations() {
 
               <div className="flex items-center justify-between pt-2 border-t border-zinc-800/60">
                 <span className="text-xs text-emerald-400 flex items-center gap-1.5 font-medium">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                   {item.status}
                 </span>
 

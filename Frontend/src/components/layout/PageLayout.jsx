@@ -170,7 +170,7 @@ export default function PageLayout({
       <section className="relative z-10 pt-16 pb-12 px-6 text-center max-w-4xl mx-auto">
         {badge && (
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-purple-500/25 bg-purple-950/20 backdrop-blur-md text-xs font-medium text-purple-300 mb-5 shadow-sm">
-            <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+            <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
             <span>{badge}</span>
           </div>
         )}

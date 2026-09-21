@@ -184,7 +184,7 @@ export default function Features() {
               <span className="text-xs font-mono text-zinc-400 uppercase tracking-wider">
                 Live Simulation
               </span>
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
             </div>
 
             <div className="h-44 bg-[#14171f] rounded-lg border border-dashed border-zinc-800 relative flex items-center justify-center overflow-hidden p-4">

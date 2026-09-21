@@ -52,7 +52,7 @@ export default function LandingPage() {
       <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-4xl mx-auto">
         {/* Top Feature Pill */}
         <div className="mb-8 px-4 py-1.5 rounded-full border border-purple-500/20 bg-[#1a1d24]/90 backdrop-blur-md text-sm text-purple-300 flex items-center gap-2 shadow-sm cursor-default">
-          <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span>
+          <span className="w-2 h-2 rounded-full bg-purple-400"></span>
           <span>Live now. Draw with anyone, instantly.</span>
         </div>
 

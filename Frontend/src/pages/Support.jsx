@@ -57,7 +57,7 @@ export default function Support() {
       <div className="bg-[#14171f]/80 border border-zinc-800/80 rounded-2xl p-4 md:p-6 mb-12 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-emerald-950/40 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-            <FiActivity className="w-5 h-5 animate-pulse" />
+            <FiActivity className="w-5 h-5" />
           </div>
           <div>
             <h4 className="text-sm font-bold text-white">
@@ -70,7 +70,7 @@ export default function Support() {
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+          <span className="w-2 h-2 rounded-full bg-emerald-400" />
           <span className="text-xs font-mono font-medium text-emerald-400 uppercase tracking-wider">
             99.99% Uptime
           </span>
