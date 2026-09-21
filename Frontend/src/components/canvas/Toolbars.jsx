@@ -20,6 +20,7 @@ import {
   FiX,
   FiSun,
   FiMoon,
+  FiLogOut,
 } from "react-icons/fi";
 import { LuHand, LuDiamond } from "react-icons/lu";
 import { FloatingDock, FloatingDockVertical } from "../ReactBits/FloatingDock";
@@ -32,6 +33,7 @@ export default function Toolbars({
   addDiamond,
   addArchitectureNode,
   setShowClearModal,
+  onLeaveRoom,
   theme,
   onToggleTheme,
 }) {
@@ -144,8 +146,8 @@ export default function Toolbars({
         />
       </div>
 
-      {/* Theme toggle + Clear Canvas — icon-only circles on mobile, full pill on desktop */}
-      <div className="absolute top-4 right-4 md:top-6 md:right-6 z-50 flex items-center gap-2">
+      {/* Top right actions: Theme toggle + Leave Room + Clear Canvas */}
+      <div className="absolute top-4 right-4 md:top-6 md:right-6 z-50 flex items-center gap-2.5 sm:gap-3">
         <button
           onClick={onToggleTheme}
           title={
@@ -153,15 +155,28 @@ export default function Toolbars({
               ? "Switch canvas to light"
               : "Switch canvas to dark"
           }
-          className="flex items-center justify-center w-10 h-10 md:w-auto md:h-auto md:px-3 md:py-2 rounded-full md:rounded-xl bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 text-zinc-300 hover:text-white shadow-xl transition-all"
+          className="flex items-center justify-center w-10 h-10 md:w-auto md:h-auto md:px-3 md:py-2 rounded-full md:rounded-xl bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 text-zinc-300 hover:text-white shadow-xl transition-all cursor-pointer"
         >
           {theme === "dark" ? <FiSun size={16} /> : <FiMoon size={16} />}
         </button>
 
+        {onLeaveRoom && (
+          <button
+            onClick={onLeaveRoom}
+            title="Leave Room"
+            className="flex items-center justify-center gap-2 w-10 h-10 md:w-auto md:h-auto rounded-full md:rounded-xl md:px-4 md:py-2 bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 text-zinc-300 shadow-xl transition-all hover:bg-zinc-800 hover:text-white cursor-pointer"
+          >
+            <FiLogOut size={15} />
+            <span className="hidden md:inline text-xs font-semibold tracking-wide uppercase">
+              Leave Room
+            </span>
+          </button>
+        )}
+
         <button
           onClick={() => setShowClearModal(true)}
           title="Clear Canvas"
-          className="flex items-center justify-center gap-2 w-10 h-10 md:w-auto md:h-auto rounded-full md:rounded-xl md:px-4 md:py-2 bg-[#1a1d24]/95 backdrop-blur-md border border-red-900/50 text-red-400 shadow-xl transition-all hover:bg-red-500/10 hover:border-red-500/80"
+          className="flex items-center justify-center gap-2 w-10 h-10 md:w-auto md:h-auto rounded-full md:rounded-xl md:px-4 md:py-2 bg-[#1a1d24]/95 backdrop-blur-md border border-red-900/50 text-red-400 shadow-xl transition-all hover:bg-red-500/10 hover:border-red-500/80 cursor-pointer"
         >
           <FiTrash2 size={16} />
           <span className="hidden md:inline text-xs font-semibold tracking-wide uppercase">

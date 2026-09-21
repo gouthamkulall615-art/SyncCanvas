@@ -15,7 +15,6 @@ import {
   RegularPolygon,
 } from "react-konva";
 import { useNavigate } from "react-router-dom";
-import { FiLogOut } from "react-icons/fi";
 import { ArchitectureNode } from "./ArchitectureNodes";
 import Toolbars from "./Toolbars";
 import PropertiesPanel from "./PropertiesPanel";
@@ -620,15 +619,6 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
 
   return (
     <div className="canvas-board relative w-full h-full overflow-hidden">
-      {/* Leave Room Button - Added right gap to separate it from Clear Canvas */}
-      <button
-        onClick={() => setShowLeaveModal(true)}
-        className="absolute top-20 right-4 md:top-6 md:right-44 z-[60] px-4 py-2 bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 text-zinc-300 text-xs font-semibold tracking-wide uppercase rounded-xl hover:bg-zinc-800 hover:text-white transition-all shadow-xl flex items-center gap-2"
-      >
-        <FiLogOut size={14} />
-        <span className="hidden sm:inline">Leave Room</span>
-      </button>
-
       {/* Leave Room Confirmation Modal */}
       {showLeaveModal && (
         <div className="absolute inset-0 z-[100] flex items-center justify-center bg-[#0e1116]/60 backdrop-blur-sm">
@@ -695,6 +685,7 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
         addDiamond={addDiamond}
         addArchitectureNode={addArchitectureNode}
         setShowClearModal={setShowClearModal}
+        onLeaveRoom={() => setShowLeaveModal(true)}
         theme={theme}
         onToggleTheme={toggleTheme}
       />
