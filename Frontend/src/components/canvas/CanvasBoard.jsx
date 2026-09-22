@@ -38,7 +38,12 @@ const CANVAS_THEMES = {
   },
 };
 
-export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
+export default function CanvasBoard({
+  shapesMap,
+  awareness,
+  undoManager,
+  onLeave,
+}) {
   const navigate = useNavigate();
   const [shapes, setShapes] = useState([]);
   const [remoteUsers, setRemoteUsers] = useState([]);
@@ -638,7 +643,13 @@ export default function CanvasBoard({ shapesMap, awareness, undoManager }) {
                 Cancel
               </button>
               <button
-                onClick={() => navigate("/dashboard")}
+                onClick={() => {
+                  if (onLeave) {
+                    onLeave();
+                  } else {
+                    navigate("/dashboard");
+                  }
+                }}
                 className="px-4 py-2 text-sm font-medium bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 border border-purple-500/20 rounded-lg transition-colors"
               >
                 Leave Room
