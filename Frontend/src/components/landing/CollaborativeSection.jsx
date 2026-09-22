@@ -1,5 +1,18 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
+import FolderFloat from "../ReactBits/FolderFloat";
 import "./CollaborativeSection.css";
+
+const FOLDER_ITEMS = [
+  "Live Cursors",
+  "Real-time Sync",
+  "CRDT Powered",
+  "Multi-user Editing",
+  "Instant Updates",
+  "Undo Everywhere",
+  "No Exports Needed",
+  "Low Latency",
+];
 
 // Reusable Cursor Component
 const Cursor = ({ color, name, className }) => (
@@ -22,12 +35,75 @@ const Cursor = ({ color, name, className }) => (
 );
 
 const CollaborativeSection = () => {
+  const navigate = useNavigate();
+
+  const handleLaunch = () => {
+    const token = localStorage.getItem("token");
+    navigate(token ? "/dashboard" : "/register");
+  };
+
   return (
     <section className="collab-wrapper">
-      <div className="collab-header">
-        <span className="badge">BUILT FOR COLLABORATION</span>
-        <h2>Everything moves together.</h2>
-        <p>A shared canvas where every action is reflected in real time.</p>
+      <div className="collab-hero-row">
+        <div className="collab-text-col">
+          <span className="badge">BUILT FOR COLLABORATION</span>
+          <h2 className="collab-title">Everything moves together.</h2>
+          <p className="collab-desc">
+            A shared canvas where every action is reflected in real time.
+            No waiting, no conflicts—just instant synchronous creativity.
+          </p>
+          <div className="collab-cta-wrap">
+            <button
+              onClick={handleLaunch}
+              className="collab-cta-btn"
+              type="button"
+            >
+              <span>Start collaborating</span>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div className="collab-folder-col">
+          <FolderFloat
+            items={FOLDER_ITEMS}
+            label="What's Inside"
+            sublabel="8 capabilities"
+            trigger="hover"
+            closeOnSelect={false}
+            physics={true}
+            drift={0.55}
+            folderColor="#161b22"
+            frontColor="#1f242d"
+            paperColor="#8B5CF6"
+            itemColor="#161b22"
+            itemTextColor="#f8fafc"
+            labelColor="#ffffff"
+            width={200}
+            height={148}
+            radius={14}
+            spread={175}
+            lift={28}
+            tilt={7}
+            flapAngle={34}
+            restAngle={14}
+            openDuration={520}
+            stagger={42}
+            bounce={0.28}
+          />
+        </div>
       </div>
 
       <div className="cards-grid">
