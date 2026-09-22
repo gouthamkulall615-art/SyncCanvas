@@ -134,18 +134,11 @@ export default function WorkspaceCards() {
         <div className="mb-10 text-center max-w-2xl mx-auto">
           <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-[1.1] mb-3">
             <EncryptedText
-              text="Collaborative Real-time"
+              text={"Collaborative Real-time\nWorkspace"}
               encryptedClassName="text-purple-400/80 font-black"
               revealedClassName="text-white font-black"
-              revealDelayMs={35}
-            />
-            <br />
-            <EncryptedText
-              text="Workspace"
-              encryptedClassName="text-purple-400/80 font-black"
-              revealedClassName="text-white font-black"
-              revealDelayMs={40}
-              initialDelayMs={350}
+              revealDelayMs={65}
+              scrambleIntervalMs={60}
             />
           </h1>
           <p className="text-zinc-400 text-sm sm:text-base font-normal leading-relaxed">
