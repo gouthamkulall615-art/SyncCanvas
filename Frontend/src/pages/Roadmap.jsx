@@ -23,7 +23,7 @@ const INITIAL_ROADMAP = [
     id: "ai-diagrams",
     column: "Planned",
     title: "AI Prompt to Architecture Diagram",
-    desc: "Describe a cloud topology (e.g. 'Load balanced Express cluster with Redis & Postgres') and generate instant nodes and arrows.",
+    desc: "Describe a cloud topology (e.g. 'Load balanced Express cluster with MongoDB & WebSockets') and generate instant nodes and arrows.",
     votes: 156,
     tags: ["AI", "Architecture"],
   },

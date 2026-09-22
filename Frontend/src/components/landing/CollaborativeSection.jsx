@@ -172,7 +172,7 @@ const CollaborativeSection = () => {
             <Cursor name="Alex" color="#a855f7" className="anim-drawing" />
 
             <div className="node db-node">
-              <div className="status-dot blue"></div> Postgres Pool
+              <div className="status-dot green"></div> MongoDB Cluster
             </div>
           </div>
           <div className="card-text">

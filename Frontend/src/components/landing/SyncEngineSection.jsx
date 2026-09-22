@@ -103,7 +103,7 @@ export default function SyncEngineSection() {
           <span className="ses-persist-tag">Durable backend</span>
           <span className="ses-persist-title">Persistent State</span>
           <span className="ses-persist-meta">
-            Postgres Snapshot Storage + Redis Ephemeral Buffer
+            MongoDB Document Storage + In-Memory State Buffer
           </span>
         </div>
       </div>
