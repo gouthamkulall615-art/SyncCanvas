@@ -107,9 +107,11 @@ export default function WorkspaceCards() {
       const response = await api.post("/rooms/join-by-pin", { pin: fullPin });
       const { token } = response.data;
       setJoinStatus("success");
+      sessionStorage.setItem(`host:${token}`, "true");
+      sessionStorage.setItem(`verified:${token}`, "true");
       setTimeout(() => {
         navigate(`/workspace/${token}`);
-      }, 700);
+      }, 500);
     } catch (error) {
       setJoinStatus("error");
       const status = error.response?.status;
@@ -317,6 +319,7 @@ export default function WorkspaceCards() {
                   settle={0.3}
                   rise={8}
                   cascade={20}
+                  caret={false}
                 />
               </div>
             </div>

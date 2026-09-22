@@ -2,7 +2,6 @@ import { useMemo, useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import * as Y from "yjs";
 import { SocketIOProvider } from "y-socket.io";
-import { FiAlertTriangle, FiX, FiLogOut } from "react-icons/fi";
 import CanvasBoard from "../components/canvas/CanvasBoard";
 import CodeSlots from "../components/ReactBits/CodeSlots";
 import api from "../api/axios";
@@ -65,7 +64,9 @@ export default function Workspace() {
   // open a Yjs/socket connection. This is the check that was missing before:
   // previously the token in the URL was treated as sufficient on its own.
   const [verified, setVerified] = useState(
-    () => sessionStorage.getItem(`host:${token}`) === "true",
+    () =>
+      sessionStorage.getItem(`host:${token}`) === "true" ||
+      sessionStorage.getItem(`verified:${token}`) === "true",
   );
   const [pinInput, setPinInput] = useState("");
   const [codeStatus, setCodeStatus] = useState("idle"); // "idle" | "error" | "success"
@@ -103,6 +104,7 @@ export default function Workspace() {
       await api.post(`/rooms/${token}/verify`, { pin: fullPin });
       setCodeStatus("success");
       sessionStorage.setItem(`host:${token}`, "true");
+      sessionStorage.setItem(`verified:${token}`, "true");
       setTimeout(() => {
         setVerified(true);
       }, 700);
@@ -351,6 +353,7 @@ export default function Workspace() {
               rise={8}
               cascade={20}
               autoFocus={true}
+              caret={false}
             />
           </div>
 
@@ -424,93 +427,62 @@ export default function Workspace() {
       {/* Sudden Exit Prevention Modal */}
       {showExitIntentModal && (
         <div
-          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn select-auto"
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn select-auto"
           role="dialog"
           aria-modal="true"
           aria-labelledby="exit-modal-title"
         >
-          <div className="w-full max-w-md bg-[#12151d] border border-amber-500/40 rounded-2xl p-6 shadow-2xl relative animate-scaleIn">
-            {/* Close / Dismiss button */}
-            <button
-              type="button"
-              onClick={handleStay}
-              className="absolute top-5 right-5 text-zinc-400 hover:text-white p-1.5 rounded-lg hover:bg-zinc-800/60 transition-colors"
-              title="Close and stay in room"
+          <div className="w-full max-w-sm bg-[#12141a] border border-zinc-800 rounded-2xl p-6 shadow-2xl relative">
+            <h3
+              id="exit-modal-title"
+              className="text-base font-semibold text-white mb-2 tracking-tight"
             >
-              <FiX size={18} />
-            </button>
+              Leave workspace?
+            </h3>
 
-            {/* Header with glowing Amber icon */}
-            <div className="flex items-center gap-3.5 mb-4">
-              <div className="w-11 h-11 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.25)] shrink-0">
-                <FiAlertTriangle size={22} />
-              </div>
-              <div>
-                <h3
-                  id="exit-modal-title"
-                  className="text-base font-bold text-white tracking-tight"
-                >
-                  Active Collaboration in Progress
-                </h3>
-                <p className="text-xs text-amber-300/90 font-medium">
-                  {users.length} members currently in this room
-                </p>
-              </div>
-            </div>
-
-            {/* Description */}
-            <p className="text-xs text-zinc-300 leading-relaxed mb-4">
-              You are currently collaborating with{" "}
-              <strong className="text-white font-semibold">
-                {users.length - 1} other{" "}
-                {users.length - 1 === 1 ? "peer" : "peers"}
-              </strong>
-              . Closing this tab or window directly might disrupt active work. If you
-              wish to leave, please exit gracefully.
+            <p className="text-sm text-zinc-400 leading-relaxed mb-5">
+              There {users.length - 1 === 1 ? "is" : "are"}{" "}
+              <span className="text-zinc-200 font-medium">
+                {users.length - 1} other {users.length - 1 === 1 ? "person" : "people"}
+              </span>{" "}
+              still active in this room. If you close this tab, you will leave the session.
             </p>
 
-            {/* Active Peers Display */}
-            <div className="bg-[#0a0c12] border border-zinc-800/90 rounded-xl p-3 mb-5 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-medium text-zinc-400">
-                  In Session:
-                </span>
-                <div className="flex items-center -space-x-1.5">
-                  {users.map((u) => (
-                    <div
-                      key={u.clientId}
-                      className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white border-2 border-[#12151d] shadow-sm"
-                      style={{ backgroundColor: u.color }}
-                      title={u.username}
-                    >
-                      {u.username ? u.username.charAt(0).toUpperCase() : "P"}
-                    </div>
-                  ))}
-                </div>
+            {/* Clean Peer Avatars */}
+            <div className="flex items-center gap-2 mb-6">
+              <div className="flex items-center -space-x-1.5">
+                {users.map((u) => (
+                  <div
+                    key={u.clientId}
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold text-white border-2 border-[#12141a]"
+                    style={{ backgroundColor: u.color }}
+                    title={u.username}
+                  >
+                    {u.username ? u.username.charAt(0).toUpperCase() : "P"}
+                  </div>
+                ))}
               </div>
-              <span className="text-[11px] font-mono text-emerald-400 flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                Connected
+              <span className="text-xs text-zinc-500">
+                {users.length} in room
               </span>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={handleConfirmLeave}
-                className="px-4 py-2.5 rounded-xl border border-red-500/20 hover:border-red-500/40 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
-              >
-                <FiLogOut size={13} />
-                <span>Leave Session</span>
-              </button>
+            <div className="flex items-center justify-end gap-2.5">
               <button
                 type="button"
                 autoFocus
                 onClick={handleStay}
-                className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow-[0_0_15px_rgba(147,51,234,0.3)] hover:shadow-[0_0_20px_rgba(147,51,234,0.45)] transition-all cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-sm font-medium transition-colors cursor-pointer"
               >
-                Stay in Workspace
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmLeave}
+                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-sm font-medium transition-colors cursor-pointer shadow-sm"
+              >
+                Leave Room
               </button>
             </div>
           </div>
