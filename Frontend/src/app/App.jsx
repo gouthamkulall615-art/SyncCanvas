@@ -13,6 +13,7 @@ import Community from "../pages/Community";
 import Support from "../pages/Support";
 import Privacy from "../pages/Privacy";
 import Terms from "../pages/Terms";
+import NotFound from "../pages/NotFound";
 
 export default function App() {
   return (
@@ -48,8 +49,9 @@ export default function App() {
       <Route path="/terms" element={<Terms />} />
       <Route path="/terms-of-service" element={<Terms />} />
 
-      {/* Fallback */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* 404 Not Found Page */}
+      <Route path="/404" element={<NotFound />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }
