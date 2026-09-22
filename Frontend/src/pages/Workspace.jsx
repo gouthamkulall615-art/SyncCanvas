@@ -40,20 +40,9 @@ export default function Workspace() {
   }, [users]);
 
   const isExplicitlyLeavingRef = useRef(false);
-  const [showExitIntentModal, setShowExitIntentModal] = useState(false);
-  const exitIntentCooldownRef = useRef(false);
-
-  const handleStay = () => {
-    setShowExitIntentModal(false);
-    exitIntentCooldownRef.current = true;
-    setTimeout(() => {
-      exitIntentCooldownRef.current = false;
-    }, 8000);
-  };
 
   const handleConfirmLeave = () => {
     isExplicitlyLeavingRef.current = true;
-    setShowExitIntentModal(false);
     navigate("/dashboard");
   };
 
@@ -235,52 +224,6 @@ export default function Workspace() {
     };
   }, [user, ydoc, token, userColor, verified]);
 
-  // Intercept exit-intent (moving mouse to browser tabs / close button) & browser back button
-  useEffect(() => {
-    if (!verified) return;
-
-    const handleMouseLeave = (e) => {
-      // User moved mouse to top of screen towards browser tab bar or close button
-      if (
-        e.clientY <= 5 &&
-        usersRef.current &&
-        usersRef.current.length >= 2 &&
-        !exitIntentCooldownRef.current &&
-        !isExplicitlyLeavingRef.current
-      ) {
-        setShowExitIntentModal(true);
-      }
-    };
-
-    window.history.pushState(null, "", window.location.href);
-    const handlePopState = () => {
-      if (isExplicitlyLeavingRef.current) return;
-      if (usersRef.current && usersRef.current.length >= 2) {
-        window.history.pushState(null, "", window.location.href);
-        setShowExitIntentModal(true);
-      }
-    };
-
-    document.addEventListener("mouseleave", handleMouseLeave);
-    window.addEventListener("popstate", handlePopState);
-
-    return () => {
-      document.removeEventListener("mouseleave", handleMouseLeave);
-      window.removeEventListener("popstate", handlePopState);
-    };
-  }, [verified]);
-
-  // Escape key closes the sudden exit modal and stays in room
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === "Escape" && showExitIntentModal) {
-        handleStay();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [showExitIntentModal]);
-
   if (!user) return null;
 
   // --- ROOM NOT FOUND UI ---
@@ -423,71 +366,6 @@ export default function Workspace() {
           onLeave={handleConfirmLeave}
         />
       </section>
-
-      {/* Sudden Exit Prevention Modal */}
-      {showExitIntentModal && (
-        <div
-          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn select-auto"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="exit-modal-title"
-        >
-          <div className="w-full max-w-sm bg-[#12141a] border border-zinc-800 rounded-2xl p-6 shadow-2xl relative">
-            <h3
-              id="exit-modal-title"
-              className="text-base font-semibold text-white mb-2 tracking-tight"
-            >
-              Leave workspace?
-            </h3>
-
-            <p className="text-sm text-zinc-400 leading-relaxed mb-5">
-              There {users.length - 1 === 1 ? "is" : "are"}{" "}
-              <span className="text-zinc-200 font-medium">
-                {users.length - 1} other {users.length - 1 === 1 ? "person" : "people"}
-              </span>{" "}
-              still active in this room. If you close this tab, you will leave the session.
-            </p>
-
-            {/* Clean Peer Avatars */}
-            <div className="flex items-center gap-2 mb-6">
-              <div className="flex items-center -space-x-1.5">
-                {users.map((u) => (
-                  <div
-                    key={u.clientId}
-                    className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold text-white border-2 border-[#12141a]"
-                    style={{ backgroundColor: u.color }}
-                    title={u.username}
-                  >
-                    {u.username ? u.username.charAt(0).toUpperCase() : "P"}
-                  </div>
-                ))}
-              </div>
-              <span className="text-xs text-zinc-500">
-                {users.length} in room
-              </span>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex items-center justify-end gap-2.5">
-              <button
-                type="button"
-                autoFocus
-                onClick={handleStay}
-                className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-sm font-medium transition-colors cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmLeave}
-                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-sm font-medium transition-colors cursor-pointer shadow-sm"
-              >
-                Leave Room
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </main>
   );
 }
