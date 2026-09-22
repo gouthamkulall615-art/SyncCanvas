@@ -210,24 +210,33 @@ export default function Workspace() {
 
     const handleBeforeUnload = (e) => {
       if (isExplicitlyLeavingRef.current) {
-        provider.awareness.setLocalStateField("user", null);
+        try {
+          provider?.awareness?.setLocalStateField("user", null);
+        } catch (_) {}
         return;
       }
       // If 2 or more members are collaborating, trigger browser exit confirmation
       if (usersRef.current && usersRef.current.length >= 2) {
-        e.preventDefault();
-        e.returnValue = "";
-        return "";
+        e = e || window.event;
+        if (e) {
+          e.preventDefault();
+          e.returnValue = "You have an active collaboration session. Are you sure you want to leave?";
+        }
+        return "You have an active collaboration session. Are you sure you want to leave?";
       }
-      provider.awareness.setLocalStateField("user", null);
+      try {
+        provider?.awareness?.setLocalStateField("user", null);
+      } catch (_) {}
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
+    window.onbeforeunload = handleBeforeUnload;
 
     return () => {
       clearInterval(heartbeatInterval);
       provider.awareness.off("change", updateUsers);
       provider.awareness.off("update", updateUsers);
       window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.onbeforeunload = null;
       provider.awareness.setLocalStateField("user", null);
       provider.disconnect();
       provider.destroy();
@@ -243,7 +252,7 @@ export default function Workspace() {
     const handleMouseLeave = (e) => {
       // User moved mouse to top of screen towards browser tab bar or close button
       if (
-        e.clientY <= 0 &&
+        e.clientY <= 5 &&
         usersRef.current &&
         usersRef.current.length >= 2 &&
         !exitIntentCooldownRef.current &&
