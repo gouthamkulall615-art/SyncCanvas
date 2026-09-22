@@ -214,7 +214,7 @@
   top: 0;
   left: 50%;
   margin: 0;
-  padding: 0 13px;
+  padding: 0 14px;
   height: 32px;
   border: 1px solid rgba(139, 92, 246, 0.32);
   border-radius: 16px;
@@ -236,7 +236,7 @@
   pointer-events: none;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  justify-content: center;
   -webkit-tap-highlight-color: transparent;
   transition:
     transform var(--ff-close) var(--ff-ease-out) calc((var(--ff-n) - 1 - var(--i)) * var(--ff-stagger) * 0.5),
@@ -244,15 +244,6 @@
     scale 160ms var(--ff-ease-out),
     border-color 0.2s ease,
     background 0.2s ease;
-}
-
-.folder-float__pill-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background-color: #8b5cf6;
-  box-shadow: 0 0 6px rgba(139, 92, 246, 0.8);
-  flex-shrink: 0;
 }
 
 .folder-float[data-open] .folder-float__item {

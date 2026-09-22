@@ -404,7 +404,6 @@ export default function FolderFloat({
                 if (!world.current.live || e.detail === 0) pick(item, i);
               }}
             >
-              <span className="folder-float__pill-dot" />
               <span className="folder-float__drift">{item.label}</span>
             </button>
           );
