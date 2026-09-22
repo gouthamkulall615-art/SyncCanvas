@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { Search, Settings, LogOut } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import SettingsModal from "./SettingsModal";
+import BrandLogo from "../common/BrandLogo";
 
 export default function DashboardNavbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -34,17 +35,12 @@ export default function DashboardNavbar() {
     <nav className="w-full bg-[#0a0a0c]/90 backdrop-blur-xl border-b border-zinc-800/80 px-6 py-3.5 flex items-center justify-between font-sans text-white relative z-50">
       {/* Brand & Logo */}
       <div className="flex items-center gap-3">
-        <a href="/dashboard" className="flex items-center gap-2.5 group">
-          <span className="relative flex items-center justify-center text-[#9333ea] bg-purple-600/15 border border-purple-500/30 p-2 rounded-xl shadow-[0_0_15px_rgba(147,51,234,0.2)] group-hover:border-purple-500 transition-colors">
-            <svg viewBox="0 0 28 28" width="18" height="18" fill="currentColor">
-              <rect x="3" y="3" width="16" height="16" rx="4" opacity="0.5" />
-              <rect x="9" y="9" width="16" height="16" rx="4" />
-            </svg>
-          </span>
-          <span className="font-bold text-lg tracking-tight text-white flex items-center gap-2">
-            SyncCanvas
-          </span>
-        </a>
+        <Link
+          to="/dashboard"
+          className="flex items-center hover:opacity-95 transition-opacity"
+        >
+          <BrandLogo size={26} textSize="text-lg" />
+        </Link>
       </div>
 
       {/* Central Command Search Bar */}

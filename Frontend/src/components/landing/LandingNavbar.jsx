@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import SpecularButton from "../ReactBits/SpecularButton";
+import BrandLogo from "../common/BrandLogo";
 
 const NAV_LINKS = [
   { label: "Features", href: "/features" },
@@ -49,16 +50,10 @@ const Navbar = () => {
         {/* Brand Logo */}
         <a
           href="#top"
-          className="flex items-center gap-3 text-white font-bold text-xl tracking-tight z-50"
+          className="flex items-center z-50 hover:opacity-95 transition-opacity"
           onClick={() => setMenuOpen(false)}
         >
-          <span className="relative flex items-center justify-center text-[#9333ea]">
-            <svg viewBox="0 0 28 28" width="28" height="28" fill="currentColor">
-              <rect x="3" y="3" width="16" height="16" rx="4" opacity="0.5" />
-              <rect x="9" y="9" width="16" height="16" rx="4" />
-            </svg>
-          </span>
-          SyncCanvas
+          <BrandLogo size={28} textSize="text-xl" />
         </a>
 
         {/* Desktop Navigation */}

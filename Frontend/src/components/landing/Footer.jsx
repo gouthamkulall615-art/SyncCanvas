@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate, Link } from "react-router-dom";
 import SpecularButton from "../ReactBits/SpecularButton";
+import BrandLogo from "../common/BrandLogo";
 import "./Footer.css";
 
 const Footer = () => {
@@ -53,29 +54,12 @@ const Footer = () => {
         <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 lg:gap-8 mb-16 border-t border-white/10 pt-16">
           {/* Brand Column */}
           <div className="lg:col-span-2 flex flex-col items-start">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 rounded-lg bg-[#a855f7] flex items-center justify-center shadow-[0_0_15px_rgba(168,85,247,0.5)]">
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M16 4H4V16"
-                    stroke="white"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path d="M8 8H20V20H8V8Z" fill="white" />
-                </svg>
-              </div>
-              <span className="text-xl font-bold text-white tracking-wide">
-                SyncCanvas
-              </span>
-            </div>
+            <Link
+              to="/"
+              className="flex items-center mb-6 hover:opacity-90 transition-opacity"
+            >
+              <BrandLogo size={28} textSize="text-xl" />
+            </Link>
             <p className="text-zinc-400 text-sm leading-relaxed max-w-xs">
               The open-source, real-time collaborative canvas for modern teams.
             </p>

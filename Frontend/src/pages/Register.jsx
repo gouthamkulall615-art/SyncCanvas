@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { User, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import api from "../api/axios";
 import Beams from "../components/ReactBits/Beams";
+import BrandLogo from "../components/common/BrandLogo";
 
 export default function Register() {
   const [name, setName] = useState("");
@@ -44,20 +45,9 @@ export default function Register() {
         <div className="flex flex-col items-center mb-8">
           <Link
             to="/"
-            className="flex items-center gap-2 text-zinc-300 font-bold tracking-tight mb-6 hover:text-white transition-colors"
+            className="flex items-center mb-6 hover:opacity-90 transition-opacity"
           >
-            <span className="relative flex items-center justify-center text-[#9333ea]">
-              <svg
-                viewBox="0 0 28 28"
-                width="24"
-                height="24"
-                fill="currentColor"
-              >
-                <rect x="3" y="3" width="16" height="16" rx="4" opacity="0.5" />
-                <rect x="9" y="9" width="16" height="16" rx="4" />
-              </svg>
-            </span>
-            SyncCanvas
+            <BrandLogo size={28} textSize="text-xl" />
           </Link>
 
           <h2 className="text-2xl font-bold mb-2 tracking-tight text-white">

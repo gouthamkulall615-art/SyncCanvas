@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Footer from "../landing/Footer";
+import BrandLogo from "../common/BrandLogo";
 
 export default function PageLayout({
   badge = "SyncCanvas",
@@ -46,27 +47,9 @@ export default function PageLayout({
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link
             to="/"
-            className="flex items-center gap-2.5 text-white font-bold text-lg tracking-tight hover:opacity-90 transition-opacity"
+            className="flex items-center hover:opacity-90 transition-opacity"
           >
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-purple-700 to-purple-500 flex items-center justify-center shadow-[0_0_15px_rgba(168,85,247,0.4)]">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M16 4H4V16"
-                  stroke="white"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path d="M8 8H20V20H8V8Z" fill="white" />
-              </svg>
-            </div>
-            <span>SyncCanvas</span>
+            <BrandLogo size={28} textSize="text-xl" />
           </Link>
 
           {/* Desktop Nav */}
