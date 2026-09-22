@@ -22,7 +22,7 @@ const DOCS_SECTIONS = [
             </h4>
             <p className="text-zinc-400 text-xs">
               From your Dashboard, click "Create Room". Choose a title (e.g.
-              "Auth Service Architecture") and set participant limits (2 to 20
+              "Auth Service Architecture") and set participant limits (2 to 6
               seats).
             </p>
           </div>

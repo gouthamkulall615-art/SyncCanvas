@@ -51,11 +51,11 @@ router.post("/create", async (req, res) => {
     if (
       !Number.isInteger(maxParticipants) ||
       maxParticipants < 2 ||
-      maxParticipants > 20
+      maxParticipants > 6
     ) {
       return res
         .status(400)
-        .json({ error: "Max participants must be an integer between 2 and 20." });
+        .json({ error: "Max participants must be an integer between 2 and 6." });
     }
 
     const token = crypto.randomBytes(24).toString("base64url");

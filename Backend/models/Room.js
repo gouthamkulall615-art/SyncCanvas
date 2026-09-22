@@ -6,7 +6,7 @@ const roomSchema = new mongoose.Schema({
   pin: { type: String, required: true, index: true },
 
   roomName: { type: String, required: true, trim: true, maxlength: 40 },
-  maxParticipants: { type: Number, required: true, min: 2, max: 20, default: 8 },
+  maxParticipants: { type: Number, required: true, min: 2, max: 6, default: 6 },
 
   attempts: { type: Number, default: 0 },
   lockedUntil: { type: Date, default: null },

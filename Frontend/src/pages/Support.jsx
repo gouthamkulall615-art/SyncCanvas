@@ -16,7 +16,7 @@ const FAQS = [
   },
   {
     q: "How many participants can join a room at once?",
-    a: "When creating a room, hosts can configure between 2 and 20 simultaneous seats. The YSocketIO sync server actively tracks live awareness heartbeats and will politely notify newcomers if a room has reached capacity.",
+    a: "When creating a room, hosts can configure between 2 and 6 simultaneous seats. The YSocketIO sync server actively tracks live awareness heartbeats and will politely notify newcomers if a room has reached capacity.",
   },
   {
     q: "What happens if I disconnect or lose my WiFi?",

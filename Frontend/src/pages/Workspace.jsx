@@ -45,7 +45,7 @@ export default function Workspace() {
   const [pinInput, setPinInput] = useState(["", "", "", "", "", ""]);
   const [gateError, setGateError] = useState(null);
   const [checking, setChecking] = useState(false);
-  const [roomInfo, setRoomInfo] = useState({ roomName: "", maxParticipants: 20 });
+  const [roomInfo, setRoomInfo] = useState({ roomName: "", maxParticipants: 6 });
   const [roomNotFound, setRoomNotFound] = useState(false);
 
   useEffect(() => {
@@ -56,7 +56,7 @@ export default function Workspace() {
         if (res.data) {
           setRoomInfo({
             roomName: res.data.roomName || "SyncCanvas",
-            maxParticipants: res.data.maxParticipants || 20,
+            maxParticipants: res.data.maxParticipants || 6,
           });
         }
       } catch (err) {

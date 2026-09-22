@@ -3,13 +3,13 @@ import { FiX, FiUsers, FiLayers, FiAlertCircle, FiLoader } from "react-icons/fi"
 
 export default function CreateRoomModal({ isOpen, onClose, onSubmit, isSubmitting, error }) {
   const [roomName, setRoomName] = useState("");
-  const [maxParticipants, setMaxParticipants] = useState(8);
+  const [maxParticipants, setMaxParticipants] = useState(6);
   const [localError, setLocalError] = useState("");
 
   useEffect(() => {
     if (isOpen) {
       setRoomName("");
-      setMaxParticipants(8);
+      setMaxParticipants(6);
       setLocalError("");
     }
   }, [isOpen]);
@@ -41,8 +41,8 @@ export default function CreateRoomModal({ isOpen, onClose, onSubmit, isSubmittin
     }
 
     const participants = Number(maxParticipants);
-    if (!Number.isInteger(participants) || participants < 2 || participants > 20) {
-      setLocalError("Max participants must be between 2 and 20.");
+    if (!Number.isInteger(participants) || participants < 2 || participants > 6) {
+      setLocalError("Max participants must be between 2 and 6.");
       return;
     }
 
@@ -130,13 +130,13 @@ export default function CreateRoomModal({ isOpen, onClose, onSubmit, isSubmittin
                 <FiUsers size={13} className="text-purple-400" />
                 Max Participants <span className="text-purple-400">*</span>
               </label>
-              <span className="text-[11px] text-zinc-500 font-mono">2 to 20</span>
+              <span className="text-[11px] text-zinc-500 font-mono">2 to 6</span>
             </div>
             <input
               id="max-participants"
               type="number"
               min={2}
-              max={20}
+              max={6}
               value={maxParticipants}
               onChange={(e) => {
                 setMaxParticipants(e.target.value);
