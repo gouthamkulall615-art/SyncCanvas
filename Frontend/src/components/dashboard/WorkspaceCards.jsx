@@ -11,6 +11,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import CreateRoomModal from "./CreateRoomModal";
+import CodeSlots from "../ReactBits/CodeSlots";
 
 export default function WorkspaceCards() {
   const navigate = useNavigate();
@@ -29,9 +30,9 @@ export default function WorkspaceCards() {
   const [isCreating, setIsCreating] = useState(false);
   const [createError, setCreateError] = useState(null);
 
-  const [pin, setPin] = useState(["", "", "", "", "", ""]);
+  const [pin, setPin] = useState("");
+  const [joinStatus, setJoinStatus] = useState("idle"); // "idle" | "error" | "success"
   const [joinError, setJoinError] = useState(null);
-  const pinRefs = useRef([]);
 
   const handleCopy = () => {
     if (!roomUrl) return;
@@ -98,48 +99,19 @@ export default function WorkspaceCards() {
     navigate(`/workspace/${roomToken}`);
   };
 
-  const handlePinChange = (index, value) => {
-    if (!/^\d*$/.test(value)) return;
-    const newPin = [...pin];
-    newPin[index] = value.slice(-1);
-    setPin(newPin);
-    setJoinError(null);
-
-    if (value && index < 5) {
-      pinRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleKeyDown = (index, e) => {
-    if (e.key === "Backspace" && !pin[index] && index > 0) {
-      pinRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const handlePinPaste = (e) => {
-    e.preventDefault();
-    const pastedData = e.clipboardData.getData("text").trim().slice(0, 6);
-    if (/^\d+$/.test(pastedData)) {
-      const digits = pastedData.split("");
-      const newPin = [...pin];
-      digits.forEach((digit, i) => {
-        newPin[i] = digit;
-      });
-      setPin(newPin);
-      const nextIndex = Math.min(digits.length, 5);
-      pinRefs.current[nextIndex]?.focus();
-    }
-  };
-
-  const handleJoinSession = async () => {
-    const fullPin = pin.join("");
+  const handleJoinSession = async (overridePin) => {
+    const fullPin = typeof overridePin === "string" ? overridePin : pin;
     if (fullPin.length !== 6) return;
 
     try {
       const response = await api.post("/rooms/join-by-pin", { pin: fullPin });
       const { token } = response.data;
-      navigate(`/workspace/${token}`);
+      setJoinStatus("success");
+      setTimeout(() => {
+        navigate(`/workspace/${token}`);
+      }, 700);
     } catch (error) {
+      setJoinStatus("error");
       const status = error.response?.status;
       if (status === 403) {
         setJoinError(error.response?.data?.error || "Room is full.");
@@ -148,8 +120,7 @@ export default function WorkspaceCards() {
       } else {
         setJoinError(error.response?.data?.error || "Invalid PIN.");
       }
-      setPin(["", "", "", "", "", ""]);
-      pinRefs.current[0]?.focus();
+      setPin("");
     }
   };
 
@@ -321,40 +292,46 @@ export default function WorkspaceCards() {
                   </span>
                 )}
               </div>
-              <div
-                className="grid grid-cols-6 gap-2 sm:gap-3 mb-6"
-                onPaste={handlePinPaste}
-              >
-                {pin.map((digit, index) => (
-                  <input
-                    key={index}
-                    ref={(el) => (pinRefs.current[index] = el)}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={1}
-                    value={digit}
-                    onChange={(e) => handlePinChange(index, e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(index, e)}
-                    placeholder="•"
-                    className={`w-full h-12 sm:h-14 text-center text-lg sm:text-xl font-mono font-bold rounded-xl bg-[#06080c] border transition-all duration-150 text-white placeholder-zinc-700 outline-none ${
-                      joinError
-                        ? "border-red-500/70 ring-1 ring-red-500/30"
-                        : digit
-                          ? "border-purple-500 ring-1 ring-purple-500/40 bg-purple-950/10"
-                          : "border-zinc-800 focus:border-purple-500/70 focus:ring-1 focus:ring-purple-500/40"
-                    }`}
-                  />
-                ))}
+              <div className="flex justify-center mb-6">
+                <CodeSlots
+                  length={6}
+                  value={pin}
+                  status={joinStatus}
+                  onChange={(code) => {
+                    setPin(code);
+                    setJoinStatus("idle");
+                    setJoinError(null);
+                  }}
+                  onComplete={(code) => {
+                    handleJoinSession(code);
+                  }}
+                  accentColor="#10b981"
+                  inkColor="#34d399"
+                  slotColor="#06080c"
+                  digitColor="#ffffff"
+                  dangerColor="#ef4444"
+                  slotSize={48}
+                  gap={8}
+                  radius={12}
+                  bounce={0.2}
+                  settle={0.3}
+                  rise={8}
+                  cascade={20}
+                />
               </div>
             </div>
 
             <button
               type="button"
-              onClick={handleJoinSession}
-              disabled={pin.join("").length !== 6}
+              onClick={() => handleJoinSession()}
+              disabled={pin.length !== 6 || joinStatus === "success"}
               className="w-full py-3.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:bg-zinc-800 disabled:text-zinc-600 disabled:shadow-none text-white font-medium text-sm transition-all duration-200 shadow-[0_0_20px_rgba(147,51,234,0.25)] hover:shadow-[0_0_25px_rgba(147,51,234,0.4)] active:scale-[0.99] flex items-center justify-center gap-2 group cursor-pointer disabled:cursor-not-allowed"
             >
-              <span>Join Active Session</span>
+              <span>
+                {joinStatus === "success"
+                  ? "Joining Room..."
+                  : "Join Active Session"}
+              </span>
               <FiArrowRight
                 className="transition-transform group-hover:translate-x-1"
                 size={16}

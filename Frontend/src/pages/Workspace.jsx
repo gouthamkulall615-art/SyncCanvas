@@ -4,6 +4,7 @@ import * as Y from "yjs";
 import { SocketIOProvider } from "y-socket.io";
 import { FiAlertTriangle, FiX, FiLogOut } from "react-icons/fi";
 import CanvasBoard from "../components/canvas/CanvasBoard";
+import CodeSlots from "../components/ReactBits/CodeSlots";
 import api from "../api/axios";
 
 const CURSOR_COLORS = [
@@ -66,7 +67,8 @@ export default function Workspace() {
   const [verified, setVerified] = useState(
     () => sessionStorage.getItem(`host:${token}`) === "true",
   );
-  const [pinInput, setPinInput] = useState(["", "", "", "", "", ""]);
+  const [pinInput, setPinInput] = useState("");
+  const [codeStatus, setCodeStatus] = useState("idle"); // "idle" | "error" | "success"
   const [gateError, setGateError] = useState(null);
   const [checking, setChecking] = useState(false);
   const [roomInfo, setRoomInfo] = useState({ roomName: "", maxParticipants: 6 });
@@ -92,33 +94,20 @@ export default function Workspace() {
     fetchRoomInfo();
   }, [token]);
 
-  const handlePinChange = (index, value) => {
-    if (!/^\d*$/.test(value)) return;
-    const next = [...pinInput];
-    next[index] = value.slice(-1);
-    setPinInput(next);
-    setGateError(null);
-    if (value && index < 5) {
-      document.getElementById(`gate-pin-${index + 1}`)?.focus();
-    }
-  };
-
-  const handleGateKeyDown = (index, e) => {
-    if (e.key === "Backspace" && !pinInput[index] && index > 0) {
-      document.getElementById(`gate-pin-${index - 1}`)?.focus();
-    }
-  };
-
-  const handleVerifyPin = async () => {
-    const fullPin = pinInput.join("");
+  const handleVerifyPin = async (overridePin) => {
+    const fullPin = typeof overridePin === "string" ? overridePin : pinInput;
     if (fullPin.length !== 6) return;
     setChecking(true);
     setGateError(null);
     try {
       await api.post(`/rooms/${token}/verify`, { pin: fullPin });
+      setCodeStatus("success");
       sessionStorage.setItem(`host:${token}`, "true");
-      setVerified(true);
+      setTimeout(() => {
+        setVerified(true);
+      }, 700);
     } catch (error) {
+      setCodeStatus("error");
       const status = error.response?.status;
       if (status === 403) {
         setGateError(error.response?.data?.error || "Room is full.");
@@ -129,8 +118,7 @@ export default function Workspace() {
       } else {
         setGateError(error.response?.data?.error || "Incorrect PIN.");
       }
-      setPinInput(["", "", "", "", "", ""]);
-      document.getElementById("gate-pin-0")?.focus();
+      setPinInput("");
     } finally {
       setChecking(false);
     }
@@ -337,36 +325,46 @@ export default function Workspace() {
               </span>
             )}
           </div>
-          <div className="grid grid-cols-6 gap-2 mb-6">
-            {pinInput.map((digit, index) => (
-              <input
-                key={index}
-                id={`gate-pin-${index}`}
-                type="text"
-                inputMode="numeric"
-                maxLength={1}
-                value={digit}
-                onChange={(e) => handlePinChange(index, e.target.value)}
-                onKeyDown={(e) => handleGateKeyDown(index, e)}
-                placeholder="•"
-                className={`w-full h-12 text-center text-lg font-mono font-bold rounded-xl bg-[#06080c] border transition-all duration-150 text-white placeholder-zinc-700 outline-none ${
-                  gateError
-                    ? "border-red-500/70 ring-1 ring-red-500/30"
-                    : digit
-                      ? "border-purple-500 ring-1 ring-purple-500/40 bg-purple-950/10"
-                      : "border-zinc-800 focus:border-purple-500/70 focus:ring-1 focus:ring-purple-500/40"
-                }`}
-              />
-            ))}
+          <div className="flex justify-center mb-6">
+            <CodeSlots
+              length={6}
+              value={pinInput}
+              status={codeStatus}
+              onChange={(code) => {
+                setPinInput(code);
+                setCodeStatus("idle");
+                setGateError(null);
+              }}
+              onComplete={(code) => {
+                handleVerifyPin(code);
+              }}
+              accentColor="#9333ea"
+              inkColor="#c084fc"
+              slotColor="#06080c"
+              digitColor="#ffffff"
+              dangerColor="#ef4444"
+              slotSize={44}
+              gap={8}
+              radius={12}
+              bounce={0.2}
+              settle={0.3}
+              rise={8}
+              cascade={20}
+              autoFocus={true}
+            />
           </div>
 
           <button
             type="button"
-            onClick={handleVerifyPin}
-            disabled={pinInput.join("").length !== 6 || checking}
+            onClick={() => handleVerifyPin()}
+            disabled={pinInput.length !== 6 || checking || codeStatus === "success"}
             className="w-full py-3 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:bg-zinc-800 disabled:text-zinc-600 text-white font-medium text-sm transition-all duration-200 cursor-pointer disabled:cursor-not-allowed"
           >
-            {checking ? "Checking..." : "Enter Workspace"}
+            {checking
+              ? "Checking..."
+              : codeStatus === "success"
+                ? "Verified! Entering..."
+                : "Enter Workspace"}
           </button>
         </div>
       </main>
