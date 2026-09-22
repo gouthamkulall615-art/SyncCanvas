@@ -12,7 +12,7 @@ export function EncryptedText({
   chars = DEFAULT_CHARS,
   className = "",
   as: Component = "span",
-  hoverTrigger = true,
+  hoverTrigger = false,
 }) {
   const [revealedCount, setRevealedCount] = useState(0);
   const [scrambled, setScrambled] = useState("");
@@ -94,7 +94,7 @@ export function EncryptedText({
   return (
     <Component
       className={`inline-block select-none cursor-default ${className}`}
-      onMouseEnter={handleMouseEnter}
+      onMouseEnter={hoverTrigger ? handleMouseEnter : undefined}
     >
       {text.split("").map((char, index) => {
         if (char === "\n") {
