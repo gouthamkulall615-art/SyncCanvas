@@ -64,16 +64,56 @@ export default function Workspace() {
   const [roomInfo, setRoomInfo] = useState({ roomName: "", maxParticipants: 6 });
   const [roomNotFound, setRoomNotFound] = useState(false);
 
+  // Helper to record / update recent room in localStorage
+  const recordRecentRoom = (participantsList = [], customRoomName = null) => {
+    try {
+      const stored = localStorage.getItem("synccanvas_recent_rooms");
+      const list = stored ? JSON.parse(stored) : [];
+      const existingIdx = list.findIndex((r) => r.token === token);
+      const existing = existingIdx >= 0 ? list[existingIdx] : {};
+
+      const currentNames = (existing.participants || []).filter(Boolean);
+      const newNames = Array.from(new Set([...currentNames, ...participantsList].filter(Boolean)));
+
+      const roomEntry = {
+        token,
+        roomName: customRoomName || roomInfo.roomName || existing.roomName || "SyncCanvas Workspace",
+        participants: newNames,
+        enteredAt: new Date().toISOString(),
+      };
+
+      let updatedList;
+      if (existingIdx >= 0) {
+        list[existingIdx] = roomEntry;
+        updatedList = list;
+      } else {
+        updatedList = [roomEntry, ...list];
+      }
+      localStorage.setItem("synccanvas_recent_rooms", JSON.stringify(updatedList.slice(0, 20)));
+    } catch (e) {
+      console.error("Failed to record recent room:", e);
+    }
+  };
+
   useEffect(() => {
     if (!token) return;
     const fetchRoomInfo = async () => {
       try {
         const res = await api.get(`/rooms/${token}`);
         if (res.data) {
+          const fetchedName = res.data.roomName || "SyncCanvas";
           setRoomInfo({
-            roomName: res.data.roomName || "SyncCanvas",
+            roomName: fetchedName,
             maxParticipants: res.data.maxParticipants || 6,
           });
+
+          // Sync participants from server if available
+          const serverParticipants = Array.isArray(res.data.participants)
+            ? res.data.participants.map((p) => (typeof p === "string" ? p : p.name)).filter(Boolean)
+            : [];
+          if (serverParticipants.length > 0) {
+            recordRecentRoom(serverParticipants, fetchedName);
+          }
         }
       } catch (err) {
         if (err.response?.status === 404) {
@@ -132,6 +172,10 @@ export default function Workspace() {
 
     const myUsername = user.name || user.username || "Peer";
 
+    // Register entry with backend and record locally
+    api.post(`/rooms/${token}/enter`, { name: myUsername }).catch(() => {});
+    recordRecentRoom([myUsername]);
+
     const backendUrl = import.meta.env.VITE_API_URL
       ? import.meta.env.VITE_API_URL.replace("/api", "")
       : "http://localhost:5000";
@@ -165,6 +209,13 @@ export default function Workspace() {
         },
         ...remoteUsers,
       ]);
+
+      // Update recent rooms with all active participants
+      const activeNames = [
+        myUsername,
+        ...remoteUsers.map((u) => u.username).filter(Boolean),
+      ];
+      recordRecentRoom(activeNames);
     };
 
     const injectPresence = () => {

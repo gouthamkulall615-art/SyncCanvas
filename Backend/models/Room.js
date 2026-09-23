@@ -18,6 +18,15 @@ const roomSchema = new mongoose.Schema({
     default: () => new Date(Date.now() + 24 * 60 * 60 * 1000),
     index: { expires: 0 },
   },
+
+  hostName: { type: String, default: null },
+
+  participants: [
+    {
+      name: { type: String, required: true },
+      enteredAt: { type: Date, default: Date.now },
+    },
+  ],
 });
 
 export default mongoose.model("Room", roomSchema);

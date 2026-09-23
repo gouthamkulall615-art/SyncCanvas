@@ -35,7 +35,7 @@ const getActiveParticipantCount = (token) => {
 
 router.post("/create", async (req, res) => {
   try {
-    let { roomName, maxParticipants } = req.body;
+    let { roomName, maxParticipants, hostName } = req.body;
 
     if (typeof roomName !== "string" || !roomName.trim()) {
       return res.status(400).json({ error: "Room name is required." });
@@ -60,11 +60,16 @@ router.post("/create", async (req, res) => {
 
     const token = crypto.randomBytes(24).toString("base64url");
     const pin = generatePin();
+    const cleanHost = typeof hostName === "string" && hostName.trim() ? hostName.trim() : null;
+    const participants = cleanHost ? [{ name: cleanHost, enteredAt: new Date() }] : [];
+
     const room = await Room.create({
       token,
       pin,
       roomName,
       maxParticipants,
+      hostName: cleanHost,
+      participants,
     });
 
     res.json({
@@ -72,6 +77,8 @@ router.post("/create", async (req, res) => {
       pin,
       roomName: room.roomName,
       maxParticipants: room.maxParticipants,
+      participants: room.participants,
+      createdAt: room.createdAt,
     });
   } catch (err) {
     console.error("Room creation failed:", err);
@@ -87,9 +94,71 @@ router.get("/:token", async (req, res) => {
       exists: true,
       roomName: room.roomName,
       maxParticipants: room.maxParticipants,
+      participants: room.participants || [],
+      createdAt: room.createdAt,
+      hostName: room.hostName,
     });
   } catch (err) {
     res.status(500).json({ error: "Lookup failed." });
+  }
+});
+
+router.post("/:token/enter", async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name || typeof name !== "string") {
+      return res.status(400).json({ error: "Name is required." });
+    }
+    const room = await Room.findOne({ token: req.params.token });
+    if (!room) return res.status(404).json({ error: "Room not found." });
+
+    const cleanName = name.trim();
+    const exists = room.participants.some(
+      (p) => p.name.toLowerCase() === cleanName.toLowerCase()
+    );
+    if (!exists) {
+      room.participants.push({ name: cleanName, enteredAt: new Date() });
+      await room.save();
+    }
+    res.json({
+      success: true,
+      participants: room.participants,
+      roomName: room.roomName,
+      createdAt: room.createdAt,
+    });
+  } catch (err) {
+    console.error("Record enter failed:", err);
+    res.status(500).json({ error: "Failed to record entry." });
+  }
+});
+
+router.delete("/:token", async (req, res) => {
+  try {
+    const result = await Room.deleteOne({ token: req.params.token });
+    res.json({ success: true, deletedCount: result.deletedCount });
+  } catch (err) {
+    console.error("Delete room failed:", err);
+    res.status(500).json({ error: "Failed to delete room." });
+  }
+});
+
+router.get("/user-recent/:userName", async (req, res) => {
+  try {
+    const { userName } = req.params;
+    const cleanName = userName.trim();
+    const rooms = await Room.find({
+      $or: [
+        { hostName: new RegExp(`^${cleanName}$`, "i") },
+        { "participants.name": new RegExp(`^${cleanName}$`, "i") },
+      ],
+    })
+      .sort({ createdAt: -1 })
+      .limit(15);
+
+    res.json(rooms);
+  } catch (err) {
+    console.error("Fetch recent failed:", err);
+    res.status(500).json({ error: "Failed to fetch recent rooms." });
   }
 });
 

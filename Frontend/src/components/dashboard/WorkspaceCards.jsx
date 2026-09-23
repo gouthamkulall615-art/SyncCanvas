@@ -13,6 +13,7 @@ import api from "../../api/axios";
 import CreateRoomModal from "./CreateRoomModal";
 import CodeSlots from "../ReactBits/CodeSlots";
 import { EncryptedText } from "@/components/ui/encrypted-text";
+import RecentRoomsTable from "./RecentRoomsTable";
 
 export default function WorkspaceCards() {
   const navigate = useNavigate();
@@ -53,9 +54,13 @@ export default function WorkspaceCards() {
     setIsCreating(true);
     setCreateError(null);
     try {
+      const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+      const hostName = storedUser.name || storedUser.username || "Host";
+
       const response = await api.post("/rooms/create", {
         roomName,
         maxParticipants,
+        hostName,
       });
       const { token, pin: newPin, roomName: savedName, maxParticipants: savedMax } = response.data;
 
@@ -81,6 +86,26 @@ export default function WorkspaceCards() {
         roomName: savedName || roomName,
         maxParticipants: savedMax || maxParticipants,
       });
+
+      // Save to recent rooms
+      try {
+        const stored = localStorage.getItem("synccanvas_recent_rooms");
+        const list = stored ? JSON.parse(stored) : [];
+        const newEntry = {
+          token,
+          roomName: savedName || roomName,
+          pin: newPin,
+          participants: [hostName],
+          enteredAt: new Date().toISOString(),
+        };
+        const filtered = list.filter((r) => r.token !== token);
+        localStorage.setItem(
+          "synccanvas_recent_rooms",
+          JSON.stringify([newEntry, ...filtered].slice(0, 20))
+        );
+      } catch (e) {
+        console.error("Error saving recent room:", e);
+      }
 
       // Host created this room, so they can skip the pin gate on this browser
       sessionStorage.setItem(`host:${token}`, "true");
@@ -128,7 +153,7 @@ export default function WorkspaceCards() {
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-4 py-8 flex flex-col justify-between min-h-[calc(100vh-100px)]">
+    <div className="w-full max-w-5xl mx-auto px-4 py-8 flex flex-col gap-8">
       {/* Header Section */}
       <div>
         <div className="mb-10 text-center max-w-2xl mx-auto">
@@ -348,6 +373,9 @@ export default function WorkspaceCards() {
             </button>
           </div>
         </div>
+
+        {/* Recently Entered Rooms Table */}
+        <RecentRoomsTable />
       </div>
 
       <CreateRoomModal
