@@ -148,7 +148,7 @@ export default function WorkspaceCards() {
         </div>
 
         {/* Two-Column Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
           {/* Host Session Card */}
           <div className="bg-[#0b0f15]/80 backdrop-blur-xl border border-zinc-800/80 rounded-2xl p-6 sm:p-7 flex flex-col justify-between shadow-2xl transition-all duration-300 hover:border-zinc-700">
             <div>
