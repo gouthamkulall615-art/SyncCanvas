@@ -1,8 +1,11 @@
+import { useState } from "react";
 import Navbar from "../components/dashboard/DashboardNavbar";
 import WorkspaceCards from "../components/dashboard/WorkspaceCards";
 import GradientWaves from "../components/ReactBits/GradientWaves";
 
 export default function Dashboard() {
+  const [searchQuery, setSearchQuery] = useState("");
+
   return (
     <div className="relative min-h-screen w-full bg-[#050505] text-white font-sans flex flex-col overflow-x-hidden">
       {/* Absolute Full-Screen Background Waves Layer */}
@@ -21,10 +24,13 @@ export default function Dashboard() {
 
       {/* Foreground UI Layer */}
       <div className="relative z-10 flex flex-col min-h-screen w-full">
-        <Navbar />
+        <Navbar searchQuery={searchQuery} onSearchChange={setSearchQuery} />
 
         <main className="flex-grow max-w-6xl w-full mx-auto px-6 py-6">
-          <WorkspaceCards />
+          <WorkspaceCards
+            searchQuery={searchQuery}
+            onClearSearch={() => setSearchQuery("")}
+          />
         </main>
       </div>
     </div>

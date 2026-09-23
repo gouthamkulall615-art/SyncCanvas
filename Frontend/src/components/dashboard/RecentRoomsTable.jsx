@@ -51,7 +51,7 @@ function formatRelativeTime(dateInput) {
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-export default function RecentRoomsTable() {
+export default function RecentRoomsTable({ searchQuery = "", onClearSearch }) {
   const navigate = useNavigate();
   const [rooms, setRooms] = useState([]);
   const [hoveredAvatar, setHoveredAvatar] = useState(null); // { roomId, name }
@@ -151,6 +151,20 @@ export default function RecentRoomsTable() {
     navigate(`/workspace/${token}`);
   };
 
+  const cleanQuery = searchQuery.trim().toLowerCase();
+  const filteredRooms = rooms.filter((room) => {
+    if (!cleanQuery) return true;
+    const matchRoomName = (room.roomName || "").toLowerCase().includes(cleanQuery);
+    const matchPin = (room.pin || "").toLowerCase().includes(cleanQuery);
+    const matchPeople =
+      Array.isArray(room.participants) &&
+      room.participants.some((p) => {
+        const nameStr = typeof p === "string" ? p : p.name || "";
+        return nameStr.toLowerCase().includes(cleanQuery);
+      });
+    return matchRoomName || matchPin || matchPeople;
+  });
+
   if (!rooms || rooms.length === 0) {
     return (
       <div className="w-full mt-4 bg-[#0b0f15]/80 backdrop-blur-xl border border-zinc-800/80 rounded-2xl p-8 text-center shadow-2xl transition-all duration-300 hover:border-zinc-700/80">
@@ -170,7 +184,7 @@ export default function RecentRoomsTable() {
   return (
     <div className="w-full mt-6 bg-[#0b0f15]/80 backdrop-blur-xl border border-zinc-800/80 rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 hover:border-zinc-700/80">
       {/* Section Header */}
-      <div className="px-6 py-5 border-b border-zinc-800/80 flex items-center justify-between">
+      <div className="px-6 py-5 border-b border-zinc-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-purple-600/15 border border-purple-500/30 flex items-center justify-center text-purple-400 shrink-0">
             <History size={18} />
@@ -179,7 +193,7 @@ export default function RecentRoomsTable() {
             <h2 className="text-base font-bold text-white tracking-tight flex items-center gap-2">
               Recently Entered Rooms
               <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-zinc-800/90 text-zinc-300 border border-zinc-700/50">
-                {rooms.length}
+                {filteredRooms.length}
               </span>
             </h2>
             <p className="text-xs text-zinc-400 mt-0.5">
@@ -187,32 +201,70 @@ export default function RecentRoomsTable() {
             </p>
           </div>
         </div>
+
+        {cleanQuery && (
+          <div className="flex items-center gap-2 self-start sm:self-auto bg-purple-500/10 border border-purple-500/25 px-3 py-1 rounded-lg text-xs">
+            <span className="text-zinc-400">Filtering:</span>
+            <span className="text-purple-300 font-semibold truncate max-w-[120px] sm:max-w-[200px]">
+              "{searchQuery}"
+            </span>
+            <button
+              type="button"
+              onClick={onClearSearch}
+              className="text-zinc-400 hover:text-white ml-1 cursor-pointer font-bold"
+              title="Clear search"
+            >
+              ✕
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Table Content */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="border-b border-zinc-800/60 bg-[#06080c]/50">
-              <th className="py-3 px-6 text-[10px] font-mono font-semibold uppercase tracking-widest text-zinc-400">
-                Room Name
-              </th>
-              <th className="py-3 px-6 text-[10px] font-mono font-semibold uppercase tracking-widest text-zinc-400">
-                People
-              </th>
-              <th className="py-3 px-6 text-[10px] font-mono font-semibold uppercase tracking-widest text-zinc-400">
-                Entered
-              </th>
-              <th className="py-3 px-6 text-[10px] font-mono font-semibold uppercase tracking-widest text-zinc-400">
-                Time
-              </th>
-              <th className="py-3 px-6 text-[10px] font-mono font-semibold uppercase tracking-widest text-zinc-400 text-right">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-800/50">
-            {rooms.map((room) => {
+      {filteredRooms.length === 0 ? (
+        <div className="p-10 text-center">
+          <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 mx-auto mb-2">
+            <FolderX size={18} />
+          </div>
+          <p className="text-sm text-zinc-300 font-medium">
+            No rooms found matching "{searchQuery}"
+          </p>
+          <p className="text-xs text-zinc-500 mt-1">
+            Try searching for a different room name or teammate.
+          </p>
+          {onClearSearch && (
+            <button
+              type="button"
+              onClick={onClearSearch}
+              className="mt-3 text-xs text-purple-400 hover:text-purple-300 font-semibold cursor-pointer underline"
+            >
+              Clear search filter
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-zinc-800/60 bg-[#06080c]/50">
+                <th className="py-3 px-6 text-[10px] font-mono font-semibold uppercase tracking-widest text-zinc-400">
+                  Room Name
+                </th>
+                <th className="py-3 px-6 text-[10px] font-mono font-semibold uppercase tracking-widest text-zinc-400">
+                  People
+                </th>
+                <th className="py-3 px-6 text-[10px] font-mono font-semibold uppercase tracking-widest text-zinc-400">
+                  Entered
+                </th>
+                <th className="py-3 px-6 text-[10px] font-mono font-semibold uppercase tracking-widest text-zinc-400">
+                  Time
+                </th>
+                <th className="py-3 px-6 text-[10px] font-mono font-semibold uppercase tracking-widest text-zinc-400 text-right">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-800/50">
+              {filteredRooms.map((room) => {
               const participants = Array.isArray(room.participants) ? room.participants : [];
               const enteredCount = participants.length > 0 ? participants.length : 1;
 
@@ -335,6 +387,7 @@ export default function RecentRoomsTable() {
           </tbody>
         </table>
       </div>
+      )}
     </div>
   );
 }

@@ -15,7 +15,7 @@ import CodeSlots from "../ReactBits/CodeSlots";
 import { EncryptedText } from "@/components/ui/encrypted-text";
 import RecentRoomsTable from "./RecentRoomsTable";
 
-export default function WorkspaceCards() {
+export default function WorkspaceCards({ searchQuery = "", onClearSearch }) {
   const navigate = useNavigate();
 
   // The link and the pin are two separate secrets now — the link alone no
@@ -375,7 +375,10 @@ export default function WorkspaceCards() {
         </div>
 
         {/* Recently Entered Rooms Table */}
-        <RecentRoomsTable />
+        <RecentRoomsTable
+          searchQuery={searchQuery}
+          onClearSearch={onClearSearch}
+        />
       </div>
 
       <CreateRoomModal

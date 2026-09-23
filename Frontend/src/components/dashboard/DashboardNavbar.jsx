@@ -1,19 +1,32 @@
 import { useState, useRef, useEffect } from "react";
-import { Search, Settings, LogOut } from "lucide-react";
+import { Search, Settings, LogOut, X } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import SettingsModal from "./SettingsModal";
 import BrandLogo from "../common/BrandLogo";
 
-export default function DashboardNavbar() {
+export default function DashboardNavbar({ searchQuery = "", onSearchChange }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const searchInputRef = useRef(null);
   const navigate = useNavigate();
 
   const userData = JSON.parse(localStorage.getItem("user") || "{}");
   const userInitial = userData.name
     ? userData.name.charAt(0).toUpperCase()
     : "U";
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // ⌘K or Ctrl+K shortcut to focus search
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -45,14 +58,29 @@ export default function DashboardNavbar() {
 
       {/* Central Command Search Bar */}
       <div className="hidden md:flex relative w-[380px] max-w-md">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
         <input
+          ref={searchInputRef}
           type="text"
-          placeholder="Search active rooms, templates..."
-          className="w-full bg-[#121214] border border-zinc-800/80 rounded-xl pl-10 pr-12 py-2 text-sm text-zinc-200 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all placeholder:text-zinc-600"
+          value={searchQuery}
+          onChange={(e) => onSearchChange?.(e.target.value)}
+          placeholder="Search active rooms, team names..."
+          className="w-full bg-[#121214] border border-zinc-800/80 rounded-xl pl-10 pr-16 py-2 text-sm text-zinc-200 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all placeholder:text-zinc-600"
         />
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-0.5 bg-zinc-900 border border-zinc-800 px-1.5 py-0.5 rounded text-[10px] font-mono text-zinc-400">
-          <span>⌘</span>K
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => onSearchChange?.("")}
+              className="text-zinc-500 hover:text-zinc-300 p-0.5 rounded cursor-pointer transition-colors"
+              title="Clear search"
+            >
+              <X size={14} />
+            </button>
+          )}
+          <div className="flex items-center gap-0.5 bg-zinc-900 border border-zinc-800 px-1.5 py-0.5 rounded text-[10px] font-mono text-zinc-400 select-none">
+            <span>⌘</span>K
+          </div>
         </div>
       </div>
 
