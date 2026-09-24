@@ -28,6 +28,12 @@ const userSchema = new mongoose.Schema(
       default: 100,
     },
 
+    role: {
+      type: String,
+      enum: ["user", "admin"],
+      default: "user",
+    },
+
     hostedRooms: [
       {
         type: mongoose.Schema.Types.ObjectId,
