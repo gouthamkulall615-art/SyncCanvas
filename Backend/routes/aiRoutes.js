@@ -16,13 +16,30 @@ const router = express.Router();
 // ---------------------------------------------------------------------------
 const CREDIT_COST = 10; // credits consumed per generation
 
-const aiLimiter = rateLimit({
+// Rate limiters — express-rate-limit defaults to keying by IP (req.ip).
+// Since protect runs first, we dispatch to a more generous limit for admins during testing.
+const userAiLimiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10 minutes
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many AI requests. Try again in a few minutes." },
 });
+
+const adminAiLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  max: 60, // generous limit for testing (60 req / 10 min)
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many AI requests. Try again in a few minutes." },
+});
+
+const aiLimiter = (req, res, next) => {
+  if (req.user?.role === "admin") {
+    return adminAiLimiter(req, res, next);
+  }
+  return userAiLimiter(req, res, next);
+};
 
 // ---------------------------------------------------------------------------
 // Shape types recognised by CanvasBoard
@@ -268,19 +285,23 @@ router.post("/generate", protect, aiLimiter, async (req, res) => {
         .json({ error: "Prompt must be under 2000 characters." });
     }
 
-    // 1. Spend credits BEFORE calling Gemini
+    // 1. Spend credits BEFORE calling Gemini (admins bypass credit deduction)
     const userId = req.user._id;
-    try {
-      await spendCredits(userId, CREDIT_COST);
-    } catch (err) {
-      if (err instanceof InsufficientCreditsError) {
-        return res.status(402).json({
-          error: "Insufficient credits.",
-          required: CREDIT_COST,
-          available: err.available,
-        });
+    const isAdmin = req.user?.role === "admin";
+
+    if (!isAdmin) {
+      try {
+        await spendCredits(userId, CREDIT_COST);
+      } catch (err) {
+        if (err instanceof InsufficientCreditsError) {
+          return res.status(402).json({
+            error: "Insufficient credits.",
+            required: CREDIT_COST,
+            available: err.available,
+          });
+        }
+        throw err;
       }
-      throw err;
     }
 
     // 2. Call Gemini with one retry on validation failure
@@ -296,8 +317,10 @@ router.post("/generate", protect, aiLimiter, async (req, res) => {
             validationError: firstError.validationError,
           });
         } catch (secondError) {
-          // Both attempts failed — refund credits
-          await refundCredits(userId, CREDIT_COST);
+          // Both attempts failed — refund credits if spent
+          if (!isAdmin) {
+            await refundCredits(userId, CREDIT_COST);
+          }
           console.error("AI generation failed after retry:", secondError);
           return res.status(500).json({
             error:
@@ -305,8 +328,10 @@ router.post("/generate", protect, aiLimiter, async (req, res) => {
           });
         }
       } else {
-        // Non-validation error (network, JSON parse, etc.) — refund
-        await refundCredits(userId, CREDIT_COST);
+        // Non-validation error (network, JSON parse, etc.) — refund if spent
+        if (!isAdmin) {
+          await refundCredits(userId, CREDIT_COST);
+        }
         console.error("AI generation failed:", firstError);
         return res.status(500).json({
           error:
