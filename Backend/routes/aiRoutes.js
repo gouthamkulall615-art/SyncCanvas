@@ -213,9 +213,9 @@ let model = null;
 function getModel() {
   if (!model) {
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
+    if (!apiKey || apiKey === "your-gemini-api-key-here") {
       throw new Error(
-        "GEMINI_API_KEY is not set in environment variables (.config.env)",
+        "GEMINI_API_KEY is not set or is still the placeholder in Backend/.config.env",
       );
     }
     genAI = new GoogleGenerativeAI(apiKey);
@@ -325,6 +325,7 @@ router.post("/generate", protect, aiLimiter, async (req, res) => {
           return res.status(500).json({
             error:
               "AI generation failed after retry. Your credits have been refunded.",
+            details: secondError?.message || String(secondError),
           });
         }
       } else {
@@ -336,6 +337,7 @@ router.post("/generate", protect, aiLimiter, async (req, res) => {
         return res.status(500).json({
           error:
             "AI generation failed. Your credits have been refunded.",
+          details: firstError?.message || String(firstError),
         });
       }
     }
