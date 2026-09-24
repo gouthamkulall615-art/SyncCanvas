@@ -4,6 +4,7 @@ import * as Y from "yjs";
 import { SocketIOProvider } from "y-socket.io";
 import { UserMinus, UserPlus, X } from "lucide-react";
 import CanvasBoard from "../components/canvas/CanvasBoard";
+import AIAssistant from "../components/ui/AIAssistant";
 import CodeSlots from "../components/ReactBits/CodeSlots";
 import api from "../api/axios";
 
@@ -532,6 +533,15 @@ export default function Workspace() {
           onLeave={handleConfirmLeave}
         />
       </section>
+
+      {/* Floating AI Assistant */}
+      <AIAssistant
+        onGenerate={async (prompt) => {
+          console.log("AI prompt from workspace:", prompt);
+          // TODO: Wire to Gemini API. For now this resolves immediately
+          // so the full open → type → submit → loading → close flow works.
+        }}
+      />
     </main>
   );
 }
