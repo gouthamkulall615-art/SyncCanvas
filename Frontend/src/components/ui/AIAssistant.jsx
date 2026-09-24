@@ -87,7 +87,7 @@ export default function AIAssistant({
             onChange={(e) => setPrompt(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={loading}
-            placeholder="Describe what to build — e.g. "a secure auth flow with JWT and refresh tokens""
+            placeholder={'Describe what to build \u2014 e.g. "a secure auth flow with JWT and refresh tokens"'}
             rows={3}
             className="w-full resize-none rounded-xl bg-[#06080c] border border-zinc-800 focus:border-purple-500/70 focus:ring-1 focus:ring-purple-500/40 text-sm text-white placeholder-zinc-600 px-3 py-2.5 outline-none transition-colors disabled:opacity-50"
           />

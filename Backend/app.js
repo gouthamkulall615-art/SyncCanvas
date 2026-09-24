@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import { YSocketIO } from "y-socket.io/dist/server";
 import { removeAwarenessStates } from "y-protocols/awareness";
 import authRoutes from "./routes/authRoutes.js";
 import roomRoutes from "./routes/roomRoutes.js";
