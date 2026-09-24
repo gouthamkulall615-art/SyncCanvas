@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon --env-file=.config.env server.js",
+    "dev": "nodemon --env-file=.config.env --watch . --watch .config.env server.js",
     "start": "node server.js"
   },
   "keywords": [],
