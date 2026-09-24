@@ -18,6 +18,8 @@ import { useNavigate } from "react-router-dom";
 import { ArchitectureNode } from "./ArchitectureNodes";
 import Toolbars from "./Toolbars";
 import PropertiesPanel from "./PropertiesPanel";
+import AIAssistant from "../ui/AIAssistant";
+import api from "../../api/axios";
 import "./CanvasBoard.css";
 
 let idCounter = 0;
@@ -622,6 +624,63 @@ export default function CanvasBoard({
     return { x: s.x + 36, y: s.y + 36 };
   };
 
+  // ----- AI-assisted shape generation -----
+  const handleAIGenerate = async (prompt) => {
+    let res;
+    try {
+      res = await api.post("/ai/generate", { prompt });
+    } catch (err) {
+      const status = err.response?.status;
+      const serverMsg = err.response?.data?.error;
+      if (status === 402) {
+        throw new Error(
+          serverMsg || "You don\u2019t have enough credits for this generation.",
+        );
+      }
+      if (status === 429) {
+        throw new Error(
+          serverMsg || "Too many requests \u2014 please wait a few minutes.",
+        );
+      }
+      throw new Error(
+        serverMsg || "AI generation failed. Please try again.",
+      );
+    }
+
+    const newShapes = res.data?.shapes;
+    if (!Array.isArray(newShapes) || newShapes.length === 0) {
+      throw new Error("AI returned no shapes. Try a different prompt.");
+    }
+
+    // Insert every shape into the Yjs map with a fresh id
+    for (const shape of newShapes) {
+      const { id: _discard, ...fields } = shape;
+      shapesMap.set(nextId(), fields);
+    }
+
+    // If the new shapes are outside the current viewport, pan to center on them
+    const xs = newShapes.map((s) => s.x ?? 0);
+    const ys = newShapes.map((s) => s.y ?? 0);
+    const centerX = (Math.min(...xs) + Math.max(...xs)) / 2;
+    const centerY = (Math.min(...ys) + Math.max(...ys)) / 2;
+
+    const vpCenter = getViewportCenter();
+    const vpHalfW = (size.width / stageScale) / 2;
+    const vpHalfH = (size.height / stageScale) / 2;
+    const isOutside =
+      centerX < vpCenter.x - vpHalfW ||
+      centerX > vpCenter.x + vpHalfW ||
+      centerY < vpCenter.y - vpHalfH ||
+      centerY > vpCenter.y + vpHalfH;
+
+    if (isOutside) {
+      setStageTransform(stageScale, {
+        x: -centerX * stageScale + size.width / 2,
+        y: -centerY * stageScale + size.height / 2,
+      });
+    }
+  };
+
   return (
     <div className="canvas-board relative w-full h-full overflow-hidden">
       {/* Leave Room Confirmation Modal */}
@@ -1021,6 +1080,9 @@ export default function CanvasBoard({
           </Stage>
         )}
       </div>
+
+      {/* Floating AI Assistant */}
+      <AIAssistant onGenerate={handleAIGenerate} />
     </div>
   );
 }
