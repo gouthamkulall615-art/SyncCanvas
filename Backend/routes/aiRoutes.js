@@ -215,7 +215,7 @@ function getModel() {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey || apiKey === "your-gemini-api-key-here") {
       throw new Error(
-        "GEMINI_API_KEY is not set or is still the placeholder in Backend/.config.env",
+        "GEMINI_API_KEY is not set or is still the placeholder (set GEMINI_API_KEY in Render dashboard under Environment Variables)",
       );
     }
     genAI = new GoogleGenerativeAI(apiKey);
