@@ -23,6 +23,11 @@ const userSchema = new mongoose.Schema(
       select: false,
     },
 
+    credits: {
+      type: Number,
+      default: 100,
+    },
+
     hostedRooms: [
       {
         type: mongoose.Schema.Types.ObjectId,
