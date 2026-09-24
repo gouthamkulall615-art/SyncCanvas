@@ -30,15 +30,46 @@ export class InsufficientCreditsError extends Error {
  * @throws {InsufficientCreditsError} If the user doesn't have enough credits.
  */
 export async function spendCredits(userId, amount) {
-  const updatedUser = await User.findOneAndUpdate(
-    { _id: userId, credits: { $gte: amount } },
-    { $inc: { credits: -amount } },
-    { new: true },
+  const filter = { _id: userId, credits: { $gte: amount } };
+  const update = { $inc: { credits: -amount } };
+  console.log("spendCredits filter:", JSON.stringify(filter), "update:", JSON.stringify(update));
+
+  let updatedUser = await User.findOneAndUpdate(
+    filter,
+    update,
+    { returnDocument: "after" },
   );
 
   if (!updatedUser) {
-    // Fetch current balance so the error message is actionable.
+    // Check whether user exists and what's in the document
     const user = await User.findById(userId).select("credits");
+    if (!user) {
+      throw new Error(`spendCredits failed: user ${userId} not found`);
+    }
+
+    // Legacy document check: if the document was created before `credits` was added
+    // to the schema, `credits` does not exist in MongoDB BSON (missing field).
+    // In MongoDB, { credits: { $gte: amount } } evaluates to false for missing fields,
+    // even though Mongoose hydrated user.credits with default 100.
+    const rawUser = await User.collection.findOne(
+      { _id: user._id },
+      { projection: { credits: 1 } },
+    );
+
+    if (rawUser && rawUser.credits === undefined) {
+      const defaultCredits = 100;
+      if (defaultCredits >= amount) {
+        updatedUser = await User.findOneAndUpdate(
+          { _id: userId, credits: { $exists: false } },
+          { $set: { credits: defaultCredits - amount } },
+          { returnDocument: "after" },
+        );
+        if (updatedUser) {
+          return updatedUser;
+        }
+      }
+    }
+
     throw new InsufficientCreditsError(
       userId,
       amount,
