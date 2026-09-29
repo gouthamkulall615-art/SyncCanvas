@@ -64,7 +64,7 @@ export default function AIAssistant({
               </div>
               <div>
                 <span className="text-sm font-bold text-white tracking-tight block">
-                  AI Assistant
+                  Syncy
                 </span>
                 <span className="inline-flex items-center gap-1.5 text-[10px] font-medium text-emerald-400">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -87,7 +87,7 @@ export default function AIAssistant({
             onChange={(e) => setPrompt(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={loading}
-            placeholder={'Describe what to build — e.g. "a microservices payment architecture"'}
+            placeholder={'Ask Syncy to build — e.g. "a microservices payment architecture"'}
             rows={3}
             className="w-full resize-none rounded-xl bg-[#0b0d13] border border-zinc-800/90 focus:border-purple-500/70 focus:ring-1 focus:ring-purple-500/40 text-xs sm:text-sm text-white placeholder-zinc-500 p-3 outline-none transition-colors disabled:opacity-50 select-text"
           />
@@ -120,7 +120,7 @@ export default function AIAssistant({
 
       <button
         onClick={() => setOpen((v) => !v)}
-        title="AI Assistant"
+        title="Syncy"
         className={`relative w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 shadow-2xl cursor-pointer ${
           open
             ? "bg-purple-600 text-white ring-4 ring-purple-500/20"
