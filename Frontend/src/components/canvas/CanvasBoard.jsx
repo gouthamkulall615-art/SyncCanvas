@@ -80,6 +80,8 @@ export default function CanvasBoard({
   const textareaRef = useRef(null);
   const stageTransformRef = useRef({ scale: 1, position: { x: 0, y: 0 } });
   const touchGestureRef = useRef(null);
+  const dragPositionsRef = useRef({});
+  const [, setDragTick] = useState(0);
 
   const [size, setSize] = useState({ width: 0, height: 0 });
 
@@ -693,22 +695,25 @@ export default function CanvasBoard({
 
   const getShapeCenter = (s) => {
     if (!s) return { x: 0, y: 0 };
+    const curPos = dragPositionsRef.current[s.id];
+    const posX = curPos ? curPos.x : s.x;
+    const posY = curPos ? curPos.y : s.y;
     const sx = s.scaleX || 1;
     const sy = s.scaleY || 1;
     if (s.type === "rect") {
       return {
-        x: s.x + ((s.width || 100) * sx) / 2,
-        y: s.y + ((s.height || 100) * sy) / 2,
+        x: posX + ((s.width || 100) * sx) / 2,
+        y: posY + ((s.height || 100) * sy) / 2,
       };
     }
     if (s.type === "circle" || s.type === "diamond") {
-      return { x: s.x, y: s.y };
+      return { x: posX, y: posY };
     }
     if (s.type === "text") {
-      return { x: s.x + 30, y: s.y + 15 };
+      return { x: posX + 30, y: posY + 15 };
     }
     // Architecture nodes (icon is 24x24 scaled by 3 = 72x72)
-    return { x: s.x + 36 * (sx / 3), y: s.y + 36 * (sy / 3) };
+    return { x: posX + 36 * (sx / 3), y: posY + 36 * (sy / 3) };
   };
 
   const getDockingPoint = (sourceShape, targetPos) => {
@@ -819,7 +824,49 @@ export default function CanvasBoard({
     const preparedShapes = [];
     const connectableNodes = [];
 
+    // Separate text shapes that act as labels for architecture nodes
+    const textLabels = [];
+    const rawNodes = [];
+
     for (const shape of newShapes) {
+      if (shape.type === "text") {
+        textLabels.push(shape);
+      } else {
+        rawNodes.push(shape);
+      }
+    }
+
+    // Attach labels to architecture nodes if located directly under them
+    for (const node of rawNodes) {
+      if (
+        node.type === "server" ||
+        node.type === "database" ||
+        node.type === "client" ||
+        node.type === "cloud" ||
+        node.type === "queue" ||
+        node.type === "worker" ||
+        node.type === "internet" ||
+        node.type === "mobile" ||
+        node.type === "auth"
+      ) {
+        if (!node.label) {
+          const matchIdx = textLabels.findIndex(
+            (t) =>
+              Math.abs((t.x || 0) - (node.x || 0)) < 80 &&
+              (t.y || 0) >= (node.y || 0) &&
+              (t.y || 0) - (node.y || 0) < 120,
+          );
+          if (matchIdx !== -1) {
+            node.label = textLabels[matchIdx].text;
+            textLabels.splice(matchIdx, 1);
+          }
+        }
+      }
+    }
+
+    const finalShapesToInsert = [...rawNodes, ...textLabels];
+
+    for (const shape of finalShapesToInsert) {
       const generatedId = nextId();
       if (shape.id) {
         idMap.set(String(shape.id), generatedId);
@@ -834,11 +881,11 @@ export default function CanvasBoard({
       }
     }
 
-    let arrowCount = 0;
+    const existingArrows = [];
+
     for (const { shape, yjsId } of preparedShapes) {
       const { id: rawId, ...fields } = shape;
       if (fields.type === "arrow") {
-        arrowCount++;
         if (fields.startId && idMap.has(String(fields.startId))) {
           fields.startId = idMap.get(String(fields.startId));
         }
@@ -860,28 +907,39 @@ export default function CanvasBoard({
             fields.endId = eNode.yjsId;
           }
         }
+        existingArrows.push(fields);
       }
       shapesMap.set(yjsId, fields);
     }
 
-    // Auto-connect if no arrows were returned but we have 2+ connectable nodes
-    if (arrowCount === 0 && connectableNodes.length >= 2) {
+    // Auto-connect ALL sequential architecture nodes so every node is stably linked
+    if (connectableNodes.length >= 2) {
       const sorted = [...connectableNodes].sort(
-        (a, b) => (a.x || 0) - (b.x || 0),
+        (a, b) =>
+          (a.x || 0) + (a.y || 0) * 0.2 - ((b.x || 0) + (b.y || 0) * 0.2),
       );
       for (let i = 0; i < sorted.length - 1; i++) {
         const fromNode = sorted[i];
         const toNode = sorted[i + 1];
-        shapesMap.set(nextId(), {
-          type: "arrow",
-          startId: fromNode.yjsId,
-          endId: toNode.yjsId,
-          stroke: fromNode.stroke || "#5ca4f8",
-          strokeWidth: 2,
-          dash: [],
-          x: 0,
-          y: 0,
-        });
+
+        const alreadyConnected = existingArrows.some(
+          (arr) =>
+            (arr.startId === fromNode.yjsId && arr.endId === toNode.yjsId) ||
+            (arr.startId === toNode.yjsId && arr.endId === fromNode.yjsId),
+        );
+
+        if (!alreadyConnected) {
+          shapesMap.set(nextId(), {
+            type: "arrow",
+            startId: fromNode.yjsId,
+            endId: toNode.yjsId,
+            stroke: fromNode.stroke || "#5ca4f8",
+            strokeWidth: 2,
+            dash: [],
+            x: 0,
+            y: 0,
+          });
+        }
       }
     }
 
@@ -1147,10 +1205,24 @@ export default function CanvasBoard({
                   onTap: () => {
                     if (activeTool === "select") setSelectedId(shape.id);
                   },
-                  onDragMove: (e) =>
-                    updateShapePosition(shape.id, e.target.x(), e.target.y()),
-                  onDragEnd: (e) =>
-                    updateShapePosition(shape.id, e.target.x(), e.target.y()),
+                  onDragStart: (e) => {
+                    dragPositionsRef.current[shape.id] = {
+                      x: e.target.x(),
+                      y: e.target.y(),
+                    };
+                  },
+                  onDragMove: (e) => {
+                    dragPositionsRef.current[shape.id] = {
+                      x: e.target.x(),
+                      y: e.target.y(),
+                    };
+                    setDragTick((t) => t + 1);
+                  },
+                  onDragEnd: (e) => {
+                    delete dragPositionsRef.current[shape.id];
+                    updateShapePosition(shape.id, e.target.x(), e.target.y());
+                    setDragTick((t) => t + 1);
+                  },
                   onTransformEnd: (e) =>
                     updateShapeTransform(shape.id, e.target),
                 };
@@ -1253,6 +1325,7 @@ export default function CanvasBoard({
                         key={shape.id}
                         shape={shape}
                         commonProps={commonProps}
+                        theme={theme}
                       />
                     );
                   case "arrow": {

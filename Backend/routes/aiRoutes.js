@@ -78,6 +78,7 @@ const shapeSchema = z
     scaleY: z.number().optional(),
     opacity: z.number().optional(),
     // text-specific
+    label: z.string().optional(),
     text: z.string().optional(),
     fontSize: z.number().optional(),
     // line-specific
@@ -125,6 +126,7 @@ const geminiResponseSchema = {
       scaleY: { type: SchemaType.NUMBER, description: "Y scale factor" },
       opacity: { type: SchemaType.NUMBER, description: "Opacity 0-1" },
       text: { type: SchemaType.STRING, description: "Text content" },
+      label: { type: SchemaType.STRING, description: "Label for architecture node" },
       fontSize: { type: SchemaType.NUMBER, description: "Font size" },
       points: {
         type: SchemaType.ARRAY,
@@ -160,13 +162,13 @@ RULES:
 - Every object MUST have a "type" field. Valid types:
   Primitives: rect, circle, diamond, text, line, arrow
   Architecture nodes: server, database, client, cloud, queue, worker, internet, mobile, auth
-- Layout: Start near x:100, y:100. Space elements ~160px apart to prevent overlap.
+- Layout: Start near x:100, y:100. Space elements ~180px apart to prevent overlap.
 - Theme: Dark fills with bright, contrasting strokes (e.g., #5ca4f8, #10b981, #f59e0b).
 - Shapes must include appropriate fields:
   * rect: type, x, y, width, height, fill, stroke, strokeWidth, dash
   * circle/diamond: type, x, y, radius, fill, stroke, strokeWidth, dash
   * text: type, x, y, text, fill, fontSize
-  * architecture nodes: id, type, x, y, fill, stroke, strokeWidth, dash, scaleX:3, scaleY:3
+  * architecture nodes: id, type, x, y, label, fill, stroke, strokeWidth, dash, scaleX:3, scaleY:3
   * arrow: type, startId, endId, stroke, strokeWidth
 - Connections: Give every connected node an "id" (e.g. "client", "auth", "db"). Always connect related nodes logically using arrows with "startId" and "endId".
 
@@ -174,12 +176,9 @@ EXAMPLE:
 Prompt: "Client sending requests to auth service and database"
 Response:
 [
-  {"id":"client","type":"client","x":120,"y":200,"fill":"#262627","stroke":"#5ca4f8","strokeWidth":2,"dash":[],"scaleX":3,"scaleY":3},
-  {"type":"text","x":100,"y":270,"text":"Client / User","fill":"#ffffff","fontSize":14},
-  {"id":"auth","type":"auth","x":320,"y":200,"fill":"#262627","stroke":"#f59e0b","strokeWidth":2,"dash":[],"scaleX":3,"scaleY":3},
-  {"type":"text","x":300,"y":270,"text":"Auth Service","fill":"#ffffff","fontSize":14},
-  {"id":"db","type":"database","x":520,"y":200,"fill":"#262627","stroke":"#10b981","strokeWidth":2,"dash":[],"scaleX":3,"scaleY":3},
-  {"type":"text","x":500,"y":270,"text":"User Database","fill":"#ffffff","fontSize":14},
+  {"id":"client","type":"client","x":120,"y":200,"label":"Client / User","fill":"#262627","stroke":"#5ca4f8","strokeWidth":2,"dash":[],"scaleX":3,"scaleY":3},
+  {"id":"auth","type":"auth","x":340,"y":200,"label":"Auth Service","fill":"#262627","stroke":"#f59e0b","strokeWidth":2,"dash":[],"scaleX":3,"scaleY":3},
+  {"id":"db","type":"database","x":560,"y":200,"label":"User Database","fill":"#262627","stroke":"#10b981","strokeWidth":2,"dash":[],"scaleX":3,"scaleY":3},
   {"type":"arrow","startId":"client","endId":"auth","stroke":"#5ca4f8","strokeWidth":2},
   {"type":"arrow","startId":"auth","endId":"db","stroke":"#f59e0b","strokeWidth":2}
 ]`;

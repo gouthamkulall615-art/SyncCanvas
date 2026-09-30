@@ -1,4 +1,4 @@
-import { Path, Group, Rect } from "react-konva";
+import { Path, Group, Rect, Text } from "react-konva";
 
 // 1. Removed the 'export' keyword from this constant
 const ARCHITECTURE_PATHS = {
@@ -22,15 +22,21 @@ const ARCHITECTURE_PATHS = {
 };
 
 // 2. Kept the export on the React component
-export function ArchitectureNode({ shape, commonProps }) {
+export function ArchitectureNode({ shape, commonProps, theme = "dark" }) {
   const { fill, stroke, strokeWidth, dash, ...groupProps } = commonProps;
+  const label = shape.label;
+  const isLight = theme === "light";
+  const labelColor = isLight ? "#111827" : "#ffffff";
+
   return (
     <Group {...groupProps}>
       {/* Invisible bounding hitbox for easy clicking, dragging, and magnetic snapping */}
       <Rect
         id={commonProps.id}
-        width={24}
-        height={24}
+        x={-6}
+        y={-6}
+        width={36}
+        height={label ? 46 : 36}
         fill="transparent"
         listening={true}
       />
@@ -42,6 +48,21 @@ export function ArchitectureNode({ shape, commonProps }) {
         strokeWidth={shape.strokeWidth}
         strokeScaleEnabled={false}
       />
+      {label && (
+        <Text
+          id={commonProps.id}
+          text={label}
+          x={-20}
+          y={26}
+          width={64}
+          align="center"
+          fontSize={4.8}
+          fill={labelColor}
+          fontFamily="sans-serif"
+          fontStyle="bold"
+          listening={true}
+        />
+      )}
     </Group>
   );
 }
