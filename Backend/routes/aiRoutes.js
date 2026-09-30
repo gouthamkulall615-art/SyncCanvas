@@ -63,6 +63,7 @@ const ALL_SHAPE_TYPES = [...PRIMITIVE_TYPES, ...ARCHITECTURE_TYPES];
 // ---------------------------------------------------------------------------
 const shapeSchema = z
   .object({
+    id: z.string().optional(),
     type: z.enum(ALL_SHAPE_TYPES),
     x: z.number().optional(),
     y: z.number().optional(),
@@ -130,6 +131,18 @@ const geminiResponseSchema = {
         items: { type: SchemaType.NUMBER },
         description: "Line points [x1,y1,x2,y2,...]",
       },
+      id: {
+        type: SchemaType.STRING,
+        description: "Identifier for shape referencing in connections",
+      },
+      startId: {
+        type: SchemaType.STRING,
+        description: "ID of source node for arrow connection",
+      },
+      endId: {
+        type: SchemaType.STRING,
+        description: "ID of target node for arrow connection",
+      },
     },
     required: ["type"],
   },
@@ -153,18 +166,22 @@ RULES:
   * rect: type, x, y, width, height, fill, stroke, strokeWidth, dash
   * circle/diamond: type, x, y, radius, fill, stroke, strokeWidth, dash
   * text: type, x, y, text, fill, fontSize
-  * architecture nodes: type, x, y, fill, stroke, strokeWidth, dash, scaleX:3, scaleY:3
-  * arrow/line: type, points [x1, y1, x2, y2], stroke, strokeWidth
-- Connections: Connect related nodes logically using arrows between node centers or edges.
+  * architecture nodes: id, type, x, y, fill, stroke, strokeWidth, dash, scaleX:3, scaleY:3
+  * arrow: type, startId, endId, stroke, strokeWidth
+- Connections: Give every connected node an "id" (e.g. "client", "auth", "db"). Always connect related nodes logically using arrows with "startId" and "endId".
 
 EXAMPLE:
-Prompt: "Client sending requests to API server"
+Prompt: "Client sending requests to auth service and database"
 Response:
 [
-  {"type":"client","x":120,"y":180,"fill":"#262627","stroke":"#5ca4f8","strokeWidth":2,"dash":[],"scaleX":3,"scaleY":3},
-  {"type":"arrow","points":[170,180,310,180],"stroke":"#5ca4f8","strokeWidth":2},
-  {"type":"server","x":340,"y":180,"fill":"#262627","stroke":"#10b981","strokeWidth":2,"dash":[],"scaleX":3,"scaleY":3},
-  {"type":"text","x":320,"y":250,"text":"API Server","fill":"#ffffff","fontSize":14}
+  {"id":"client","type":"client","x":120,"y":200,"fill":"#262627","stroke":"#5ca4f8","strokeWidth":2,"dash":[],"scaleX":3,"scaleY":3},
+  {"type":"text","x":100,"y":270,"text":"Client / User","fill":"#ffffff","fontSize":14},
+  {"id":"auth","type":"auth","x":320,"y":200,"fill":"#262627","stroke":"#f59e0b","strokeWidth":2,"dash":[],"scaleX":3,"scaleY":3},
+  {"type":"text","x":300,"y":270,"text":"Auth Service","fill":"#ffffff","fontSize":14},
+  {"id":"db","type":"database","x":520,"y":200,"fill":"#262627","stroke":"#10b981","strokeWidth":2,"dash":[],"scaleX":3,"scaleY":3},
+  {"type":"text","x":500,"y":270,"text":"User Database","fill":"#ffffff","fontSize":14},
+  {"type":"arrow","startId":"client","endId":"auth","stroke":"#5ca4f8","strokeWidth":2},
+  {"type":"arrow","startId":"auth","endId":"db","stroke":"#f59e0b","strokeWidth":2}
 ]`;
 
 // ---------------------------------------------------------------------------

@@ -328,13 +328,24 @@ export default function CanvasBoard({
     }
 
     if (activeTool === "arrow") {
+      let startNode = null;
       if (clickedId && shapesMap.has(clickedId)) {
+        const s = shapesMap.get(clickedId);
+        if (s && s.type !== "arrow" && s.type !== "line") {
+          startNode = { id: clickedId, ...s };
+        }
+      }
+      if (!startNode) {
+        startNode = findNodeNear(pos, shapes, 60);
+      }
+
+      if (startNode) {
         setIsDrawing(true);
         setSelectedId(null);
         const id = nextId();
         shapesMap.set(id, {
           type: "arrow",
-          startId: clickedId,
+          startId: startNode.id,
           endId: null,
           endX: pos.x,
           endY: pos.y,
@@ -401,10 +412,15 @@ export default function CanvasBoard({
     const existing = shapesMap.get(drawingShapeId);
 
     if (activeTool === "arrow" && existing) {
+      const snapNode = findNodeNear(relativePoint, shapes, 50);
+      const targetPos =
+        snapNode && snapNode.id !== existing.startId
+          ? getShapeCenter(snapNode)
+          : relativePoint;
       shapesMap.set(drawingShapeId, {
         ...existing,
-        endX: relativePoint.x,
-        endY: relativePoint.y,
+        endX: targetPos.x,
+        endY: targetPos.y,
       });
       return;
     }
@@ -424,18 +440,43 @@ export default function CanvasBoard({
   const handleStageMouseUp = (e) => {
     if (isDrawing) {
       if (activeTool === "arrow" && drawingShapeId) {
+        const stage = e.target.getStage();
+        const pos = getRelativePointerPosition(stage);
         const dropTargetId = e.target.id();
         const existing = shapesMap.get(drawingShapeId);
         if (existing) {
-          if (
-            dropTargetId &&
-            dropTargetId !== existing.startId &&
-            shapesMap.has(dropTargetId)
-          ) {
-            shapesMap.set(drawingShapeId, { ...existing, endId: dropTargetId });
+          const dropTarget =
+            (dropTargetId &&
+              dropTargetId !== existing.startId &&
+              shapesMap.has(dropTargetId) &&
+              shapesMap.get(dropTargetId).type !== "arrow" && {
+                id: dropTargetId,
+                ...shapesMap.get(dropTargetId),
+              }) ||
+            findNodeNear(pos, shapes, 60);
+
+          if (dropTarget && dropTarget.id !== existing.startId) {
+            shapesMap.set(drawingShapeId, {
+              ...existing,
+              endId: dropTarget.id,
+            });
+          } else {
+            const startShape = shapes.find((s) => s.id === existing.startId);
+            const startCenter = getShapeCenter(startShape);
+            if (
+              Math.hypot(
+                (existing.endX || pos.x) - startCenter.x,
+                (existing.endY || pos.y) - startCenter.y,
+              ) < 25
+            ) {
+              shapesMap.delete(drawingShapeId);
+            }
           }
         }
         setActiveTool("select");
+        setIsDrawing(false);
+        setDrawingShapeId(null);
+        return;
       }
       setIsDrawing(false);
       setDrawingShapeId(null);
@@ -523,6 +564,15 @@ export default function CanvasBoard({
   const deleteSelected = () => {
     if (!selectedId) return;
     shapesMap.delete(selectedId);
+    // Also remove any arrows that were connected to this node
+    shapesMap.forEach((val, key) => {
+      if (
+        val.type === "arrow" &&
+        (val.startId === selectedId || val.endId === selectedId)
+      ) {
+        shapesMap.delete(key);
+      }
+    });
     setSelectedId(null);
   };
 
@@ -614,14 +664,71 @@ export default function CanvasBoard({
 
   const getShapeCenter = (s) => {
     if (!s) return { x: 0, y: 0 };
-    if (s.type === "rect")
+    const sx = s.scaleX || 1;
+    const sy = s.scaleY || 1;
+    if (s.type === "rect") {
       return {
-        x: s.x + (s.width * (s.scaleX || 1)) / 2,
-        y: s.y + (s.height * (s.scaleY || 1)) / 2,
+        x: s.x + ((s.width || 100) * sx) / 2,
+        y: s.y + ((s.height || 100) * sy) / 2,
       };
-    if (s.type === "circle" || s.type === "diamond") return { x: s.x, y: s.y };
-    if (s.type === "text") return { x: s.x + 20, y: s.y + 15 };
-    return { x: s.x + 36, y: s.y + 36 };
+    }
+    if (s.type === "circle" || s.type === "diamond") {
+      return { x: s.x, y: s.y };
+    }
+    if (s.type === "text") {
+      return { x: s.x + 30, y: s.y + 15 };
+    }
+    // Architecture nodes (icon is 24x24 scaled by 3 = 72x72)
+    return { x: s.x + 36 * (sx / 3), y: s.y + 36 * (sy / 3) };
+  };
+
+  const getDockingPoint = (sourceShape, targetPos) => {
+    if (!sourceShape) return { x: 0, y: 0 };
+    const center = getShapeCenter(sourceShape);
+    if (!targetPos) return center;
+
+    const dx = targetPos.x - center.x;
+    const dy = targetPos.y - center.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 1) return center;
+
+    const sx = sourceShape.scaleX || 1;
+    const sy = sourceShape.scaleY || 1;
+
+    if (sourceShape.type === "rect") {
+      const hw = ((sourceShape.width || 100) * sx) / 2 + 2;
+      const hh = ((sourceShape.height || 100) * sy) / 2 + 2;
+      const scale = Math.min(
+        Math.abs(hw / (dx || 0.0001)),
+        Math.abs(hh / (dy || 0.0001)),
+      );
+      return { x: center.x + dx * scale, y: center.y + dy * scale };
+    }
+
+    if (sourceShape.type === "circle" || sourceShape.type === "diamond") {
+      const r = ((sourceShape.radius || 40) * sx) + 2;
+      return { x: center.x + (dx / dist) * r, y: center.y + (dy / dist) * r };
+    }
+
+    // Architecture nodes (database, client, server, auth, etc.)
+    const r = 38 * (sx / 3);
+    return { x: center.x + (dx / dist) * r, y: center.y + (dy / dist) * r };
+  };
+
+  const findNodeNear = (pos, shapeList, threshold = 60) => {
+    if (!pos || !shapeList) return null;
+    let closest = null;
+    let minDist = threshold;
+    for (const s of shapeList) {
+      if (s.type === "arrow" || s.type === "line" || s.type === "text") continue;
+      const center = getShapeCenter(s);
+      const dist = Math.hypot(center.x - pos.x, center.y - pos.y);
+      if (dist < minDist) {
+        minDist = dist;
+        closest = s;
+      }
+    }
+    return closest;
   };
 
   // ----- AI-assisted shape generation -----
@@ -663,10 +770,75 @@ export default function CanvasBoard({
       throw new Error("AI returned no shapes. Try a different prompt.");
     }
 
-    // Insert every shape into the Yjs map with a fresh id
+    // Map AI IDs to unique Yjs IDs
+    const idMap = new Map();
+    const preparedShapes = [];
+    const connectableNodes = [];
+
     for (const shape of newShapes) {
-      const { id: _discard, ...fields } = shape;
-      shapesMap.set(nextId(), fields);
+      const generatedId = nextId();
+      if (shape.id) {
+        idMap.set(String(shape.id), generatedId);
+      }
+      preparedShapes.push({ shape, yjsId: generatedId });
+      if (
+        shape.type !== "arrow" &&
+        shape.type !== "line" &&
+        shape.type !== "text"
+      ) {
+        connectableNodes.push({ ...shape, yjsId: generatedId });
+      }
+    }
+
+    let arrowCount = 0;
+    for (const { shape, yjsId } of preparedShapes) {
+      const { id: rawId, ...fields } = shape;
+      if (fields.type === "arrow") {
+        arrowCount++;
+        if (fields.startId && idMap.has(String(fields.startId))) {
+          fields.startId = idMap.get(String(fields.startId));
+        }
+        if (fields.endId && idMap.has(String(fields.endId))) {
+          fields.endId = idMap.get(String(fields.endId));
+        }
+        // If arrow has points but no startId/endId, snap to closest connectable nodes
+        if (
+          (!fields.startId || !fields.endId) &&
+          Array.isArray(fields.points) &&
+          fields.points.length >= 4
+        ) {
+          const pStart = { x: fields.points[0], y: fields.points[1] };
+          const pEnd = { x: fields.points[2], y: fields.points[3] };
+          const sNode = findNodeNear(pStart, connectableNodes, 120);
+          const eNode = findNodeNear(pEnd, connectableNodes, 120);
+          if (sNode) fields.startId = sNode.yjsId;
+          if (eNode && (!sNode || eNode.yjsId !== sNode.yjsId)) {
+            fields.endId = eNode.yjsId;
+          }
+        }
+      }
+      shapesMap.set(yjsId, fields);
+    }
+
+    // Auto-connect if no arrows were returned but we have 2+ connectable nodes
+    if (arrowCount === 0 && connectableNodes.length >= 2) {
+      const sorted = [...connectableNodes].sort(
+        (a, b) => (a.x || 0) - (b.x || 0),
+      );
+      for (let i = 0; i < sorted.length - 1; i++) {
+        const fromNode = sorted[i];
+        const toNode = sorted[i + 1];
+        shapesMap.set(nextId(), {
+          type: "arrow",
+          startId: fromNode.yjsId,
+          endId: toNode.yjsId,
+          stroke: fromNode.stroke || "#5ca4f8",
+          strokeWidth: 2,
+          dash: [],
+          x: 0,
+          y: 0,
+        });
+      }
     }
 
     // If the new shapes are outside the current viewport, pan to center on them
@@ -926,6 +1098,8 @@ export default function CanvasBoard({
                   onTap: () => {
                     if (activeTool === "select") setSelectedId(shape.id);
                   },
+                  onDragMove: (e) =>
+                    updateShapePosition(shape.id, e.target.x(), e.target.y()),
                   onDragEnd: (e) =>
                     updateShapePosition(shape.id, e.target.x(), e.target.y()),
                   onTransformEnd: (e) =>
@@ -1013,21 +1187,50 @@ export default function CanvasBoard({
                     const endShape = shape.endId
                       ? shapes.find((s) => s.id === shape.endId)
                       : null;
-                    if (!startShape) return null;
 
-                    const startP = getShapeCenter(startShape);
-                    const endP = endShape
+                    if (!startShape) {
+                      if (
+                        Array.isArray(shape.points) &&
+                        shape.points.length >= 4
+                      ) {
+                        return (
+                          <Arrow
+                            key={shape.id}
+                            {...commonProps}
+                            points={shape.points}
+                            fill={shape.stroke || "#5ca4f8"}
+                            stroke={shape.stroke || "#5ca4f8"}
+                            pointerLength={10}
+                            pointerWidth={10}
+                            listening={drawingShapeId !== shape.id}
+                          />
+                        );
+                      }
+                      return null;
+                    }
+
+                    const rawEndP = endShape
                       ? getShapeCenter(endShape)
-                      : { x: shape.endX, y: shape.endY };
+                      : {
+                          x: shape.endX ?? startShape.x,
+                          y: shape.endY ?? startShape.y,
+                        };
+
+                    const startP = getDockingPoint(startShape, rawEndP);
+                    const endP = endShape
+                      ? getDockingPoint(endShape, startP)
+                      : rawEndP;
 
                     return (
                       <Arrow
                         key={shape.id}
                         {...commonProps}
                         points={[startP.x, startP.y, endP.x, endP.y]}
-                        fill={shape.stroke}
-                        pointerLength={12}
-                        pointerWidth={12}
+                        fill={shape.stroke || "#5ca4f8"}
+                        stroke={shape.stroke || "#5ca4f8"}
+                        pointerLength={10}
+                        pointerWidth={10}
+                        tension={0}
                         listening={drawingShapeId !== shape.id}
                       />
                     );
