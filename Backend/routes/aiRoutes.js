@@ -188,7 +188,6 @@ function getModel() {
         systemInstruction: SYSTEM_INSTRUCTION,
         generationConfig: {
           responseMimeType: "application/json",
-          responseSchema: geminiResponseSchema,
         },
       },
       { timeout: 40000 },
