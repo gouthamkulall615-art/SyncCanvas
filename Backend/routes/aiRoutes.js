@@ -138,70 +138,33 @@ const geminiResponseSchema = {
 // ---------------------------------------------------------------------------
 // System instruction with few-shot examples
 // ---------------------------------------------------------------------------
-const SYSTEM_INSTRUCTION = `You are SyncCanvas AI — a design assistant that turns natural-language
-descriptions into arrays of canvas shape objects. The frontend renders
-these shapes with Konva (react-konva).
+// System instruction with one concise few-shot example
+// ---------------------------------------------------------------------------
+const SYSTEM_INSTRUCTION = `You are SyncCanvas AI — a design assistant that converts natural-language descriptions into arrays of Konva canvas shape objects.
 
 RULES:
 - Return ONLY a JSON array of shape objects. No markdown, no commentary.
 - Every object MUST have a "type" field. Valid types:
   Primitives: rect, circle, diamond, text, line, arrow
   Architecture nodes: server, database, client, cloud, queue, worker, internet, mobile, auth
-- Use sensible x/y positions to lay shapes out so they don't overlap.
-  Start near x:100, y:100 and space elements ~160px apart.
-- Use dark-theme-friendly colours (dark fills, bright strokes).
-- For "text" shapes always include: type, x, y, text, fill, fontSize.
-- For "rect" shapes always include: type, x, y, width, height, fill, stroke, strokeWidth, dash.
-- For "circle" shapes always include: type, x, y, radius, fill, stroke, strokeWidth, dash.
-- For "diamond" shapes always include: type, x, y, radius, fill, stroke, strokeWidth, dash.
-- For architecture nodes (server, database, client, cloud, queue, worker, internet, mobile, auth)
-  always include: type, x, y, fill, stroke, strokeWidth, dash, scaleX, scaleY.
-  Recommended scaleX/scaleY: 3.
+- Layout: Start near x:100, y:100. Space elements ~160px apart to prevent overlap.
+- Theme: Dark fills with bright, contrasting strokes (e.g., #5ca4f8, #10b981, #f59e0b).
+- Shapes must include appropriate fields:
+  * rect: type, x, y, width, height, fill, stroke, strokeWidth, dash
+  * circle/diamond: type, x, y, radius, fill, stroke, strokeWidth, dash
+  * text: type, x, y, text, fill, fontSize
+  * architecture nodes: type, x, y, fill, stroke, strokeWidth, dash, scaleX:3, scaleY:3
+  * arrow/line: type, points [x1, y1, x2, y2], stroke, strokeWidth
+- Connections: Connect related nodes logically using arrows between node centers or edges.
 
-FEW-SHOT EXAMPLES:
-
-Prompt: "A login form with a submit button"
+EXAMPLE:
+Prompt: "Client sending requests to API server"
 Response:
 [
-  {"type":"text","x":200,"y":80,"text":"Login Form","fill":"#ffffff","fontSize":28},
-  {"type":"rect","x":150,"y":130,"width":200,"height":40,"fill":"#1a2332","stroke":"#5ca4f8","strokeWidth":2,"dash":[]},
-  {"type":"text","x":160,"y":140,"text":"Username","fill":"#8899aa","fontSize":14},
-  {"type":"rect","x":150,"y":190,"width":200,"height":40,"fill":"#1a2332","stroke":"#5ca4f8","strokeWidth":2,"dash":[]},
-  {"type":"text","x":160,"y":200,"text":"Password","fill":"#8899aa","fontSize":14},
-  {"type":"rect","x":150,"y":260,"width":200,"height":44,"fill":"#7c3aed","stroke":"#a78bfa","strokeWidth":2,"dash":[]},
-  {"type":"text","x":215,"y":272,"text":"Submit","fill":"#ffffff","fontSize":16}
-]
-
-Prompt: "A microservices architecture with a client, API server, database, and auth service"
-Response:
-[
-  {"type":"client","x":100,"y":200,"fill":"#262627","stroke":"#5ca4f8","strokeWidth":2,"dash":[],"scaleX":3,"scaleY":3},
-  {"type":"text","x":80,"y":300,"text":"Client App","fill":"#ffffff","fontSize":16},
-  {"type":"server","x":350,"y":200,"fill":"#262627","stroke":"#5ca4f8","strokeWidth":2,"dash":[],"scaleX":3,"scaleY":3},
-  {"type":"text","x":330,"y":300,"text":"API Server","fill":"#ffffff","fontSize":16},
-  {"type":"database","x":600,"y":200,"fill":"#262627","stroke":"#10b981","strokeWidth":2,"dash":[],"scaleX":3,"scaleY":3},
-  {"type":"text","x":585,"y":300,"text":"Database","fill":"#ffffff","fontSize":16},
-  {"type":"auth","x":350,"y":400,"fill":"#262627","stroke":"#f59e0b","strokeWidth":2,"dash":[],"scaleX":3,"scaleY":3},
-  {"type":"text","x":330,"y":500,"text":"Auth Service","fill":"#ffffff","fontSize":16}
-]
-
-Prompt: "Three colored circles in a row"
-Response:
-[
-  {"type":"circle","x":150,"y":200,"radius":50,"fill":"#3b1d6e","stroke":"#8b5cf6","strokeWidth":2,"dash":[]},
-  {"type":"circle","x":310,"y":200,"radius":50,"fill":"#1e3a2f","stroke":"#10b981","strokeWidth":2,"dash":[]},
-  {"type":"circle","x":470,"y":200,"radius":50,"fill":"#3b1520","stroke":"#ef4444","strokeWidth":2,"dash":[]}
-]
-
-Prompt: "A simple flowchart with start, process, and end"
-Response:
-[
-  {"type":"circle","x":250,"y":100,"radius":40,"fill":"#1e3a2f","stroke":"#10b981","strokeWidth":2,"dash":[]},
-  {"type":"text","x":228,"y":92,"text":"Start","fill":"#ffffff","fontSize":16},
-  {"type":"rect","x":190,"y":200,"width":120,"height":60,"fill":"#20456b","stroke":"#5ca4f8","strokeWidth":2,"dash":[]},
-  {"type":"text","x":215,"y":220,"text":"Process","fill":"#ffffff","fontSize":16},
-  {"type":"circle","x":250,"y":360,"radius":40,"fill":"#3b1520","stroke":"#ef4444","strokeWidth":2,"dash":[]},
-  {"type":"text","x":235,"y":352,"text":"End","fill":"#ffffff","fontSize":16}
+  {"type":"client","x":120,"y":180,"fill":"#262627","stroke":"#5ca4f8","strokeWidth":2,"dash":[],"scaleX":3,"scaleY":3},
+  {"type":"arrow","points":[170,180,310,180],"stroke":"#5ca4f8","strokeWidth":2},
+  {"type":"server","x":340,"y":180,"fill":"#262627","stroke":"#10b981","strokeWidth":2,"dash":[],"scaleX":3,"scaleY":3},
+  {"type":"text","x":320,"y":250,"text":"API Server","fill":"#ffffff","fontSize":14}
 ]`;
 
 // ---------------------------------------------------------------------------
@@ -219,14 +182,17 @@ function getModel() {
       );
     }
     genAI = new GoogleGenerativeAI(apiKey);
-    model = genAI.getGenerativeModel({
-      model: "gemini-3.6-flash",
-      systemInstruction: SYSTEM_INSTRUCTION,
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: geminiResponseSchema,
+    model = genAI.getGenerativeModel(
+      {
+        model: "gemini-3.5-flash-lite",
+        systemInstruction: SYSTEM_INSTRUCTION,
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: geminiResponseSchema,
+        },
       },
-    });
+      { timeout: 40000 },
+    );
   }
   return model;
 }
@@ -241,7 +207,10 @@ async function callGeminiAndValidate(prompt, retryContext = null) {
     ? `The previous response had validation errors. Here is the broken output:\n\n${retryContext.brokenOutput}\n\nValidation error:\n${retryContext.validationError}\n\nPlease fix ONLY the validation issues and return a corrected JSON array of shapes for this original prompt: "${prompt}"`
     : prompt;
 
+  console.log("[AI] Calling Gemini model: gemini-3.5-flash-lite");
+  const startTime = Date.now();
   const result = await geminiModel.generateContent(userMessage);
+  console.log(`[AI] Gemini responded in ${Date.now() - startTime}ms`);
   const responseText = result.response.text();
 
   // Parse the JSON
@@ -272,6 +241,7 @@ async function callGeminiAndValidate(prompt, retryContext = null) {
 // POST /api/ai/generate
 // ---------------------------------------------------------------------------
 router.post("/generate", protect, aiLimiter, async (req, res) => {
+  console.log("[AI] Request received", new Date().toISOString());
   try {
     const { prompt } = req.body;
 
@@ -304,13 +274,18 @@ router.post("/generate", protect, aiLimiter, async (req, res) => {
       }
     }
 
+    const isTimeoutError = (err) =>
+      err?.name === "AbortError" ||
+      err?.name === "TimeoutError" ||
+      /abort|timeout/i.test(err?.message || "");
+
     // 2. Call Gemini with one retry on validation failure
     let shapes;
     try {
       shapes = await callGeminiAndValidate(prompt.trim());
     } catch (firstError) {
       if (firstError.isValidationError) {
-        // Retry once — send Gemini its own broken output + the error
+        // Retry once only for schema validation errors
         try {
           shapes = await callGeminiAndValidate(prompt.trim(), {
             brokenOutput: firstError.brokenOutput,
@@ -322,22 +297,24 @@ router.post("/generate", protect, aiLimiter, async (req, res) => {
             await refundCredits(userId, CREDIT_COST);
           }
           console.error("AI generation failed after retry:", secondError);
-          return res.status(500).json({
-            error:
-              "AI generation failed after retry. Your credits have been refunded.",
-            details: secondError?.message || String(secondError),
+          const isTimeout = isTimeoutError(secondError);
+          return res.status(isTimeout ? 504 : 500).json({
+            error: isTimeout
+              ? "AI generation timed out after retry. Your credits have been refunded."
+              : "AI generation failed after retry. Your credits have been refunded.",
           });
         }
       } else {
-        // Non-validation error (network, JSON parse, etc.) — refund if spent
+        // Non-validation error (timeout, network, parse error) — do NOT retry, refund credits immediately
         if (!isAdmin) {
           await refundCredits(userId, CREDIT_COST);
         }
         console.error("AI generation failed:", firstError);
-        return res.status(500).json({
-          error:
-            "AI generation failed. Your credits have been refunded.",
-          details: firstError?.message || String(firstError),
+        const isTimeout = isTimeoutError(firstError);
+        return res.status(isTimeout ? 504 : 500).json({
+          error: isTimeout
+            ? "AI generation timed out. Your credits have been refunded."
+            : "AI generation failed. Your credits have been refunded.",
         });
       }
     }
@@ -348,7 +325,7 @@ router.post("/generate", protect, aiLimiter, async (req, res) => {
     console.error("Unexpected error in /api/ai/generate:", err);
     return res
       .status(500)
-      .json({ error: "Internal server error.", details: err.message });
+      .json({ error: "Internal server error." });
   }
 });
 

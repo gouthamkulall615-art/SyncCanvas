@@ -628,18 +628,29 @@ export default function CanvasBoard({
   const handleAIGenerate = async (prompt) => {
     let res;
     try {
-      res = await api.post("/ai/generate", { prompt });
+      res = await api.post("/ai/generate", { prompt }, { timeout: 60000 });
     } catch (err) {
+      if (err.code === "ECONNABORTED") {
+        throw new Error("AI took too long. Please try again.");
+      }
       const status = err.response?.status;
       const serverMsg = err.response?.data?.error;
+      if (status === 401) {
+        throw new Error("Session expired, please log in again.");
+      }
       if (status === 402) {
         throw new Error(
-          serverMsg || "You don\u2019t have enough credits for this generation.",
+          serverMsg || "You don’t have enough credits for this generation.",
         );
       }
       if (status === 429) {
         throw new Error(
-          serverMsg || "Too many requests \u2014 please wait a few minutes.",
+          serverMsg || "Too many requests — please wait a few minutes.",
+        );
+      }
+      if (status === 504) {
+        throw new Error(
+          serverMsg || "AI took too long. Please try again.",
         );
       }
       throw new Error(
