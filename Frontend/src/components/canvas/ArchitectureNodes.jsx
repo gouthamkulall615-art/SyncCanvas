@@ -1,4 +1,4 @@
-import { Path } from "react-konva";
+import { Path, Group, Rect } from "react-konva";
 
 // 1. Removed the 'export' keyword from this constant
 const ARCHITECTURE_PATHS = {
@@ -23,14 +23,25 @@ const ARCHITECTURE_PATHS = {
 
 // 2. Kept the export on the React component
 export function ArchitectureNode({ shape, commonProps }) {
+  const { fill, stroke, strokeWidth, dash, ...groupProps } = commonProps;
   return (
-    <Path
-      {...commonProps}
-      data={ARCHITECTURE_PATHS[shape.type]}
-      fill={shape.fill}
-      stroke={shape.stroke}
-      strokeWidth={shape.strokeWidth}
-      strokeScaleEnabled={false}
-    />
+    <Group {...groupProps}>
+      {/* Invisible bounding hitbox for easy clicking, dragging, and magnetic snapping */}
+      <Rect
+        id={commonProps.id}
+        width={24}
+        height={24}
+        fill="transparent"
+        listening={true}
+      />
+      <Path
+        id={commonProps.id}
+        data={ARCHITECTURE_PATHS[shape.type]}
+        fill={shape.fill}
+        stroke={shape.stroke}
+        strokeWidth={shape.strokeWidth}
+        strokeScaleEnabled={false}
+      />
+    </Group>
   );
 }

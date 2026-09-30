@@ -54,6 +54,7 @@ export default function CanvasBoard({
   const [activeTool, setActiveTool] = useState("select");
   const [isDrawing, setIsDrawing] = useState(false);
   const [editingTextId, setEditingTextId] = useState(null);
+  const [hoveredSnapId, setHoveredSnapId] = useState(null);
 
   // Modals state
   const [showClearModal, setShowClearModal] = useState(false);
@@ -336,27 +337,28 @@ export default function CanvasBoard({
         }
       }
       if (!startNode) {
-        startNode = findNodeNear(pos, shapes, 60);
+        startNode = findNodeNear(pos, shapes, 75);
       }
 
-      if (startNode) {
-        setIsDrawing(true);
-        setSelectedId(null);
-        const id = nextId();
-        shapesMap.set(id, {
-          type: "arrow",
-          startId: startNode.id,
-          endId: null,
-          endX: pos.x,
-          endY: pos.y,
-          stroke: "#5ca4f8",
-          strokeWidth: 2,
-          dash: [],
-          x: 0,
-          y: 0,
-        });
-        setDrawingShapeId(id);
-      }
+      setIsDrawing(true);
+      setSelectedId(null);
+      const id = nextId();
+      const startP = startNode ? getShapeCenter(startNode) : pos;
+      shapesMap.set(id, {
+        type: "arrow",
+        startId: startNode ? startNode.id : null,
+        startX: startP.x,
+        startY: startP.y,
+        endId: null,
+        endX: pos.x,
+        endY: pos.y,
+        stroke: "#5ca4f8",
+        strokeWidth: 2,
+        dash: [],
+        x: 0,
+        y: 0,
+      });
+      setDrawingShapeId(id);
       return;
     }
 
@@ -408,22 +410,36 @@ export default function CanvasBoard({
       }
     }
 
+    if (activeTool === "arrow") {
+      const snapCandidate = findNodeNear(relativePoint, shapes, 75);
+      if (isDrawing && drawingShapeId) {
+        const existing = shapesMap.get(drawingShapeId);
+        if (existing) {
+          const targetPos =
+            snapCandidate && snapCandidate.id !== existing.startId
+              ? getShapeCenter(snapCandidate)
+              : relativePoint;
+          shapesMap.set(drawingShapeId, {
+            ...existing,
+            endX: targetPos.x,
+            endY: targetPos.y,
+          });
+          setHoveredSnapId(
+            snapCandidate && snapCandidate.id !== existing.startId
+              ? snapCandidate.id
+              : null,
+          );
+          return;
+        }
+      } else {
+        setHoveredSnapId(snapCandidate ? snapCandidate.id : null);
+      }
+    } else if (hoveredSnapId) {
+      setHoveredSnapId(null);
+    }
+
     if (!isDrawing) return;
     const existing = shapesMap.get(drawingShapeId);
-
-    if (activeTool === "arrow" && existing) {
-      const snapNode = findNodeNear(relativePoint, shapes, 50);
-      const targetPos =
-        snapNode && snapNode.id !== existing.startId
-          ? getShapeCenter(snapNode)
-          : relativePoint;
-      shapesMap.set(drawingShapeId, {
-        ...existing,
-        endX: targetPos.x,
-        endY: targetPos.y,
-      });
-      return;
-    }
 
     if (
       (activeTool === "pen" || activeTool === "highlighter") &&
@@ -453,33 +469,46 @@ export default function CanvasBoard({
                 id: dropTargetId,
                 ...shapesMap.get(dropTargetId),
               }) ||
-            findNodeNear(pos, shapes, 60);
+            findNodeNear(pos, shapes, 75);
 
-          if (dropTarget && dropTarget.id !== existing.startId) {
+          const finalEndId =
+            dropTarget && dropTarget.id !== existing.startId
+              ? dropTarget.id
+              : null;
+
+          const startCenter = existing.startId
+            ? getShapeCenter(shapes.find((s) => s.id === existing.startId))
+            : { x: existing.startX || pos.x, y: existing.startY || pos.y };
+
+          const dist = Math.hypot(
+            (existing.endX || pos.x) - startCenter.x,
+            (existing.endY || pos.y) - startCenter.y,
+          );
+
+          if (dist < 15 && !finalEndId) {
+            shapesMap.delete(drawingShapeId);
+          } else {
             shapesMap.set(drawingShapeId, {
               ...existing,
-              endId: dropTarget.id,
+              endId: finalEndId,
+              endX: finalEndId
+                ? getShapeCenter(dropTarget).x
+                : existing.endX || pos.x,
+              endY: finalEndId
+                ? getShapeCenter(dropTarget).y
+                : existing.endY || pos.y,
             });
-          } else {
-            const startShape = shapes.find((s) => s.id === existing.startId);
-            const startCenter = getShapeCenter(startShape);
-            if (
-              Math.hypot(
-                (existing.endX || pos.x) - startCenter.x,
-                (existing.endY || pos.y) - startCenter.y,
-              ) < 25
-            ) {
-              shapesMap.delete(drawingShapeId);
-            }
           }
         }
         setActiveTool("select");
         setIsDrawing(false);
         setDrawingShapeId(null);
+        setHoveredSnapId(null);
         return;
       }
       setIsDrawing(false);
       setDrawingShapeId(null);
+      setHoveredSnapId(null);
     }
   };
 
@@ -715,20 +744,35 @@ export default function CanvasBoard({
     return { x: center.x + (dx / dist) * r, y: center.y + (dy / dist) * r };
   };
 
-  const findNodeNear = (pos, shapeList, threshold = 60) => {
+  const findNodeNear = (pos, shapeList, threshold = 75) => {
     if (!pos || !shapeList) return null;
-    let closest = null;
+    let closestNode = null;
     let minDist = threshold;
+
+    // First priority: architecture nodes and primary shapes (rect, circle, diamond)
     for (const s of shapeList) {
       if (s.type === "arrow" || s.type === "line" || s.type === "text") continue;
       const center = getShapeCenter(s);
       const dist = Math.hypot(center.x - pos.x, center.y - pos.y);
       if (dist < minDist) {
         minDist = dist;
-        closest = s;
+        closestNode = s;
       }
     }
-    return closest;
+    if (closestNode) return closestNode;
+
+    // Second priority: text shapes if no architecture or shape node was within range
+    minDist = threshold;
+    for (const s of shapeList) {
+      if (s.type !== "text") continue;
+      const center = getShapeCenter(s);
+      const dist = Math.hypot(center.x - pos.x, center.y - pos.y);
+      if (dist < minDist) {
+        minDist = dist;
+        closestNode = s;
+      }
+    }
+    return closestNode;
   };
 
   // ----- AI-assisted shape generation -----
@@ -1001,8 +1045,13 @@ export default function CanvasBoard({
             position: "absolute",
             top: `${shapesMap.get(editingTextId).y * stageScale + stagePos.y}px`,
             left: `${shapesMap.get(editingTextId).x * stageScale + stagePos.x}px`,
-            background: "transparent",
-            color: shapesMap.get(editingTextId).fill,
+            color:
+              theme === "light" &&
+              (!shapesMap.get(editingTextId)?.fill ||
+                shapesMap.get(editingTextId)?.fill?.toLowerCase() === "#ffffff" ||
+                shapesMap.get(editingTextId)?.fill?.toLowerCase() === "#fff")
+                ? themeConfig.textFill
+                : shapesMap.get(editingTextId)?.fill || themeConfig.textFill,
             fontSize: `${shapesMap.get(editingTextId).fontSize * stageScale}px`,
             fontFamily: "sans-serif",
             fontWeight: "bold",
@@ -1134,14 +1183,39 @@ export default function CanvasBoard({
                         radius={shape.radius}
                       />
                     );
-                  case "text":
+                  case "text": {
+                    const isLight = theme === "light";
+                    const isWhiteText =
+                      !shape.fill ||
+                      shape.fill.toLowerCase() === "#ffffff" ||
+                      shape.fill.toLowerCase() === "#fff" ||
+                      shape.fill.toLowerCase() === "#f8fafc" ||
+                      shape.fill.toLowerCase() === "#f1f5f9" ||
+                      shape.fill.toLowerCase() === "white";
+
+                    const isDarkText =
+                      shape.fill &&
+                      (shape.fill.toLowerCase() === "#000000" ||
+                        shape.fill.toLowerCase() === "#000" ||
+                        shape.fill.toLowerCase() === "#0e1116" ||
+                        shape.fill.toLowerCase() === "#111827" ||
+                        shape.fill.toLowerCase() === "black");
+
+                    const textFill = isLight
+                      ? isWhiteText
+                        ? themeConfig.textFill
+                        : shape.fill
+                      : isDarkText
+                        ? themeConfig.textFill
+                        : shape.fill || themeConfig.textFill;
+
                     return (
                       <Text
                         key={shape.id}
                         {...commonProps}
                         text={shape.text}
-                        fontSize={shape.fontSize}
-                        fill={shape.fill}
+                        fontSize={shape.fontSize || 14}
+                        fill={textFill}
                         fontFamily="sans-serif"
                         fontStyle="bold"
                         opacity={editingTextId === shape.id ? 0 : 1}
@@ -1149,6 +1223,7 @@ export default function CanvasBoard({
                         onDblTap={() => setEditingTextId(shape.id)}
                       />
                     );
+                  }
                   case "line":
                     return (
                       <Line
@@ -1181,45 +1256,50 @@ export default function CanvasBoard({
                       />
                     );
                   case "arrow": {
-                    const startShape = shapes.find(
-                      (s) => s.id === shape.startId,
-                    );
+                    const startShape = shape.startId
+                      ? shapes.find((s) => s.id === shape.startId)
+                      : null;
                     const endShape = shape.endId
                       ? shapes.find((s) => s.id === shape.endId)
                       : null;
 
-                    if (!startShape) {
-                      if (
-                        Array.isArray(shape.points) &&
-                        shape.points.length >= 4
-                      ) {
-                        return (
-                          <Arrow
-                            key={shape.id}
-                            {...commonProps}
-                            points={shape.points}
-                            fill={shape.stroke || "#5ca4f8"}
-                            stroke={shape.stroke || "#5ca4f8"}
-                            pointerLength={10}
-                            pointerWidth={10}
-                            listening={drawingShapeId !== shape.id}
-                          />
-                        );
-                      }
+                    let startP;
+                    let endP;
+
+                    if (startShape && endShape) {
+                      const rawStart = getShapeCenter(startShape);
+                      const rawEnd = getShapeCenter(endShape);
+                      startP = getDockingPoint(startShape, rawEnd);
+                      endP = getDockingPoint(endShape, startP);
+                    } else if (startShape) {
+                      const rawEnd = {
+                        x: shape.endX ?? startShape.x,
+                        y: shape.endY ?? startShape.y,
+                      };
+                      startP = getDockingPoint(startShape, rawEnd);
+                      endP = rawEnd;
+                    } else if (endShape) {
+                      const rawStart = {
+                        x: shape.startX ?? 0,
+                        y: shape.startY ?? 0,
+                      };
+                      endP = getDockingPoint(endShape, rawStart);
+                      startP = rawStart;
+                    } else if (
+                      shape.startX != null &&
+                      shape.endX != null
+                    ) {
+                      startP = { x: shape.startX, y: shape.startY };
+                      endP = { x: shape.endX, y: shape.endY };
+                    } else if (
+                      Array.isArray(shape.points) &&
+                      shape.points.length >= 4
+                    ) {
+                      startP = { x: shape.points[0], y: shape.points[1] };
+                      endP = { x: shape.points[2], y: shape.points[3] };
+                    } else {
                       return null;
                     }
-
-                    const rawEndP = endShape
-                      ? getShapeCenter(endShape)
-                      : {
-                          x: shape.endX ?? startShape.x,
-                          y: shape.endY ?? startShape.y,
-                        };
-
-                    const startP = getDockingPoint(startShape, rawEndP);
-                    const endP = endShape
-                      ? getDockingPoint(endShape, startP)
-                      : rawEndP;
 
                     return (
                       <Arrow
@@ -1239,6 +1319,33 @@ export default function CanvasBoard({
                     return null;
                 }
               })}
+
+              {/* Magnetic snap indicator ring when using the arrow tool */}
+              {activeTool === "arrow" && hoveredSnapId && (() => {
+                const target = shapes.find((s) => s.id === hoveredSnapId);
+                if (!target) return null;
+                const c = getShapeCenter(target);
+                return (
+                  <Group listening={false}>
+                    <Circle
+                      x={c.x}
+                      y={c.y}
+                      radius={44}
+                      stroke="#3b82f6"
+                      strokeWidth={2.5}
+                      dash={[6, 4]}
+                      opacity={0.85}
+                    />
+                    <Circle
+                      x={c.x}
+                      y={c.y}
+                      radius={5}
+                      fill="#3b82f6"
+                      opacity={0.9}
+                    />
+                  </Group>
+                );
+              })()}
 
               <Transformer
                 ref={transformerRef}
