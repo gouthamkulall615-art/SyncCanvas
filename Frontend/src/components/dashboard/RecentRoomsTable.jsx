@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
+import { getRecentRoomsStorageKey } from "../../utils/recentRooms";
 
 // Consistent palette based on user name
 const AVATAR_PALETTES = [
@@ -63,9 +64,30 @@ export default function RecentRoomsTable({ searchQuery = "", onClearSearch }) {
   }, []);
 
   const loadRooms = async () => {
+    let storedUser = null;
+    try {
+      storedUser = JSON.parse(localStorage.getItem("user") || "null");
+    } catch (e) {
+      console.error("Failed to parse stored user:", e);
+    }
+
+    if (!storedUser) {
+      setRooms([]);
+      return;
+    }
+
+    const storageKey = getRecentRoomsStorageKey(storedUser);
+    if (!storageKey) {
+      setRooms([]);
+      return;
+    }
+
+    // Remove legacy untracked key so it never leaks between accounts
+    localStorage.removeItem("synccanvas_recent_rooms");
+
     let localRooms = [];
     try {
-      const stored = localStorage.getItem("synccanvas_recent_rooms");
+      const stored = localStorage.getItem(storageKey);
       if (stored) {
         localRooms = JSON.parse(stored);
       }
@@ -73,49 +95,57 @@ export default function RecentRoomsTable({ searchQuery = "", onClearSearch }) {
       console.error("Failed to parse local recent rooms:", e);
     }
 
+    // Set initial scoped local rooms (empty array for new user!)
     setRooms(localRooms);
 
-    // Sync with backend if current user name is known
+    // Sync with backend if current user email or name is known
     try {
-      const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
-      const currentUserName = storedUser.name || storedUser.username;
-      if (currentUserName) {
-        const res = await api.get(`/rooms/user-recent/${encodeURIComponent(currentUserName)}`);
-        if (Array.isArray(res.data) && res.data.length > 0) {
-          // Merge backend rooms with local rooms (deduping by token)
-          const mergedMap = new Map();
-          // First add local rooms
-          localRooms.forEach((r) => {
-            if (r.token) mergedMap.set(r.token, r);
-          });
-          // Merge in backend rooms
-          res.data.forEach((bRoom) => {
-            const existing = mergedMap.get(bRoom.token) || {};
-            const participantNames = Array.isArray(bRoom.participants)
-              ? bRoom.participants.map((p) => (typeof p === "string" ? p : p.name)).filter(Boolean)
-              : [];
+      const userEmail = storedUser.email ? storedUser.email.trim().toLowerCase() : null;
+      const currentUserName = storedUser.name || storedUser.username || "user";
 
-            const combinedParticipants = Array.from(
-              new Set([...(existing.participants || []), ...participantNames])
-            );
+      const res = await api.get(`/rooms/user-recent/${encodeURIComponent(currentUserName)}`, {
+        params: { email: userEmail },
+      });
 
-            mergedMap.set(bRoom.token, {
-              ...existing,
-              token: bRoom.token,
-              roomName: bRoom.roomName || existing.roomName || "Untitled Room",
-              participants: combinedParticipants,
-              pin: bRoom.pin || existing.pin,
-              enteredAt: bRoom.createdAt || existing.enteredAt || new Date().toISOString(),
-            });
-          });
+      if (Array.isArray(res.data)) {
+        if (res.data.length === 0 && localRooms.length === 0) {
+          setRooms([]);
+          return;
+        }
 
-          const mergedArray = Array.from(mergedMap.values()).sort(
-            (a, b) => new Date(b.enteredAt || 0) - new Date(a.enteredAt || 0)
+        // Merge backend rooms with local rooms (deduping by token)
+        const mergedMap = new Map();
+        // First add local rooms
+        localRooms.forEach((r) => {
+          if (r.token) mergedMap.set(r.token, r);
+        });
+        // Merge in backend rooms
+        res.data.forEach((bRoom) => {
+          const existing = mergedMap.get(bRoom.token) || {};
+          const participantNames = Array.isArray(bRoom.participants)
+            ? bRoom.participants.map((p) => (typeof p === "string" ? p : p.name)).filter(Boolean)
+            : [];
+
+          const combinedParticipants = Array.from(
+            new Set([...(existing.participants || []), ...participantNames])
           );
 
-          setRooms(mergedArray);
-          localStorage.setItem("synccanvas_recent_rooms", JSON.stringify(mergedArray));
-        }
+          mergedMap.set(bRoom.token, {
+            ...existing,
+            token: bRoom.token,
+            roomName: bRoom.roomName || existing.roomName || "Untitled Room",
+            participants: combinedParticipants,
+            pin: bRoom.pin || existing.pin,
+            enteredAt: bRoom.createdAt || existing.enteredAt || new Date().toISOString(),
+          });
+        });
+
+        const mergedArray = Array.from(mergedMap.values()).sort(
+          (a, b) => new Date(b.enteredAt || 0) - new Date(a.enteredAt || 0)
+        );
+
+        setRooms(mergedArray);
+        localStorage.setItem(storageKey, JSON.stringify(mergedArray));
       }
     } catch (err) {
       // Backend may be offline or unauthenticated; local cache is already set
@@ -129,8 +159,13 @@ export default function RecentRoomsTable({ searchQuery = "", onClearSearch }) {
     // Optimistically remove from state & localStorage
     const updated = rooms.filter((r) => r.token !== tokenToDelete);
     setRooms(updated);
+
     try {
-      localStorage.setItem("synccanvas_recent_rooms", JSON.stringify(updated));
+      const storedUser = JSON.parse(localStorage.getItem("user") || "null");
+      const storageKey = getRecentRoomsStorageKey(storedUser);
+      if (storageKey) {
+        localStorage.setItem(storageKey, JSON.stringify(updated));
+      }
     } catch (err) {
       console.error("Failed to update localStorage:", err);
     }

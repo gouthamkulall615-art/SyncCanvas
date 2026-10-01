@@ -6,6 +6,7 @@ import { UserMinus, UserPlus, X } from "lucide-react";
 import CanvasBoard from "../components/canvas/CanvasBoard";
 import CodeSlots from "../components/ReactBits/CodeSlots";
 import api from "../api/axios";
+import { getRecentRoomsStorageKey } from "../utils/recentRooms";
 
 const CURSOR_COLORS = [
   "#3b82f6",
@@ -93,7 +94,9 @@ export default function Workspace() {
   // Helper to record / update recent room in localStorage
   const recordRecentRoom = (participantsList = [], customRoomName = null) => {
     try {
-      const stored = localStorage.getItem("synccanvas_recent_rooms");
+      const storageKey = getRecentRoomsStorageKey(user);
+      if (!storageKey) return;
+      const stored = localStorage.getItem(storageKey);
       const list = stored ? JSON.parse(stored) : [];
       const existingIdx = list.findIndex((r) => r.token === token);
       const existing = existingIdx >= 0 ? list[existingIdx] : {};
@@ -115,7 +118,8 @@ export default function Workspace() {
       } else {
         updatedList = [roomEntry, ...list];
       }
-      localStorage.setItem("synccanvas_recent_rooms", JSON.stringify(updatedList.slice(0, 20)));
+      localStorage.setItem(storageKey, JSON.stringify(updatedList.slice(0, 20)));
+      localStorage.removeItem("synccanvas_recent_rooms");
     } catch (e) {
       console.error("Failed to record recent room:", e);
     }
@@ -197,9 +201,10 @@ export default function Workspace() {
     if (!user || !token || !verified) return;
 
     const myUsername = user.name || user.username || "Peer";
+    const myEmail = user.email ? user.email.trim().toLowerCase() : null;
 
     // Register entry with backend and record locally
-    api.post(`/rooms/${token}/enter`, { name: myUsername }).catch(() => {});
+    api.post(`/rooms/${token}/enter`, { name: myUsername, email: myEmail }).catch(() => {});
     recordRecentRoom([myUsername]);
 
     const backendUrl = import.meta.env.VITE_API_URL

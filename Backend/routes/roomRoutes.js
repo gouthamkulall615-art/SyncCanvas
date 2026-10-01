@@ -35,7 +35,7 @@ const getActiveParticipantCount = (token) => {
 
 router.post("/create", async (req, res) => {
   try {
-    let { roomName, maxParticipants, hostName } = req.body;
+    let { roomName, maxParticipants, hostName, hostEmail } = req.body;
 
     if (typeof roomName !== "string" || !roomName.trim()) {
       return res.status(400).json({ error: "Room name is required." });
@@ -61,7 +61,10 @@ router.post("/create", async (req, res) => {
     const token = crypto.randomBytes(24).toString("base64url");
     const pin = generatePin();
     const cleanHost = typeof hostName === "string" && hostName.trim() ? hostName.trim() : null;
-    const participants = cleanHost ? [{ name: cleanHost, enteredAt: new Date() }] : [];
+    const cleanHostEmail = typeof hostEmail === "string" && hostEmail.trim() ? hostEmail.trim().toLowerCase() : null;
+    const participants = cleanHost
+      ? [{ name: cleanHost, email: cleanHostEmail, enteredAt: new Date() }]
+      : [];
 
     const room = await Room.create({
       token,
@@ -69,6 +72,7 @@ router.post("/create", async (req, res) => {
       roomName,
       maxParticipants,
       hostName: cleanHost,
+      hostEmail: cleanHostEmail,
       participants,
     });
 
@@ -105,7 +109,7 @@ router.get("/:token", async (req, res) => {
 
 router.post("/:token/enter", async (req, res) => {
   try {
-    const { name } = req.body;
+    const { name, email } = req.body;
     if (!name || typeof name !== "string") {
       return res.status(400).json({ error: "Name is required." });
     }
@@ -113,13 +117,35 @@ router.post("/:token/enter", async (req, res) => {
     if (!room) return res.status(404).json({ error: "Room not found." });
 
     const cleanName = name.trim();
-    const exists = room.participants.some(
-      (p) => p.name.toLowerCase() === cleanName.toLowerCase()
-    );
-    if (!exists) {
-      room.participants.push({ name: cleanName, enteredAt: new Date() });
-      await room.save();
+    const cleanEmail = typeof email === "string" && email.trim() ? email.trim().toLowerCase() : null;
+
+    const existingIndex = room.participants.findIndex((p) => {
+      if (cleanEmail && p.email) {
+        return p.email.toLowerCase() === cleanEmail;
+      }
+      return p.name.toLowerCase() === cleanName.toLowerCase();
+    });
+
+    if (existingIndex >= 0) {
+      if (cleanEmail && !room.participants[existingIndex].email) {
+        room.participants[existingIndex].email = cleanEmail;
+      }
+      room.participants[existingIndex].enteredAt = new Date();
+    } else {
+      room.participants.push({
+        name: cleanName,
+        email: cleanEmail,
+        enteredAt: new Date(),
+      });
     }
+
+    // Auto-link hostEmail if room host entered without hostEmail set
+    if (!room.hostEmail && cleanEmail && room.hostName && room.hostName.toLowerCase() === cleanName.toLowerCase()) {
+      room.hostEmail = cleanEmail;
+    }
+
+    await room.save();
+
     res.json({
       success: true,
       participants: room.participants,
@@ -142,16 +168,33 @@ router.delete("/:token", async (req, res) => {
   }
 });
 
-router.get("/user-recent/:userName", async (req, res) => {
+const handleRecentRoomsQuery = async (req, res) => {
   try {
-    const { userName } = req.params;
-    const cleanName = userName.trim();
-    const rooms = await Room.find({
-      $or: [
-        { hostName: new RegExp(`^${cleanName}$`, "i") },
-        { "participants.name": new RegExp(`^${cleanName}$`, "i") },
-      ],
-    })
+    const emailQuery = (req.query.email || "").trim().toLowerCase();
+    const cleanName = (req.params.userName || req.query.userName || "").trim();
+
+    let query;
+    if (emailQuery) {
+      // Strict email isolation: only return rooms created by or participated in by this email
+      query = {
+        $or: [
+          { hostEmail: emailQuery },
+          { "participants.email": emailQuery },
+        ],
+      };
+    } else if (cleanName) {
+      // Legacy fallback when no email is provided
+      query = {
+        $or: [
+          { hostName: new RegExp(`^${cleanName}$`, "i") },
+          { "participants.name": new RegExp(`^${cleanName}$`, "i") },
+        ],
+      };
+    } else {
+      return res.json([]);
+    }
+
+    const rooms = await Room.find(query)
       .sort({ createdAt: -1 })
       .limit(15);
 
@@ -160,7 +203,10 @@ router.get("/user-recent/:userName", async (req, res) => {
     console.error("Fetch recent failed:", err);
     res.status(500).json({ error: "Failed to fetch recent rooms." });
   }
-});
+};
+
+router.get("/user-recent", handleRecentRoomsQuery);
+router.get("/user-recent/:userName", handleRecentRoomsQuery);
 
 router.post("/:token/verify", async (req, res) => {
   try {

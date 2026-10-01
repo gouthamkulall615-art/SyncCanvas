@@ -41,6 +41,8 @@ export default function DashboardNavbar({ searchQuery = "", onSearchChange }) {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    localStorage.removeItem("synccanvas_recent_rooms");
+    sessionStorage.clear();
     navigate("/login");
   };
 

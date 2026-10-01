@@ -20,10 +20,12 @@ const roomSchema = new mongoose.Schema({
   },
 
   hostName: { type: String, default: null },
+  hostEmail: { type: String, default: null, lowercase: true, trim: true, index: true },
 
   participants: [
     {
       name: { type: String, required: true },
+      email: { type: String, default: null, lowercase: true, trim: true },
       enteredAt: { type: Date, default: Date.now },
     },
   ],

@@ -101,6 +101,8 @@ export default function SettingsModal({ isOpen, onClose }) {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    localStorage.removeItem("synccanvas_recent_rooms");
+    sessionStorage.clear();
     onClose();
     navigate("/login");
   };

@@ -14,6 +14,7 @@ import CreateRoomModal from "./CreateRoomModal";
 import CodeSlots from "../ReactBits/CodeSlots";
 import { EncryptedText } from "@/components/ui/encrypted-text";
 import RecentRoomsTable from "./RecentRoomsTable";
+import { getRecentRoomsStorageKey } from "../../utils/recentRooms";
 
 export default function WorkspaceCards({ searchQuery = "", onClearSearch }) {
   const navigate = useNavigate();
@@ -56,11 +57,13 @@ export default function WorkspaceCards({ searchQuery = "", onClearSearch }) {
     try {
       const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
       const hostName = storedUser.name || storedUser.username || "Host";
+      const hostEmail = storedUser.email ? storedUser.email.trim().toLowerCase() : null;
 
       const response = await api.post("/rooms/create", {
         roomName,
         maxParticipants,
         hostName,
+        hostEmail,
       });
       const { token, pin: newPin, roomName: savedName, maxParticipants: savedMax } = response.data;
 
@@ -87,22 +90,27 @@ export default function WorkspaceCards({ searchQuery = "", onClearSearch }) {
         maxParticipants: savedMax || maxParticipants,
       });
 
-      // Save to recent rooms
+      // Save to user-scoped recent rooms
       try {
-        const stored = localStorage.getItem("synccanvas_recent_rooms");
-        const list = stored ? JSON.parse(stored) : [];
-        const newEntry = {
-          token,
-          roomName: savedName || roomName,
-          pin: newPin,
-          participants: [hostName],
-          enteredAt: new Date().toISOString(),
-        };
-        const filtered = list.filter((r) => r.token !== token);
-        localStorage.setItem(
-          "synccanvas_recent_rooms",
-          JSON.stringify([newEntry, ...filtered].slice(0, 20))
-        );
+        const storageKey = getRecentRoomsStorageKey(storedUser);
+        if (storageKey) {
+          const stored = localStorage.getItem(storageKey);
+          const list = stored ? JSON.parse(stored) : [];
+          const newEntry = {
+            token,
+            roomName: savedName || roomName,
+            pin: newPin,
+            participants: [hostName],
+            enteredAt: new Date().toISOString(),
+          };
+          const filtered = list.filter((r) => r.token !== token);
+          localStorage.setItem(
+            storageKey,
+            JSON.stringify([newEntry, ...filtered].slice(0, 20))
+          );
+        }
+        // Remove legacy untracked key if present
+        localStorage.removeItem("synccanvas_recent_rooms");
       } catch (e) {
         console.error("Error saving recent room:", e);
       }
