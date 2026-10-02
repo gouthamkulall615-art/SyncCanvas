@@ -5,11 +5,21 @@ export default function PropertiesPanel({
   shapes,
   updateShapeProperty,
   deleteSelected,
+  theme = "dark",
 }) {
   if (!selectedId) return null;
 
   const currentShape = shapes.find((s) => s.id === selectedId);
   if (!currentShape) return null;
+
+  const isLight = theme === "light";
+  const strokeSwatches = isLight
+    ? ["#1e293b", "#2563eb", "#059669", "#7c3aed", "#d97706", "#e11d48"]
+    : ["#e9e9e7", "#ff8a8a", "#6bcf70", "#5ca4f8", "#e67e22"];
+
+  const bgSwatches = isLight
+    ? ["#ffffff", "#f1f5f9", "#eff6ff", "#ecfdf5", "#f5f3ff", "#fffbeb"]
+    : ["#262627", "#63292b", "#1d4924", "#20456b", "#523a10"];
 
   return (
     <div className="absolute right-6 top-24 z-50 bg-[#232329]/95 backdrop-blur-md border border-zinc-800/80 rounded-xl p-4 w-64 shadow-2xl text-white">
@@ -22,8 +32,8 @@ export default function PropertiesPanel({
       <div className="space-y-6">
         <div>
           <p className="text-[11px] text-zinc-300 mb-2.5">Stroke</p>
-          <div className="flex gap-2 items-center">
-            {["#e9e9e7", "#ff8a8a", "#6bcf70", "#5ca4f8", "#e67e22"].map((color) => {
+          <div className="flex gap-2 items-center flex-wrap">
+            {strokeSwatches.map((color) => {
               const isActive =
                 currentShape.stroke === color ||
                 ((currentShape.type === "line" || currentShape.type === "arrow") &&
@@ -41,7 +51,7 @@ export default function PropertiesPanel({
                     isActive ? "ring-2 ring-blue-500 ring-offset-2 ring-offset-[#232329]" : "hover:bg-white/10"
                   }`}
                 >
-                  <div className="w-6 h-6 rounded-md" style={{ backgroundColor: color }} />
+                  <div className="w-6 h-6 rounded-md border border-zinc-600/40" style={{ backgroundColor: color }} />
                 </button>
               );
             })}
@@ -60,8 +70,8 @@ export default function PropertiesPanel({
         {currentShape.type !== "line" && currentShape.type !== "arrow" && currentShape.type !== "text" && (
           <div>
             <p className="text-[11px] text-zinc-300 mb-2.5">Background</p>
-            <div className="flex gap-2 items-center">
-              {["#262627", "#63292b", "#1d4924", "#20456b", "#523a10"].map((color) => {
+            <div className="flex gap-2 items-center flex-wrap">
+              {bgSwatches.map((color) => {
                 const isActive = currentShape.fill === color;
                 return (
                   <button
@@ -71,7 +81,7 @@ export default function PropertiesPanel({
                       isActive ? "ring-2 ring-indigo-400 ring-offset-2 ring-offset-[#232329]" : "hover:bg-white/10"
                     }`}
                   >
-                    <div className="w-6 h-6 rounded-md" style={{ backgroundColor: color }} />
+                    <div className="w-6 h-6 rounded-md border border-zinc-600/40" style={{ backgroundColor: color }} />
                   </button>
                 );
               })}

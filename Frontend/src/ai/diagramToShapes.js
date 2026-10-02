@@ -27,12 +27,21 @@ function dockingPoint(center, target) {
   return { x: center.x + (dx / dist) * r, y: center.y + (dy / dist) * r };
 }
 
+import { LIGHT_NODE_PALETTE, DARK_NODE_PALETTE } from "../components/canvas/ArchitectureNodes";
+
 /**
  * diagram: output of layoutDiagram() (nodes have x/y)
  * origin: where on the canvas to place the top-left of the diagram
+ * theme: 'light' | 'dark'
  * Returns an array of [id, shape] ready for shapesMap.set(id, shape)
  */
-export function diagramToShapes(diagram, origin = { x: 100, y: 100 }) {
+export function diagramToShapes(
+  diagram,
+  origin = { x: 100, y: 100 },
+  theme = "dark"
+) {
+  const isLight = theme === "light";
+  const palette = isLight ? LIGHT_NODE_PALETTE : DARK_NODE_PALETTE;
   const groupId = `ai-group-${Date.now()}`;
   const idOf = {};
   const topLeft = {};
@@ -46,6 +55,7 @@ export function diagramToShapes(diagram, origin = { x: 100, y: 100 }) {
 
     // Format label to show tech if provided (e.g. "API Gateway (Nginx)")
     const displayLabel = n.tech ? `${n.label}\n(${n.tech})` : n.label;
+    const nodeColors = palette[type] || (isLight ? { fill: "#f1f5f9", stroke: "#2563eb" } : { fill: "#1e293b", stroke: "#5ca4f8" });
 
     // Created identically to how the CanvasBoard toolbox creates an ArchitectureNode
     entries.push([
@@ -57,8 +67,8 @@ export function diagramToShapes(diagram, origin = { x: 100, y: 100 }) {
         label: displayLabel,
         rawLabel: n.label,
         tech: n.tech || "",
-        fill: "#262627",
-        stroke: COLOR[type] || "#5ca4f8",
+        fill: nodeColors.fill,
+        stroke: nodeColors.stroke,
         strokeWidth: 2,
         dash: [],
         scaleX: 3,
@@ -86,7 +96,7 @@ export function diagramToShapes(diagram, origin = { x: 100, y: 100 }) {
         startId: idOf[e.from],
         endId: idOf[e.to],
         points: [p1.x, p1.y, p2.x, p2.y],
-        stroke: "#5ca4f8",
+        stroke: isLight ? "#2563eb" : "#5ca4f8",
         strokeWidth: 2,
         dashed: !!e.async,
         dash: e.async ? [8, 6] : [],
@@ -100,8 +110,8 @@ export function diagramToShapes(diagram, origin = { x: 100, y: 100 }) {
 }
 
 // One transaction = one network update and one undo step for all collaborators.
-export function addAIDiagram(shapesMap, diagram, origin) {
-  const entries = diagramToShapes(diagram, origin);
+export function addAIDiagram(shapesMap, diagram, origin, theme = "dark") {
+  const entries = diagramToShapes(diagram, origin, theme);
   if (shapesMap.doc?.transact) {
     shapesMap.doc.transact(() => {
       entries.forEach(([id, shape]) => shapesMap.set(id, shape));

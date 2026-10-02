@@ -21,45 +21,113 @@ const ARCHITECTURE_PATHS = {
   auth: "M5 11h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2z M7 11V7a5 5 0 0 1 10 0v4",
 };
 
-// 2. Kept the export on the React component
+// Clean, soft pastel fills paired with high-contrast rich strokes for light theme (gentle on eyes, no harsh black blobs)
+export const LIGHT_NODE_PALETTE = {
+  client: { fill: "#e2e8f0", stroke: "#334155" },
+  mobile: { fill: "#e0e7ff", stroke: "#4338ca" },
+  internet: { fill: "#e0f2fe", stroke: "#0369a1" },
+  server: { fill: "#d1fae5", stroke: "#047857" },
+  worker: { fill: "#ccfbf1", stroke: "#0f766e" },
+  database: { fill: "#dbeafe", stroke: "#1d4ed8" },
+  queue: { fill: "#fef3c7", stroke: "#b45309" },
+  cloud: { fill: "#ede9fe", stroke: "#6d28d9" },
+  auth: { fill: "#ffe4e6", stroke: "#be123c" },
+};
+
+// Deep, sleek dark-mode palette
+export const DARK_NODE_PALETTE = {
+  client: { fill: "#1e293b", stroke: "#94a3b8" },
+  mobile: { fill: "#1e2238", stroke: "#60a5fa" },
+  internet: { fill: "#16283b", stroke: "#38bdf8" },
+  server: { fill: "#132d24", stroke: "#34d399" },
+  worker: { fill: "#132e2b", stroke: "#2dd4bf" },
+  database: { fill: "#172844", stroke: "#60a5fa" },
+  queue: { fill: "#302213", stroke: "#fbbf24" },
+  cloud: { fill: "#27193f", stroke: "#c084fc" },
+  auth: { fill: "#351726", stroke: "#f472b6" },
+};
+
 export function ArchitectureNode({ shape, commonProps, theme = "dark" }) {
   const { fill, stroke, strokeWidth, dash, ...groupProps } = commonProps;
   const label = shape.label;
   const isLight = theme === "light";
-  const labelColor = isLight ? "#111827" : "#ffffff";
+
+  const palette = isLight ? LIGHT_NODE_PALETTE[shape.type] : DARK_NODE_PALETTE[shape.type];
+
+  // Detect if fill is dark default
+  const isDefaultDarkFill =
+    !shape.fill ||
+    shape.fill === "#262627" ||
+    shape.fill === "#20456b" ||
+    shape.fill === "#1e293b" ||
+    shape.fill === "#0b0d13";
+
+  // Detect default/AI neon strokes
+  const isDefaultStroke =
+    !shape.stroke ||
+    shape.stroke === "#5ca4f8" ||
+    shape.stroke === "#10b981" ||
+    shape.stroke === "#ec4899" ||
+    shape.stroke === "#8b5cf6" ||
+    shape.stroke === "#f59e0b" ||
+    shape.stroke === "#14b8a6" ||
+    shape.stroke === "#0ea5e9" ||
+    shape.stroke === "#3b82f6" ||
+    shape.stroke === "#64748b";
+
+  let resolvedFill = shape.fill;
+  if (isLight && (isDefaultDarkFill || !shape.fill)) {
+    resolvedFill = palette?.fill || "#e2e8f0";
+  } else if (!isLight && (!shape.fill || shape.fill === "#f1f5f9" || shape.fill === "#e2e8f0")) {
+    resolvedFill = palette?.fill || "#1e293b";
+  }
+
+  let resolvedStroke = shape.stroke;
+  if (isLight && isDefaultStroke) {
+    resolvedStroke = palette?.stroke || "#1d4ed8";
+  } else if (!isLight && isDefaultStroke) {
+    resolvedStroke = palette?.stroke || "#5ca4f8";
+  }
+
+  const labelColor = isLight ? "#0f172a" : "#f8fafc";
+  const labelHalo = isLight ? "#ffffff" : "#0e1116";
 
   return (
     <Group {...groupProps}>
-      {/* Invisible bounding hitbox for easy clicking, dragging, and magnetic snapping */}
+      {/* Hitbox for easy clicking, dragging, and magnetic snapping */}
       <Rect
         id={commonProps.id}
         x={-6}
         y={-6}
         width={36}
-        height={label ? 46 : 36}
+        height={label ? 48 : 36}
         fill="transparent"
         listening={true}
       />
       <Path
         id={commonProps.id}
         data={ARCHITECTURE_PATHS[shape.type]}
-        fill={shape.fill}
-        stroke={shape.stroke}
-        strokeWidth={shape.strokeWidth}
+        fill={resolvedFill}
+        stroke={resolvedStroke}
+        strokeWidth={shape.strokeWidth || 1.8}
         strokeScaleEnabled={false}
       />
       {label && (
         <Text
           id={commonProps.id}
           text={label}
-          x={-20}
+          x={-28}
           y={26}
-          width={64}
+          width={80}
           align="center"
-          fontSize={4.8}
+          fontSize={4.6}
+          lineHeight={1.22}
           fill={labelColor}
-          fontFamily="sans-serif"
+          fontFamily="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
           fontStyle="bold"
+          stroke={labelHalo}
+          strokeWidth={isLight ? 2.5 : 2}
+          fillAfterStrokeEnabled={true}
           listening={true}
         />
       )}

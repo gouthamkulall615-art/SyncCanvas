@@ -14,8 +14,7 @@ import {
   Arrow,
   RegularPolygon,
 } from "react-konva";
-import { useNavigate } from "react-router-dom";
-import { ArchitectureNode } from "./ArchitectureNodes";
+import { ArchitectureNode, LIGHT_NODE_PALETTE, DARK_NODE_PALETTE } from "./ArchitectureNodes";
 import Toolbars from "./Toolbars";
 import PropertiesPanel from "./PropertiesPanel";
 import AIAssistant from "../ui/AIAssistant";
@@ -528,12 +527,14 @@ export default function CanvasBoard({
   const addArchitectureNode = (nodeType) => {
     const center = getViewportCenter();
     const id = nextId();
+    const isLight = theme === "light";
+    const palette = isLight ? LIGHT_NODE_PALETTE[nodeType] : DARK_NODE_PALETTE[nodeType];
     shapesMap.set(id, {
       type: nodeType,
       x: center.x - 40,
       y: center.y - 40,
-      fill: "#262627",
-      stroke: "#5ca4f8",
+      fill: palette?.fill || (isLight ? "#e2e8f0" : "#262627"),
+      stroke: palette?.stroke || (isLight ? "#1d4ed8" : "#5ca4f8"),
       strokeWidth: 2,
       dash: [],
       scaleX: 3,
@@ -832,7 +833,7 @@ export default function CanvasBoard({
         y: center.y - diagH / 2,
       };
 
-      addAIDiagram(shapesMap, laidOut, origin);
+      addAIDiagram(shapesMap, laidOut, origin, theme);
       return;
     }
 
@@ -1071,6 +1072,7 @@ export default function CanvasBoard({
         shapes={shapes}
         updateShapeProperty={updateShapeProperty}
         deleteSelected={deleteSelected}
+        theme={theme}
       />
 
       <div className="absolute z-50 flex items-center gap-3 md:gap-4 bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 text-zinc-300 rounded-xl px-2.5 md:px-3 py-2 shadow-xl bottom-24 right-4 md:bottom-6 md:left-6 md:right-auto">
@@ -1453,13 +1455,20 @@ export default function CanvasBoard({
                     const mx = (startP.x + endP.x) / 2;
                     const my = (startP.y + endP.y) / 2;
 
+                    const isLight = theme === "light";
+                    const isDefaultSky = shape.stroke === "#5ca4f8";
+                    const arrowStroke =
+                      isLight && isDefaultSky
+                        ? "#2563eb"
+                        : shape.stroke || (isLight ? "#2563eb" : "#5ca4f8");
+
                     return (
                       <Group key={shape.id}>
                         <Arrow
                           {...commonProps}
                           points={[startP.x, startP.y, endP.x, endP.y]}
-                          fill={shape.stroke || "#5ca4f8"}
-                          stroke={shape.stroke || "#5ca4f8"}
+                          fill={arrowStroke}
+                          stroke={arrowStroke}
                           dash={
                             isDashed
                               ? shape.dash?.length
@@ -1476,15 +1485,16 @@ export default function CanvasBoard({
                           <Text
                             x={mx}
                             y={my - 8}
-                            width={160}
-                            offsetX={80}
+                            width={180}
+                            offsetX={90}
                             align="center"
                             text={shape.label}
-                            fontSize={11}
+                            fontSize={11.5}
                             fontStyle="bold"
-                            fill={theme === "light" ? "#334155" : "#cbd5e1"}
-                            stroke={theme === "light" ? "#ffffff" : "#0e1116"}
-                            strokeWidth={3}
+                            fontFamily="system-ui, -apple-system, sans-serif"
+                            fill={isLight ? "#0f172a" : "#cbd5e1"}
+                            stroke={isLight ? "#ffffff" : "#0e1116"}
+                            strokeWidth={3.5}
                             fillAfterStrokeEnabled
                             listening={false}
                           />
