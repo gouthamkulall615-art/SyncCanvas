@@ -490,7 +490,7 @@ export default function Workspace() {
           </div>
         ))}
       </div>
-      <div className="absolute top-6 left-6 z-50 bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 rounded-2xl p-4 w-64 shadow-2xl">
+      <div className="absolute top-4 left-4 md:top-6 md:left-6 z-50 bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 rounded-2xl p-3.5 sm:p-4 w-60 sm:w-64 max-w-[calc(100vw-5rem)] shadow-2xl">
         <div className="flex items-center gap-3 mb-3">
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-white shadow-[0_0_12px_rgba(37,99,235,0.4)] shrink-0">
             S
