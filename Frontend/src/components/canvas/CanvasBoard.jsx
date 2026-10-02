@@ -14,6 +14,7 @@ import {
   Arrow,
   RegularPolygon,
 } from "react-konva";
+import { useNavigate } from "react-router-dom";
 import { ArchitectureNode, LIGHT_NODE_PALETTE, DARK_NODE_PALETTE } from "./ArchitectureNodes";
 import Toolbars from "./Toolbars";
 import PropertiesPanel from "./PropertiesPanel";
