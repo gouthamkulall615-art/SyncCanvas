@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { TbRobot } from "react-icons/tb";
 import { HiSparkles } from "react-icons/hi2";
-import { FiSend, FiX, FiLoader } from "react-icons/fi";
+import { FiSend, FiX } from "react-icons/fi";
+import LatticeLoader from "./LatticeLoader";
 
 const QUICK_PROMPTS = [
   "Microservices architecture with API gateway",
@@ -22,8 +23,10 @@ export default function AIAssistant({
   const [open, setOpen] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loaderStatus, setLoaderStatus] = useState("working");
   const [error, setError] = useState(null);
   const textareaRef = useRef(null);
+  const timerTimeoutRef = useRef(null);
 
   useEffect(() => {
     if (open) {
@@ -33,20 +36,35 @@ export default function AIAssistant({
     }
   }, [open]);
 
+  useEffect(() => {
+    return () => {
+      if (timerTimeoutRef.current) clearTimeout(timerTimeoutRef.current);
+    };
+  }, []);
+
   const handleSubmit = async () => {
     const trimmed = prompt.trim();
     if (!trimmed || loading) return;
     setLoading(true);
+    setLoaderStatus("working");
     setError(null);
     try {
       await onGenerate(trimmed);
-      setPrompt("");
-      setOpen(false);
+      setLoaderStatus("done");
+      timerTimeoutRef.current = setTimeout(() => {
+        setPrompt("");
+        setOpen(false);
+        setLoading(false);
+        setLoaderStatus("working");
+      }, 1000);
     } catch (err) {
       console.error("AI generation failed:", err);
       setError(err?.message || "Something went wrong. Try again.");
-    } finally {
-      setLoading(false);
+      setLoaderStatus("error");
+      timerTimeoutRef.current = setTimeout(() => {
+        setLoading(false);
+        setLoaderStatus("working");
+      }, 1800);
     }
   };
 
@@ -73,9 +91,17 @@ export default function AIAssistant({
                 <span className="text-sm font-bold text-white tracking-tight block">
                   Syncy
                 </span>
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-medium text-emerald-400">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Ready
+                <span
+                  className={`inline-flex items-center gap-1.5 text-[10px] font-medium ${
+                    loading ? "text-purple-400" : "text-emerald-400"
+                  }`}
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      loading ? "bg-purple-400 animate-ping" : "bg-emerald-400 animate-pulse"
+                    }`}
+                  />
+                  {loading ? "Thinking..." : "Ready"}
                 </span>
               </div>
             </div>
@@ -129,20 +155,47 @@ export default function AIAssistant({
           )}
 
           <div className="flex items-center justify-between mt-3 gap-2">
-            <span className="text-[10px] text-zinc-500 font-mono">
+            <span className="text-[10px] text-zinc-500 font-mono truncate max-w-[130px] sm:max-w-none">
               Enter to generate · Shift+Enter newline
             </span>
             <button
               onClick={handleSubmit}
               disabled={!prompt.trim() || loading}
-              className="flex items-center justify-center gap-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:bg-zinc-800 disabled:text-zinc-600 text-white text-xs font-medium px-3.5 py-2 transition-all cursor-pointer disabled:cursor-not-allowed shadow-lg shadow-purple-900/20"
+              className={`shrink-0 flex items-center justify-center gap-1.5 rounded-xl text-white text-xs font-medium px-3.5 py-2 transition-all shadow-lg ${
+                loading
+                  ? "bg-purple-600/90 cursor-wait shadow-purple-900/30"
+                  : !prompt.trim()
+                  ? "bg-zinc-800 text-zinc-600 cursor-not-allowed"
+                  : "bg-purple-600 hover:bg-purple-500 cursor-pointer shadow-purple-900/20"
+              }`}
             >
               {loading ? (
-                <FiLoader size={13} className="animate-spin" />
+                <LatticeLoader
+                  status={loaderStatus}
+                  label="Thinking"
+                  doneLabel="Done in"
+                  errorLabel="Failed after"
+                  pattern="orbit"
+                  grid={3}
+                  shape="round"
+                  doneColor="#22c55e"
+                  errorColor="#ef4444"
+                  cellSize={6}
+                  gap={2}
+                  fontSize={14}
+                  step={90}
+                  idleOpacity={0.15}
+                  glow={false}
+                  glowColor=""
+                  showTimer
+                  color="#f5f5f5"
+                />
               ) : (
-                <FiSend size={13} />
+                <>
+                  <FiSend size={13} />
+                  <span>Generate</span>
+                </>
               )}
-              {loading ? "Generating..." : "Generate"}
             </button>
           </div>
         </div>
