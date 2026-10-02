@@ -103,7 +103,27 @@
 }
 
 @media (max-width: 720px) {
+  .mcd-toolbar {
+    top: 10px;
+    left: 10px;
+    padding: 3px;
+    gap: 3px;
+    border-radius: 8px;
+  }
+
+  .mcd-tool {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    font-size: 11px;
+  }
+
   .mcd-svg text {
     font-size: 9px;
+  }
+
+  .mcd-status {
+    padding: 8px 14px;
+    font-size: 10px;
   }
 }

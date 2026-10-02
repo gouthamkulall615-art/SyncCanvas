@@ -93,7 +93,7 @@ export default function MiniCanvasDemo() {
       {/* CHANGED: viewBox shifted by -100 on the Y-axis and height increased by 100 to add top padding */}
       <svg viewBox="0 -100 1053 677" className="mcd-svg" aria-hidden="true">
         {/* Sticky note */}
-        <g transform="translate(170, 122) rotate(-1)">
+        <g transform="translate(150, 150) rotate(-1)">
           <rect
             width="200"
             height="100"
