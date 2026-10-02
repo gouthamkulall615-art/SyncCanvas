@@ -1,0 +1,168 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <!-- Soft shadow filter -->
+    <filter id="syncyShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" floodColor="#000000" floodOpacity="0.4" />
+    </filter>
+
+    <!-- Glowing eyes filter -->
+    <filter id="eyeCyanGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <!-- Visor Gradient: deep reflective black/navy -->
+    <radialGradient id="syncyVisor" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" stopColor="#1e222d" />
+      <stop offset="60%" stopColor="#0b0d13" />
+      <stop offset="100%" stopColor="#040508" />
+    </radialGradient>
+
+    <!-- White Helmet Gradient: glossy clean pearl white -->
+    <linearGradient id="syncyHelmet" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stopColor="#ffffff" />
+      <stop offset="70%" stopColor="#e2e8f0" />
+      <stop offset="100%" stopColor="#cbd5e1" />
+    </linearGradient>
+
+    <!-- Headset Gradient -->
+    <linearGradient id="syncyHeadset" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#ffffff" />
+      <stop offset="100%" stopColor="#94a3b8" />
+    </linearGradient>
+
+    <!-- Visor Glass Highlight Reflection -->
+    <linearGradient id="visorReflection" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stopColor="#ffffff" stopOpacity="0.25" />
+      <stop offset="60%" stopColor="#ffffff" stopOpacity="0.05" />
+      <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+    </linearGradient>
+
+    <!-- Eye Glow Radial Gradient -->
+    <radialGradient id="eyeGlowGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stopColor="#ffffff" />
+      <stop offset="55%" stopColor="#38bdf8" />
+      <stop offset="100%" stopColor="#0284c7" />
+    </radialGradient>
+  </defs>
+
+  <!-- Ambient Ground Shadow -->
+  <ellipse cx="100" cy="184" rx="48" ry="6" fill="#000000" opacity="0.25" filter="blur(2px)" />
+
+  <!-- Main Mascot Head Group -->
+  <g filter="url(#syncyShadow)">
+    <!-- 1. Overhead Headset Arch -->
+    <path
+      d="M 28 86 A 74 74 0 0 1 172 86"
+      fill="none"
+      stroke="url(#syncyHeadset)"
+      strokeWidth="11"
+      strokeLinecap="round"
+    />
+    <!-- Top Headset inner rim highlight -->
+    <path
+      d="M 40 76 A 66 66 0 0 1 160 76"
+      fill="none"
+      stroke="#ffffff"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      opacity="0.8"
+    />
+
+    <!-- 2. Main Robot Head Shell (Glossy white dome) -->
+    <ellipse cx="100" cy="98" rx="68" ry="58" fill="url(#syncyHelmet)" />
+
+    <!-- Top head sheen -->
+    <ellipse cx="100" cy="54" rx="42" ry="12" fill="#ffffff" opacity="0.6" />
+
+    <!-- 3. Dark Glossy Visor Screen -->
+    <rect
+      x="44"
+      y="60"
+      width="112"
+      height="74"
+      rx="34"
+      fill="url(#syncyVisor)"
+      stroke="#334155"
+      strokeWidth="1.5"
+    />
+
+    <!-- Visor reflection highlight overlay -->
+    <path
+      d="M 48 86 C 48 70, 60 62, 80 62 L 120 62 C 140 62, 152 70, 152 86 C 130 74, 70 74, 48 86 Z"
+      fill="url(#visorReflection)"
+    />
+
+    <!-- 4. Left Earphone Cushion and Shell -->
+    <rect x="15" y="68" width="16" height="38" rx="8" fill="#1e293b" />
+    <rect x="11" y="70" width="14" height="34" rx="7" fill="url(#syncyHeadset)" />
+    <line x1="15" y1="74" x2="15" y2="98" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" opacity="0.7" />
+
+    <!-- 5. Right Earphone and Mic Boom -->
+    <rect x="169" y="68" width="16" height="38" rx="8" fill="#1e293b" />
+    <rect x="175" y="70" width="14" height="34" rx="7" fill="url(#syncyHeadset)" />
+    <line x1="181" y1="74" x2="181" y2="98" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" opacity="0.7" />
+
+    <!-- Microphone Boom Arm curving to mouth -->
+    <path
+      d="M 179 96 C 182 128, 168 144, 138 147"
+      fill="none"
+      stroke="#1e293b"
+      strokeWidth="4.5"
+      strokeLinecap="round"
+    />
+    <!-- Microphone capsule -->
+    <rect
+      x="128"
+      y="142"
+      width="14"
+      height="9"
+      rx="4.5"
+      fill="#0f172a"
+      stroke="#334155"
+      strokeWidth="1"
+    />
+    <!-- Mic tip indicator light -->
+    <circle cx="132" cy="146.5" r="1.5" fill="#38bdf8" />
+
+    <!-- 6. Glowing Cyan Eyes & Smile inside Visor -->
+    <g>
+      <!-- Left Eye -->
+      <ellipse
+        cx="76"
+        cy="93"
+        rx="9.5"
+        ry="10.5"
+        fill="url(#eyeGlowGrad)"
+        filter="url(#eyeCyanGlow)"
+      />
+      <!-- Left Eye Pupil highlight -->
+      <circle cx="79" cy="90" r="3" fill="#ffffff" opacity="0.9" />
+
+      <!-- Right Eye -->
+      <ellipse
+        cx="124"
+        cy="93"
+        rx="9.5"
+        ry="10.5"
+        fill="url(#eyeGlowGrad)"
+        filter="url(#eyeCyanGlow)"
+      />
+      <!-- Right Eye Pupil highlight -->
+      <circle cx="127" cy="90" r="3" fill="#ffffff" opacity="0.9" />
+
+      <!-- Glowing Smile -->
+      <path
+        d="M 92 110 Q 100 118 108 110"
+        fill="none"
+        stroke="#38bdf8"
+        strokeWidth="3.2"
+        strokeLinecap="round"
+        filter="url(#eyeCyanGlow)"
+      />
+    </g>
+  </g>
+</svg>

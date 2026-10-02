@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from "react";
-import { TbRobot } from "react-icons/tb";
 import { HiSparkles } from "react-icons/hi2";
 import { FiSend, FiX } from "react-icons/fi";
 import LatticeLoader from "./LatticeLoader";
+import SyncyRobot from "./SyncyRobot";
 
 const QUICK_PROMPTS = [
   "Microservices architecture with API gateway",
@@ -12,7 +12,7 @@ const QUICK_PROMPTS = [
 
 /**
  * Floating AI Assistant (Syncy).
- * - collapsed: a round glowing robot button positioned neatly above the zoom controls
+ * - collapsed: an animated, eye-tracking Syncy robot mascot that floats above the controls
  * - expanded: prompt textarea to describe architecture/canvas shapes + send button
  */
 export default function AIAssistant({
@@ -84,9 +84,7 @@ export default function AIAssistant({
         <div className="w-[310px] sm:w-[360px] max-h-[calc(100vh-170px)] overflow-y-auto rounded-2xl bg-[#1a1d24]/95 backdrop-blur-md border border-purple-500/30 shadow-2xl shadow-purple-900/30 p-4 animate-in fade-in slide-in-from-bottom-2 duration-200">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-purple-600/20 border border-purple-500/40 flex items-center justify-center text-purple-400 shadow-inner">
-                <TbRobot size={18} />
-              </div>
+              <SyncyRobot size={38} floating={false} state={loading ? "thinking" : "idle"} />
               <div>
                 <span className="text-sm font-bold text-white tracking-tight block">
                   Syncy
@@ -201,20 +199,24 @@ export default function AIAssistant({
         </div>
       )}
 
+      {/* Floating Syncy Trigger Button with Eye Tracking & Float */}
       <button
         onClick={() => setOpen((v) => !v)}
-        title="Syncy"
-        className={`relative w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 shadow-2xl cursor-pointer ${
+        title="Syncy - AI Canvas Assistant"
+        className={`group relative w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl cursor-pointer ${
           open
-            ? "bg-purple-600 text-white ring-4 ring-purple-500/20"
-            : "bg-[#1a1d24]/95 backdrop-blur-md border border-purple-500/40 text-purple-400 hover:text-white hover:border-purple-500/70"
+            ? "bg-purple-600/30 backdrop-blur-xl border-2 border-purple-500/80 ring-4 ring-purple-500/25"
+            : "bg-[#12141c]/95 backdrop-blur-xl border-2 border-purple-500/50 hover:border-purple-400 hover:shadow-[0_0_24px_rgba(168,85,247,0.45)] hover:scale-105"
         }`}
       >
-        {!open && (
-          <span className="absolute inset-0 rounded-full bg-purple-500/20 animate-ping" />
-        )}
-        <TbRobot size={22} className="relative" />
-        <span className="absolute top-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-[#1a1d24] shadow" />
+        <SyncyRobot
+          size={52}
+          floating={!open}
+          state={loading ? "thinking" : "idle"}
+          showBadge={!open}
+          badgeText="Syncy"
+        />
+        <span className="absolute top-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-[#12141c] shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" />
       </button>
     </div>
   );

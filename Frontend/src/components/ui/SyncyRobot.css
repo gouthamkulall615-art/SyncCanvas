@@ -1,0 +1,147 @@
+.syncy-container {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  perspective: 600px;
+}
+
+.syncy-head-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.syncy-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  transition: transform 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.syncy-tilt-group {
+  transform-origin: center center;
+  transform: rotateX(var(--syncy-tilt-x, 0deg)) rotateY(var(--syncy-tilt-y, 0deg));
+  transition: transform 0.12s ease-out;
+}
+
+/* Floating Levitation Animation */
+.syncy-floating .syncy-head-wrapper {
+  animation: syncy-float 3.4s ease-in-out infinite;
+}
+
+@keyframes syncy-float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+/* Ground shadow responding to float */
+.syncy-ground-shadow {
+  position: absolute;
+  bottom: -4px;
+  left: 20%;
+  width: 60%;
+  height: 6px;
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0) 75%);
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0.6;
+  filter: blur(1.5px);
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.syncy-floating .syncy-ground-shadow {
+  animation: syncy-shadow 3.4s ease-in-out infinite;
+}
+
+@keyframes syncy-shadow {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(0.8);
+    opacity: 0.35;
+  }
+}
+
+/* Eye movement */
+.syncy-eyes {
+  transition: transform 0.08s ease-out;
+  transform-origin: 100px 98px;
+}
+
+/* Natural Blinking */
+.syncy-blinking {
+  transform: scaleY(0.08);
+  transition: transform 0.07s ease-in;
+}
+
+/* Thinking Pulse */
+.syncy-thinking {
+  animation: syncy-thinking-pulse 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes syncy-thinking-pulse {
+  0% {
+    filter: drop-shadow(0 0 3px rgba(56, 189, 248, 0.4));
+  }
+  100% {
+    filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.9));
+  }
+}
+
+/* Hover excitement */
+.syncy-container:hover .syncy-svg {
+  transform: scale(1.05);
+}
+
+/* Badge / Tooltip */
+.syncy-badge {
+  position: absolute;
+  bottom: -18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(15, 23, 42, 0.88);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #f8fafc;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 1px 7px;
+  border-radius: 9999px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(8px);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.syncy-status-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: #38bdf8;
+  box-shadow: 0 0 6px #38bdf8;
+  animation: syncy-dot-pulse 2s infinite;
+}
+
+@keyframes syncy-dot-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.85);
+  }
+}
