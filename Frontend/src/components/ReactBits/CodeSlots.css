@@ -1,3 +1,8 @@
+.code-slots-container {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
 .code-slots {
   --cs-accent: #f5f5f5;
   --cs-ink: #f5f5f5;
@@ -12,6 +17,8 @@
 
   position: relative;
   display: inline-block;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .code-slots__row {
@@ -22,6 +29,10 @@
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   transition: opacity 200ms ease;
+  max-width: 100%;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
 }
 
 .code-slots__row[data-disabled] {
@@ -74,6 +85,8 @@
   transition: background-color 200ms ease;
   user-select: none;
   -webkit-user-select: none;
+  flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .code-slots__fill {

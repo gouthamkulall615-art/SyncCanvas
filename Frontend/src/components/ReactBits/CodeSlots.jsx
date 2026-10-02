@@ -98,9 +98,67 @@ export default function CodeSlots({
     [length]
   );
   const { mvs, drops } = springs;
-  const pitch = slotSize + gap;
-  const height = Math.round(slotSize * 1.18);
-  const washRadius = Math.min(radius, slotSize / 2);
+  const containerRef = useRef(null);
+
+  // Responsive slot sizing based on available container width
+  const [effectiveSlotSize, setEffectiveSlotSize] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const w = window.innerWidth;
+      if (w < 360) return Math.min(slotSize, 36);
+      if (w < 440) return Math.min(slotSize, 40);
+      if (w < 640) return Math.min(slotSize, 44);
+    }
+    return slotSize;
+  });
+  const [effectiveGap, setEffectiveGap] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const w = window.innerWidth;
+      if (w < 440) return Math.min(gap, 6);
+    }
+    return gap;
+  });
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const compute = (w) => {
+      if (!w || w <= 0) return;
+      const gapRatio = slotSize > 0 ? gap / slotSize : 0.16;
+      const totalUnits = length + (length - 1) * gapRatio;
+      const maxSlot = Math.floor(w / totalUnits);
+
+      if (maxSlot < slotSize) {
+        const newSlot = Math.max(26, maxSlot);
+        const newGap = Math.max(3, Math.min(gap, Math.floor(newSlot * gapRatio)));
+        setEffectiveSlotSize(newSlot);
+        setEffectiveGap(newGap);
+      } else {
+        setEffectiveSlotSize(slotSize);
+        setEffectiveGap(gap);
+      }
+    };
+
+    compute(el.clientWidth);
+
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        compute(entry.contentRect.width);
+      }
+    });
+    ro.observe(el);
+
+    return () => ro.disconnect();
+  }, [slotSize, gap, length]);
+
+  const pitch = effectiveSlotSize + effectiveGap;
+  const height = Math.round(effectiveSlotSize * 1.18);
+  const washRadius = Math.min(radius, effectiveSlotSize / 2);
+
+  const pitchRef = useRef(pitch);
+  pitchRef.current = pitch;
+  const washRadiusRef = useRef(washRadius);
+  washRadiusRef.current = washRadius;
 
   const drive = useCallback(
     (i, to, delayMs = 0) => {
@@ -142,7 +200,8 @@ export default function CodeSlots({
 
   const caretX = useTransform(() => {
     const a = activeMv.get();
-    let x = a * pitch;
+    const p = pitchRef.current;
+    let x = a * p;
     for (let j = 0; j < mvs.length; j++) {
       const h = clamp01(mvs[j].get());
       if (!glide.current.has(j)) continue;
@@ -151,12 +210,12 @@ export default function CodeSlots({
         glide.current.delete(j);
         continue;
       }
-      x += j < a ? -(1 - h) * pitch : h * pitch;
+      x += j < a ? -(1 - h) * p : h * p;
     }
-    return Math.min(Math.max(x, 0), (mvs.length - 1) * pitch);
+    return Math.min(Math.max(x, 0), (mvs.length - 1) * p);
   });
   const caretTransform = useTransform(caretX, x => `translateX(${x}px)`);
-  const washClip = useTransform(openMv, o => `inset(0 ${(1 - clamp01(o)) * 50}% round ${washRadius}px)`);
+  const washClip = useTransform(openMv, o => `inset(0 ${(1 - clamp01(o)) * 50}% round ${washRadiusRef.current}px)`);
   const checkTransform = useTransform(
     checkMv,
     c => `translateY(${(1 - c) * CHECK_RISE}px) scale(${0.85 + 0.15 * Math.max(c, 0)})`
@@ -373,77 +432,79 @@ export default function CodeSlots({
     caret && focused && !disabled && !veiled && status !== 'success' && (status === 'error' || !view[active]);
 
   return (
-    <div
-      className={`code-slots${className ? ` ${className}` : ''}`}
-      style={{
-        '--cs-accent': accentColor,
-        '--cs-ink': inkColor,
-        '--cs-slot': slotColor,
-        '--cs-digit': digitColor,
-        '--cs-danger': dangerColor,
-        '--cs-size': `${slotSize}px`,
-        '--cs-height': `${height}px`,
-        '--cs-gap': `${gap}px`,
-        '--cs-radius': `${Math.min(radius, slotSize / 2)}px`,
-        '--cs-font': `${Math.round(slotSize * 0.5)}px`
-      }}
-    >
+    <div ref={containerRef} className="code-slots-container w-full flex justify-center max-w-full">
       <div
-        ref={rowRef}
-        className="code-slots__row"
-        data-status={status}
-        data-focused={focused ? '' : undefined}
-        data-disabled={disabled ? '' : undefined}
-        onMouseDown={onRowMouseDown}
+        className={`code-slots${className ? ` ${className}` : ''}`}
+        style={{
+          '--cs-accent': accentColor,
+          '--cs-ink': inkColor,
+          '--cs-slot': slotColor,
+          '--cs-digit': digitColor,
+          '--cs-danger': dangerColor,
+          '--cs-size': `${effectiveSlotSize}px`,
+          '--cs-height': `${height}px`,
+          '--cs-gap': `${effectiveGap}px`,
+          '--cs-radius': `${Math.min(radius, effectiveSlotSize / 2)}px`,
+          '--cs-font': `${Math.round(effectiveSlotSize * 0.5)}px`
+        }}
       >
-        <input
-          ref={inputRef}
-          className="code-slots__input"
-          type="text"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          pattern="[0-9]*"
-          value=""
-          maxLength={length}
-          aria-label={ariaLabel}
-          aria-invalid={status === 'error'}
-          aria-describedby={`${uid}-count`}
-          disabled={disabled}
-          readOnly={status === 'success'}
-          onKeyDown={onKeyDown}
-          onPaste={onPaste}
-          onChange={onInput}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-        />
-        {view.map((ch, i) => (
-          <Slot
-            key={i}
-            mv={mvs[i]}
-            drop={drops[i]}
-            char={mask && ch ? '•' : ch}
-            active={focused && i === active}
-            rise={rise}
-            sink={Math.round(height * 0.5)}
-          />
-        ))}
-        <motion.span className="code-slots__wash" aria-hidden="true" style={{ clipPath: washClip }}>
-          <motion.span className="code-slots__check" style={{ transform: checkTransform, opacity: checkOpacity }}>
-            <Tick02Icon size={Math.round(slotSize * 0.6)} strokeWidth={2.2} />
-          </motion.span>
-        </motion.span>
-        <motion.span
-          className="code-slots__caret"
-          aria-hidden="true"
-          data-show={showCaret ? '' : undefined}
-          style={{ transform: caretTransform }}
+        <div
+          ref={rowRef}
+          className="code-slots__row"
+          data-status={status}
+          data-focused={focused ? '' : undefined}
+          data-disabled={disabled ? '' : undefined}
+          onMouseDown={onRowMouseDown}
         >
-          <span key={active} className="code-slots__caret-line" />
-        </motion.span>
+          <input
+            ref={inputRef}
+            className="code-slots__input"
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            pattern="[0-9]*"
+            value=""
+            maxLength={length}
+            aria-label={ariaLabel}
+            aria-invalid={status === 'error'}
+            aria-describedby={`${uid}-count`}
+            disabled={disabled}
+            readOnly={status === 'success'}
+            onKeyDown={onKeyDown}
+            onPaste={onPaste}
+            onChange={onInput}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+          />
+          {view.map((ch, i) => (
+            <Slot
+              key={i}
+              mv={mvs[i]}
+              drop={drops[i]}
+              char={mask && ch ? '•' : ch}
+              active={focused && i === active}
+              rise={rise}
+              sink={Math.round(height * 0.5)}
+            />
+          ))}
+          <motion.span className="code-slots__wash" aria-hidden="true" style={{ clipPath: washClip }}>
+            <motion.span className="code-slots__check" style={{ transform: checkTransform, opacity: checkOpacity }}>
+              <Tick02Icon size={Math.round(effectiveSlotSize * 0.6)} strokeWidth={2.2} />
+            </motion.span>
+          </motion.span>
+          <motion.span
+            className="code-slots__caret"
+            aria-hidden="true"
+            data-show={showCaret ? '' : undefined}
+            style={{ transform: caretTransform }}
+          >
+            <span key={active} className="code-slots__caret-line" />
+          </motion.span>
+        </div>
+        <span id={`${uid}-count`} className="code-slots__sr" aria-live="polite">
+          {status === 'success' ? 'Code accepted' : `${view.filter(Boolean).length} of ${length} digits entered`}
+        </span>
       </div>
-      <span id={`${uid}-count`} className="code-slots__sr" aria-live="polite">
-        {status === 'success' ? 'Code accepted' : `${view.filter(Boolean).length} of ${length} digits entered`}
-      </span>
     </div>
   );
 }

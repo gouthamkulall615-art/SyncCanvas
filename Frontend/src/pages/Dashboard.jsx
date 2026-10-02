@@ -26,7 +26,7 @@ export default function Dashboard() {
       <div className="relative z-10 flex flex-col min-h-screen w-full">
         <Navbar searchQuery={searchQuery} onSearchChange={setSearchQuery} />
 
-        <main className="flex-grow max-w-6xl w-full mx-auto px-6 py-6">
+        <main className="flex-grow max-w-6xl w-full mx-auto px-4 sm:px-6 py-4 sm:py-6">
           <WorkspaceCards
             searchQuery={searchQuery}
             onClearSearch={() => setSearchQuery("")}

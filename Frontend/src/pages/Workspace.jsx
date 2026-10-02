@@ -378,7 +378,7 @@ export default function Workspace() {
   if (!verified) {
     return (
       <main className="h-screen w-full bg-[#0e1116] flex items-center justify-center font-sans">
-        <div className="bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 rounded-2xl p-8 w-full max-w-sm shadow-2xl">
+        <div className="bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 rounded-2xl p-6 sm:p-8 w-full max-w-sm shadow-2xl mx-4">
           <h1 className="text-lg font-bold text-white mb-1">
             {roomInfo.roomName ? `Join "${roomInfo.roomName}"` : "Enter Room PIN"}
           </h1>
@@ -397,7 +397,7 @@ export default function Workspace() {
               </span>
             )}
           </div>
-          <div className="flex justify-center mb-6">
+          <div className="flex justify-center mb-6 w-full max-w-full">
             <CodeSlots
               length={6}
               value={pinInput}

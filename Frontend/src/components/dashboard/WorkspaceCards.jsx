@@ -161,7 +161,7 @@ export default function WorkspaceCards({ searchQuery = "", onClearSearch }) {
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-4 py-8 flex flex-col gap-8">
+    <div className="w-full max-w-5xl mx-auto px-1 sm:px-4 py-6 sm:py-8 flex flex-col gap-6 sm:gap-8">
       {/* Header Section */}
       <div>
         <div className="mb-10 text-center max-w-2xl mx-auto">
@@ -183,14 +183,14 @@ export default function WorkspaceCards({ searchQuery = "", onClearSearch }) {
         {/* Two-Column Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
           {/* Host Session Card */}
-          <div className="bg-[#0b0f15]/80 backdrop-blur-xl border border-zinc-800/80 rounded-2xl p-6 sm:p-7 flex flex-col justify-between shadow-2xl transition-all duration-300 hover:border-zinc-700">
+          <div className="bg-[#0b0f15]/80 backdrop-blur-xl border border-zinc-800/80 rounded-2xl p-4 sm:p-7 flex flex-col justify-between shadow-2xl transition-all duration-300 hover:border-zinc-700">
             <div>
-              <div className="flex items-start gap-4 mb-6">
-                <div className="w-12 h-12 rounded-xl bg-purple-600/15 border border-purple-500/30 flex items-center justify-center text-purple-400 shrink-0 shadow-[0_0_15px_rgba(147,51,234,0.15)]">
-                  <FiLink size={20} />
+              <div className="flex items-start gap-3 sm:gap-4 mb-6">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-purple-600/15 border border-purple-500/30 flex items-center justify-center text-purple-400 shrink-0 shadow-[0_0_15px_rgba(147,51,234,0.15)]">
+                  <FiLink size={18} className="sm:w-5 sm:h-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white tracking-tight">
+                  <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">
                     Host a New Session
                   </h3>
                   <p className="text-xs sm:text-sm text-zinc-400 mt-0.5 leading-relaxed">
@@ -306,14 +306,14 @@ export default function WorkspaceCards({ searchQuery = "", onClearSearch }) {
           </div>
 
           {/* Join Session Card */}
-          <div className="bg-[#0b0f15]/80 backdrop-blur-xl border border-zinc-800/80 rounded-2xl p-6 sm:p-7 flex flex-col justify-between shadow-2xl transition-all duration-300 hover:border-zinc-700">
+          <div className="bg-[#0b0f15]/80 backdrop-blur-xl border border-zinc-800/80 rounded-2xl p-4 sm:p-7 flex flex-col justify-between shadow-2xl transition-all duration-300 hover:border-zinc-700">
             <div>
-              <div className="flex items-start gap-4 mb-6">
-                <div className="w-12 h-12 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0 shadow-[0_0_15px_rgba(16,185,129,0.15)]">
-                  <FiLock size={20} />
+              <div className="flex items-start gap-3 sm:gap-4 mb-6">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0 shadow-[0_0_15px_rgba(16,185,129,0.15)]">
+                  <FiLock size={18} className="sm:w-5 sm:h-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white tracking-tight">
+                  <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">
                     Join via Room Code
                   </h3>
                   <p className="text-xs sm:text-sm text-zinc-400 mt-0.5 leading-relaxed">
@@ -333,7 +333,7 @@ export default function WorkspaceCards({ searchQuery = "", onClearSearch }) {
                   </span>
                 )}
               </div>
-              <div className="flex justify-center mb-6">
+              <div className="flex justify-center mb-6 w-full max-w-full overflow-hidden">
                 <CodeSlots
                   length={6}
                   value={pin}
@@ -351,7 +351,7 @@ export default function WorkspaceCards({ searchQuery = "", onClearSearch }) {
                   slotColor="#06080c"
                   digitColor="#ffffff"
                   dangerColor="#ef4444"
-                  slotSize={48}
+                  slotSize={44}
                   gap={8}
                   radius={12}
                   bounce={0.2}
