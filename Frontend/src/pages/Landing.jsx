@@ -107,7 +107,7 @@ export default function LandingPage() {
             ribbonColor="#9333ea"
             ribbonWidth={110}
             color="#ffffff"
-            speed={45}
+            speed={80}
           />
         </div>
         <div className="hidden md:block">
