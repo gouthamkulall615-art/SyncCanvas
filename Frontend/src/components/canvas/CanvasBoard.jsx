@@ -45,6 +45,7 @@ export default function CanvasBoard({
   awareness,
   undoManager,
   onLeave,
+  onRequestLeave,
 }) {
   const navigate = useNavigate();
   const [shapes, setShapes] = useState([]);
@@ -969,7 +970,7 @@ export default function CanvasBoard({
   return (
     <div className="canvas-board relative w-full h-full overflow-hidden">
       {/* Leave Room Confirmation Modal */}
-      {showLeaveModal && (
+      {!onRequestLeave && showLeaveModal && (
         <div className="absolute inset-0 z-[100] flex items-center justify-center bg-[#0e1116]/60 backdrop-blur-sm">
           <div className="bg-[#1a1d24] border border-zinc-800/80 rounded-2xl p-6 shadow-2xl max-w-sm w-full mx-4">
             <h3 className="text-white text-lg font-semibold mb-2">
@@ -1040,7 +1041,7 @@ export default function CanvasBoard({
         addDiamond={addDiamond}
         addArchitectureNode={addArchitectureNode}
         setShowClearModal={setShowClearModal}
-        onLeaveRoom={() => setShowLeaveModal(true)}
+        onLeaveRoom={onRequestLeave || (() => setShowLeaveModal(true))}
         theme={theme}
         onToggleTheme={toggleTheme}
       />

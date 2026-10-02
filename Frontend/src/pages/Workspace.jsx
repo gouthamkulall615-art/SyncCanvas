@@ -57,6 +57,37 @@ export default function Workspace() {
   }, [users]);
 
   const isExplicitlyLeavingRef = useRef(false);
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
+
+  // Intercept browser back button and tab close when active in room
+  useEffect(() => {
+    if (!verified) return;
+
+    // Push dummy history entry so the first "back" button click pops this entry instead of navigating away
+    window.history.pushState({ inRoom: true }, "");
+
+    const handlePopState = () => {
+      // Re-push history entry so the user stays on the page while the modal is shown
+      window.history.pushState({ inRoom: true }, "");
+      setShowLeaveModal(true);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+
+    const handleBeforeUnload = (e) => {
+      if (!isExplicitlyLeavingRef.current) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [verified]);
 
   const handleConfirmLeave = () => {
     isExplicitlyLeavingRef.current = true;
@@ -70,7 +101,7 @@ export default function Workspace() {
         providerRef.current.awareness?.setLocalState(null);
       }
     } catch (_) {}
-    navigate("/dashboard");
+    navigate("/dashboard", { replace: true });
   };
 
   // --- PIN GATE ---
@@ -535,8 +566,43 @@ export default function Workspace() {
           awareness={awareness}
           undoManager={undoManager}
           onLeave={handleConfirmLeave}
+          onRequestLeave={() => setShowLeaveModal(true)}
         />
       </section>
+
+      {/* Leave Room Confirmation Modal */}
+      {showLeaveModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0e1116]/60 backdrop-blur-sm">
+          <div className="bg-[#1a1d24] border border-zinc-800/80 rounded-2xl p-6 shadow-2xl max-w-sm w-full mx-4">
+            <h3 className="text-white text-lg font-semibold mb-2">
+              Leave Room
+            </h3>
+            <p className="text-zinc-400 text-sm mb-6">
+              Are you sure you want to leave this workspace? You can rejoin
+              anytime using the room PIN.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowLeaveModal(false)}
+                className="px-4 py-2 text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowLeaveModal(false);
+                  handleConfirmLeave();
+                }}
+                className="px-4 py-2 text-sm font-medium bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 border border-purple-500/20 rounded-lg transition-colors cursor-pointer"
+              >
+                Leave Room
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
