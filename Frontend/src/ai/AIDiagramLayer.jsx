@@ -5,14 +5,20 @@ import { NODE_W, NODE_H } from "./layoutDiagram";
 // Color + icon per node type
 const STYLE = {
   client:   { color: "#64748b", icon: "🖥️" },
+  mobile:   { color: "#3b82f6", icon: "📱" },
+  internet: { color: "#0ea5e9", icon: "🌐" },
+  server:   { color: "#10b981", icon: "⚙️" },
+  worker:   { color: "#14b8a6", icon: "🛠️" },
+  database: { color: "#3b82f6", icon: "🗄️" },
+  queue:    { color: "#f59e0b", icon: "📨" },
+  cloud:    { color: "#8b5cf6", icon: "☁️" },
+  auth:     { color: "#ec4899", icon: "🔒" },
+  // Compatibility fallbacks
   cdn:      { color: "#0ea5e9", icon: "🌐" },
   gateway:  { color: "#8b5cf6", icon: "🚪" },
   lb:       { color: "#6366f1", icon: "⚖️" },
   service:  { color: "#10b981", icon: "⚙️" },
-  worker:   { color: "#14b8a6", icon: "🛠️" },
-  db:       { color: "#3b82f6", icon: "🗄️" },
   cache:    { color: "#ef4444", icon: "⚡" },
-  queue:    { color: "#f59e0b", icon: "📨" },
   storage:  { color: "#a16207", icon: "📦" },
   search:   { color: "#ec4899", icon: "🔍" },
   external: { color: "#94a3b8", icon: "🔌" },

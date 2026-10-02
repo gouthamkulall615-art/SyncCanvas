@@ -1,12 +1,13 @@
 import dagre from "@dagrejs/dagre";
 
-export const NODE_W = 190;
-export const NODE_H = 72;
+// Dimensions matching the toolbox ArchitectureNode (36x36 hitbox * 3 scale = 108x108)
+export const NODE_W = 108;
+export const NODE_H = 108;
 
 // Takes the AI's validated JSON, returns the same JSON with x/y on every node.
 export function layoutDiagram(diagram) {
   const g = new dagre.graphlib.Graph();
-  g.setGraph({ rankdir: "LR", nodesep: 50, ranksep: 120, marginx: 40, marginy: 40 });
+  g.setGraph({ rankdir: "LR", nodesep: 60, ranksep: 140, marginx: 40, marginy: 40 });
   g.setDefaultEdgeLabel(() => ({}));
 
   diagram.nodes.forEach((n) => g.setNode(n.id, { width: NODE_W, height: NODE_H }));

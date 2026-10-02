@@ -1,6 +1,8 @@
-import { NODE_TYPES, PROTOCOLS } from "./diagramSchema.js";
+import { PROTOCOLS } from "./diagramSchema.js";
+import { catalogForPrompt } from "./nodeCatalog.js";
 
 // Few-shot example: shows the depth and specificity you want from the model.
+// Must use only the 9 toolbox node types.
 const EXAMPLE_OUTPUT = {
   title: "URL Shortener",
   requirements: {
@@ -9,10 +11,10 @@ const EXAMPLE_OUTPUT = {
   },
   nodes: [
     { id: "n1", type: "client", label: "Web / Mobile Client", reason: "Creates links and follows short URLs" },
-    { id: "n2", type: "gateway", label: "API Gateway", tech: "Nginx", reason: "TLS termination, rate limiting per IP", notes: "Stateless, scale horizontally" },
-    { id: "n3", type: "service", label: "Shortener Service", tech: "Node.js", reason: "Generates base62 IDs and resolves redirects", notes: "Stateless, 3+ instances" },
-    { id: "n4", type: "cache", label: "Hot URL Cache", tech: "Redis", reason: "Redirects are read-heavy (100:1), so cache hot links", notes: "~95% hit rate expected" },
-    { id: "n5", type: "db", label: "URL Store", tech: "PostgreSQL", reason: "Simple key lookups, strong consistency for new links", notes: "~500GB at 5 years; read replicas for scale" },
+    { id: "n2", type: "server", label: "API Gateway", tech: "Nginx", reason: "TLS termination, rate limiting per IP", notes: "Stateless, scale horizontally" },
+    { id: "n3", type: "server", label: "Shortener Service", tech: "Node.js", reason: "Generates base62 IDs and resolves redirects", notes: "Stateless, 3+ instances" },
+    { id: "n4", type: "database", label: "Hot URL Cache", tech: "Redis", reason: "Redirects are read-heavy (100:1), so cache hot links", notes: "~95% hit rate expected" },
+    { id: "n5", type: "database", label: "URL Store", tech: "PostgreSQL", reason: "Simple key lookups, strong consistency for new links", notes: "~500GB at 5 years; read replicas for scale" },
     { id: "n6", type: "queue", label: "Click Events", tech: "Kafka", reason: "Keeps analytics off the redirect critical path" },
     { id: "n7", type: "worker", label: "Analytics Worker", tech: "Node.js", reason: "Aggregates clicks asynchronously" },
   ],
@@ -31,7 +33,7 @@ const EXAMPLE_OUTPUT = {
   ],
   scaling_notes: [
     "Use a pre-generated ID range per service instance to avoid ID collisions",
-    "Put a CDN in front for 301 redirects of very popular links",
+    "Put a Cloud service in front for 301 redirects of very popular links",
   ],
 };
 
@@ -50,7 +52,9 @@ HOW TO THINK (do this internally, do not output it)
 OUTPUT RULES
 - Output ONLY the JSON object. No markdown, no code fences, no commentary.
 - Node ids must be "n1", "n2", ... and unique. Every edge "from"/"to" must be an existing node id.
-- node.type must be one of: ${NODE_TYPES.join(", ")}.
+- node.type must be one of the catalog types below. Use only these node types. A component that has no exact type uses the closest one and says what it really is in label and tech. Example: a Redis cache is a database node with tech Redis.
+NODE CATALOG:
+${catalogForPrompt()}
 - edge.protocol must be one of: ${PROTOCOLS.join(", ")}.
 - Every node needs a specific "reason" (why this component, why this tech). No generic filler.
 - Edge labels must say what data flows, not just "calls".

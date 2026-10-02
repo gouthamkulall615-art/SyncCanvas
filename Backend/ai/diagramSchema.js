@@ -1,9 +1,5 @@
 import { z } from "zod";
-
-export const NODE_TYPES = [
-  "client", "cdn", "gateway", "lb", "service", "worker",
-  "db", "cache", "queue", "storage", "search", "external",
-];
+import { normalizeType } from "./nodeCatalog.js";
 
 export const PROTOCOLS = [
   "HTTP", "gRPC", "WebSocket", "TCP", "SQL", "Queue", "Event", "Other",
@@ -11,7 +7,7 @@ export const PROTOCOLS = [
 
 const nodeSchema = z.object({
   id: z.string().regex(/^n\d+$/, "id must look like n1, n2, ..."),
-  type: z.enum(NODE_TYPES),
+  type: z.string().transform(normalizeType),
   label: z.string().min(1).max(40),
   tech: z.string().max(40).optional(),   // e.g. "Redis"
   reason: z.string().min(1).max(160),    // why this component / tech
