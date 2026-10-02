@@ -8,6 +8,10 @@ import {
   refundCredits,
   InsufficientCreditsError,
 } from "../utils/credits.js";
+import { generateDiagram } from "../ai/generateDiagram.js";
+import { createGeminiLlm } from "../ai/geminiWrapper.js";
+
+const geminiLlm = createGeminiLlm();
 
 const router = express.Router();
 
@@ -294,48 +298,24 @@ router.post("/generate", protect, aiLimiter, async (req, res) => {
       err?.name === "TimeoutError" ||
       /abort|timeout/i.test(err?.message || "");
 
-    // 2. Call Gemini with one retry on validation failure
-    let shapes;
-    try {
-      shapes = await callGeminiAndValidate(prompt.trim());
-    } catch (firstError) {
-      if (firstError.isValidationError) {
-        // Retry once only for schema validation errors
-        try {
-          shapes = await callGeminiAndValidate(prompt.trim(), {
-            brokenOutput: firstError.brokenOutput,
-            validationError: firstError.validationError,
-          });
-        } catch (secondError) {
-          // Both attempts failed — refund credits if spent
-          if (!isAdmin) {
-            await refundCredits(userId, CREDIT_COST);
-          }
-          console.error("AI generation failed after retry:", secondError);
-          const isTimeout = isTimeoutError(secondError);
-          return res.status(isTimeout ? 504 : 500).json({
-            error: isTimeout
-              ? "AI generation timed out after retry. Your credits have been refunded."
-              : "AI generation failed after retry. Your credits have been refunded.",
-          });
-        }
-      } else {
-        // Non-validation error (timeout, network, parse error) — do NOT retry, refund credits immediately
-        if (!isAdmin) {
-          await refundCredits(userId, CREDIT_COST);
-        }
-        console.error("AI generation failed:", firstError);
-        const isTimeout = isTimeoutError(firstError);
-        return res.status(isTimeout ? 504 : 500).json({
-          error: isTimeout
-            ? "AI generation timed out. Your credits have been refunded."
-            : "AI generation failed. Your credits have been refunded.",
-        });
+    // 2. Call generateDiagram with validation and retry
+    const result = await generateDiagram(geminiLlm, prompt.trim());
+
+    if (!result.ok) {
+      if (!isAdmin) {
+        await refundCredits(userId, CREDIT_COST);
       }
+      console.error("[AI] Generation failed:", result.error);
+      return res.status(500).json({
+        error: `AI generation failed: ${result.error}. Your credits have been refunded.`,
+      });
     }
 
-    // 3. Return the validated shapes
-    return res.status(200).json({ shapes });
+    // 3. Return the validated diagram (and legacy shapes array for compatibility)
+    return res.status(200).json({
+      diagram: result.diagram,
+      shapes: result.diagram.nodes,
+    });
   } catch (err) {
     console.error("Unexpected error in /api/ai/generate:", err);
     return res

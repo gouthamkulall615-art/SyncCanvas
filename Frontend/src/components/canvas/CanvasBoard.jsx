@@ -20,6 +20,8 @@ import Toolbars from "./Toolbars";
 import PropertiesPanel from "./PropertiesPanel";
 import AIAssistant from "../ui/AIAssistant";
 import api from "../../api/axios";
+import { layoutDiagram } from "../../ai/layoutDiagram";
+import { addAIDiagram } from "../../ai/diagramToShapes";
 import "./CanvasBoard.css";
 
 let idCounter = 0;
@@ -815,9 +817,28 @@ export default function CanvasBoard({
       );
     }
 
+    const diagram = res.data?.diagram;
+    if (diagram && Array.isArray(diagram.nodes) && diagram.nodes.length > 0) {
+      const laidOut = layoutDiagram(diagram);
+      const center = getViewportCenter();
+      const minX = Math.min(...laidOut.nodes.map((n) => n.x));
+      const maxX = Math.max(...laidOut.nodes.map((n) => n.x));
+      const minY = Math.min(...laidOut.nodes.map((n) => n.y));
+      const maxY = Math.max(...laidOut.nodes.map((n) => n.y));
+      const diagW = maxX - minX + 190;
+      const diagH = maxY - minY + 72;
+      const origin = {
+        x: center.x - diagW / 2,
+        y: center.y - diagH / 2,
+      };
+
+      addAIDiagram(shapesMap, laidOut, origin);
+      return;
+    }
+
     const newShapes = res.data?.shapes;
     if (!Array.isArray(newShapes) || newShapes.length === 0) {
-      throw new Error("AI returned no shapes. Try a different prompt.");
+      throw new Error("AI returned no diagram or shapes. Try a different prompt.");
     }
 
     // Map AI IDs to unique Yjs IDs
@@ -1229,7 +1250,57 @@ export default function CanvasBoard({
                 };
 
                 switch (shape.type) {
-                  case "rect":
+                  case "rect": {
+                    if (shape.label || shape.aiType) {
+                      const stColor = shape.stroke || "#3b82f6";
+                      const isLight = theme === "light";
+                      return (
+                        <Group key={shape.id} {...commonProps}>
+                          <Rect
+                            width={shape.width || 190}
+                            height={shape.height || 72}
+                            cornerRadius={10}
+                            fill={shape.fill || (isLight ? "#ffffff" : "#1e293b")}
+                            stroke={stColor}
+                            strokeWidth={shape.strokeWidth || 2}
+                            shadowColor="#000"
+                            shadowOpacity={0.15}
+                            shadowBlur={8}
+                            shadowOffsetY={2}
+                          />
+                          <Rect
+                            width={8}
+                            height={shape.height || 72}
+                            fill={stColor}
+                            cornerRadius={[10, 0, 0, 10]}
+                          />
+                          <Text
+                            x={16}
+                            y={12}
+                            width={(shape.width || 190) - 24}
+                            text={shape.icon ? `${shape.icon} ${shape.label}` : shape.label}
+                            fontSize={14}
+                            fontStyle="bold"
+                            fill={isLight ? "#0f172a" : "#f8fafc"}
+                            wrap="none"
+                            ellipsis
+                          />
+                          {(shape.tech || shape.aiType) && (
+                            <Text
+                              x={16}
+                              y={38}
+                              width={(shape.width || 190) - 24}
+                              text={shape.tech || shape.aiType}
+                              fontSize={11}
+                              fontStyle="bold"
+                              fill={stColor}
+                              wrap="none"
+                              ellipsis
+                            />
+                          )}
+                        </Group>
+                      );
+                    }
                     return (
                       <Rect
                         key={shape.id}
@@ -1239,6 +1310,7 @@ export default function CanvasBoard({
                         cornerRadius={4}
                       />
                     );
+                  }
                   case "circle":
                     return (
                       <Circle
@@ -1375,18 +1447,49 @@ export default function CanvasBoard({
                       return null;
                     }
 
+                    const isDashed =
+                      shape.dashed ||
+                      (Array.isArray(shape.dash) && shape.dash.length > 0);
+                    const mx = (startP.x + endP.x) / 2;
+                    const my = (startP.y + endP.y) / 2;
+
                     return (
-                      <Arrow
-                        key={shape.id}
-                        {...commonProps}
-                        points={[startP.x, startP.y, endP.x, endP.y]}
-                        fill={shape.stroke || "#5ca4f8"}
-                        stroke={shape.stroke || "#5ca4f8"}
-                        pointerLength={10}
-                        pointerWidth={10}
-                        tension={0}
-                        listening={drawingShapeId !== shape.id}
-                      />
+                      <Group key={shape.id}>
+                        <Arrow
+                          {...commonProps}
+                          points={[startP.x, startP.y, endP.x, endP.y]}
+                          fill={shape.stroke || "#5ca4f8"}
+                          stroke={shape.stroke || "#5ca4f8"}
+                          dash={
+                            isDashed
+                              ? shape.dash?.length
+                                ? shape.dash
+                                : [8, 6]
+                              : []
+                          }
+                          pointerLength={10}
+                          pointerWidth={10}
+                          tension={0}
+                          listening={drawingShapeId !== shape.id}
+                        />
+                        {shape.label && (
+                          <Text
+                            x={mx}
+                            y={my - 8}
+                            width={160}
+                            offsetX={80}
+                            align="center"
+                            text={shape.label}
+                            fontSize={11}
+                            fontStyle="bold"
+                            fill={theme === "light" ? "#334155" : "#cbd5e1"}
+                            stroke={theme === "light" ? "#ffffff" : "#0e1116"}
+                            strokeWidth={3}
+                            fillAfterStrokeEnabled
+                            listening={false}
+                          />
+                        )}
+                      </Group>
                     );
                   }
                   default:

@@ -14,12 +14,16 @@ import Support from "../pages/Support";
 import Privacy from "../pages/Privacy";
 import Terms from "../pages/Terms";
 import NotFound from "../pages/NotFound";
+import DiagramDemo from "../ai/DiagramDemo";
 
 export default function App() {
   return (
     <Routes>
       {/* Public Landing Page */}
       <Route path="/" element={<Landing />} />
+
+      {/* Temporary AI Diagram Demo */}
+      <Route path="/demo" element={<DiagramDemo />} />
 
       {/* Authenticated Dashboard */}
       <Route path="/dashboard" element={<Dashboard />} />
