@@ -200,7 +200,7 @@ function getModel() {
     genAI = new GoogleGenerativeAI(apiKey);
     model = genAI.getGenerativeModel(
       {
-        model: "gemini-3.5-flash-lite",
+        model: "gemini-3.8-flash",
         systemInstruction: SYSTEM_INSTRUCTION,
         generationConfig: {
           responseMimeType: "application/json",
