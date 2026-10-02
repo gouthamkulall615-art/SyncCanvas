@@ -59,6 +59,39 @@ export default function Workspace() {
   const isExplicitlyLeavingRef = useRef(false);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
 
+  // --- PIN GATE ---
+  // The host who just generated this link skips the gate (sessionStorage flag
+  // set by WorkspaceCards.jsx at creation time). Everyone else — including
+  // the host on a refresh — has to prove they know the pin before we ever
+  // open a Yjs/socket connection. This is the check that was missing before:
+  // previously the token in the URL was treated as sufficient on its own.
+  const [verified, setVerified] = useState(
+    () =>
+      sessionStorage.getItem(`host:${token}`) === "true" ||
+      sessionStorage.getItem(`verified:${token}`) === "true",
+  );
+  const [pinInput, setPinInput] = useState("");
+  const [codeStatus, setCodeStatus] = useState("idle"); // "idle" | "error" | "success"
+  const [gateError, setGateError] = useState(null);
+  const [checking, setChecking] = useState(false);
+  const [roomInfo, setRoomInfo] = useState({ roomName: "", maxParticipants: 6 });
+  const [roomNotFound, setRoomNotFound] = useState(false);
+
+  const handleConfirmLeave = () => {
+    isExplicitlyLeavingRef.current = true;
+    try {
+      if (providerRef.current) {
+        const myUsername = user?.name || user?.username || "Peer";
+        providerRef.current.socket?.emit("client-leave", {
+          username: myUsername,
+          clientId: providerRef.current.awareness?.clientID,
+        });
+        providerRef.current.awareness?.setLocalState(null);
+      }
+    } catch (_) {}
+    navigate("/dashboard", { replace: true });
+  };
+
   // Intercept browser back button and tab close when active in room
   useEffect(() => {
     if (!verified) return;
@@ -88,39 +121,6 @@ export default function Workspace() {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, [verified]);
-
-  const handleConfirmLeave = () => {
-    isExplicitlyLeavingRef.current = true;
-    try {
-      if (providerRef.current) {
-        const myUsername = user?.name || user?.username || "Peer";
-        providerRef.current.socket?.emit("client-leave", {
-          username: myUsername,
-          clientId: providerRef.current.awareness?.clientID,
-        });
-        providerRef.current.awareness?.setLocalState(null);
-      }
-    } catch (_) {}
-    navigate("/dashboard", { replace: true });
-  };
-
-  // --- PIN GATE ---
-  // The host who just generated this link skips the gate (sessionStorage flag
-  // set by WorkspaceCards.jsx at creation time). Everyone else — including
-  // the host on a refresh — has to prove they know the pin before we ever
-  // open a Yjs/socket connection. This is the check that was missing before:
-  // previously the token in the URL was treated as sufficient on its own.
-  const [verified, setVerified] = useState(
-    () =>
-      sessionStorage.getItem(`host:${token}`) === "true" ||
-      sessionStorage.getItem(`verified:${token}`) === "true",
-  );
-  const [pinInput, setPinInput] = useState("");
-  const [codeStatus, setCodeStatus] = useState("idle"); // "idle" | "error" | "success"
-  const [gateError, setGateError] = useState(null);
-  const [checking, setChecking] = useState(false);
-  const [roomInfo, setRoomInfo] = useState({ roomName: "", maxParticipants: 6 });
-  const [roomNotFound, setRoomNotFound] = useState(false);
 
   // Helper to record / update recent room in localStorage
   const recordRecentRoom = (participantsList = [], customRoomName = null) => {
