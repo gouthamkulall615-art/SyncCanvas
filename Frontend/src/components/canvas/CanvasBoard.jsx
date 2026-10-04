@@ -97,6 +97,7 @@ export default function CanvasBoard({
   const stageTransformRef = useRef({ scale: 1, position: { x: 0, y: 0 } });
   const touchGestureRef = useRef(null);
   const dragPositionsRef = useRef({});
+  const lastEraserPosRef = useRef(null);
   const [, setDragTick] = useState(0);
 
   const [size, setSize] = useState({ width: 0, height: 0 });
@@ -349,6 +350,7 @@ export default function CanvasBoard({
     if (activeTool === "eraser") {
       setIsErasing(true);
       setSelectedId(null);
+      lastEraserPosRef.current = pos;
       eraseShapeAt(pos, e.target);
       return;
     }
@@ -466,7 +468,25 @@ export default function CanvasBoard({
     if (activeTool === "eraser") {
       setEraserCursorPos(relativePoint);
       if (isErasing) {
-        eraseShapeAt(relativePoint, e.target);
+        const lastPos = lastEraserPosRef.current || relativePoint;
+        const dist = Math.hypot(
+          relativePoint.x - lastPos.x,
+          relativePoint.y - lastPos.y,
+        );
+        const radius = eraserSize / 2;
+        const stepDist = Math.max(3, radius * 0.4);
+        const steps = Math.max(1, Math.min(12, Math.ceil(dist / stepDist)));
+        for (let s = 1; s <= steps; s++) {
+          const interpX =
+            lastPos.x + (relativePoint.x - lastPos.x) * (s / steps);
+          const interpY =
+            lastPos.y + (relativePoint.y - lastPos.y) * (s / steps);
+          eraseShapeAt(
+            { x: interpX, y: interpY },
+            s === steps ? e.target : null,
+          );
+        }
+        lastEraserPosRef.current = relativePoint;
       }
     } else if (eraserCursorPos) {
       setEraserCursorPos(null);
@@ -546,12 +566,14 @@ export default function CanvasBoard({
     }
     if (isErasing) {
       setIsErasing(false);
+      lastEraserPosRef.current = null;
     }
   };
 
   const handleMouseLeave = () => {
     if (isDrawing) setIsDrawing(false);
     if (isErasing) setIsErasing(false);
+    lastEraserPosRef.current = null;
     setEraserCursorPos(null);
     if (!awareness) return;
     const state = awareness.getLocalState();
@@ -860,6 +882,128 @@ export default function CanvasBoard({
     return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
   };
 
+  const lineIntersectsCircle = (pts, cx, cy, r) => {
+    if (!pts || pts.length < 2) return false;
+    if (pts.length === 2) {
+      return Math.hypot(pts[0] - cx, pts[1] - cy) <= r;
+    }
+    for (let i = 0; i < pts.length - 2; i += 2) {
+      if (
+        distToSegment(cx, cy, pts[i], pts[i + 1], pts[i + 2], pts[i + 3]) <= r
+      ) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const getCircleSegmentIntervals = (x1, y1, x2, y2, cx, cy, r) => {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const a = dx * dx + dy * dy;
+
+    const d1 = Math.hypot(x1 - cx, y1 - cy);
+    const d2 = Math.hypot(x2 - cx, y2 - cy);
+
+    if (a < 1e-6) {
+      return d1 < r ? [] : [[0, 1]];
+    }
+
+    const fx = x1 - cx;
+    const fy = y1 - cy;
+    const b = 2 * (fx * dx + fy * dy);
+    const c = fx * fx + fy * fy - r * r;
+    const discriminant = b * b - 4 * a * c;
+
+    if (discriminant <= 0) {
+      return d1 < r || d2 < r ? [] : [[0, 1]];
+    }
+
+    const sqrtD = Math.sqrt(discriminant);
+    const t1 = (-b - sqrtD) / (2 * a);
+    const t2 = (-b + sqrtD) / (2 * a);
+
+    const intervals = [];
+
+    if (t1 > 0) {
+      const end = Math.min(1, t1);
+      if (end > 0.001) {
+        intervals.push([0, end]);
+      }
+    }
+
+    if (t2 < 1) {
+      const start = Math.max(0, t2);
+      if (start < 0.999) {
+        intervals.push([start, 1]);
+      }
+    }
+
+    return intervals;
+  };
+
+  const sliceStrokeByCircle = (points, cx, cy, r) => {
+    if (!points || points.length < 2) return [];
+    if (points.length === 2) {
+      return Math.hypot(points[0] - cx, points[1] - cy) < r ? [] : [points];
+    }
+
+    const chains = [];
+    let currentChain = [];
+
+    for (let i = 0; i < points.length - 2; i += 2) {
+      const x1 = points[i];
+      const y1 = points[i + 1];
+      const x2 = points[i + 2];
+      const y2 = points[i + 3];
+
+      const intervals = getCircleSegmentIntervals(x1, y1, x2, y2, cx, cy, r);
+
+      for (const [u, v] of intervals) {
+        const pStartX = Math.round((x1 + u * (x2 - x1)) * 10) / 10;
+        const pStartY = Math.round((y1 + u * (y2 - y1)) * 10) / 10;
+        const pEndX = Math.round((x1 + v * (x2 - x1)) * 10) / 10;
+        const pEndY = Math.round((y1 + v * (y2 - y1)) * 10) / 10;
+
+        const canConnect =
+          currentChain.length >= 2 &&
+          Math.hypot(
+            currentChain[currentChain.length - 2] - pStartX,
+            currentChain[currentChain.length - 1] - pStartY,
+          ) < 1.0;
+
+        if (canConnect) {
+          currentChain.push(pEndX, pEndY);
+        } else {
+          if (currentChain.length >= 4) {
+            chains.push(currentChain);
+          }
+          currentChain = [pStartX, pStartY, pEndX, pEndY];
+        }
+
+        if (v < 1) {
+          if (currentChain.length >= 4) {
+            chains.push(currentChain);
+          }
+          currentChain = [];
+        }
+      }
+
+      if (intervals.length === 0) {
+        if (currentChain.length >= 4) {
+          chains.push(currentChain);
+        }
+        currentChain = [];
+      }
+    }
+
+    if (currentChain.length >= 4) {
+      chains.push(currentChain);
+    }
+
+    return chains;
+  };
+
   const eraseShape = (id) => {
     if (!id || !shapesMap.has(id)) return;
     shapesMap.delete(id);
@@ -880,58 +1024,81 @@ export default function CanvasBoard({
     const radius = eraserSize / 2;
     const toDelete = new Set();
 
-    // 1. Direct Konva target node hit
+    // 1. Direct Konva target node hit for non-line shapes
     if (targetNode && targetNode !== stageRef.current) {
       let curr = targetNode;
       while (curr && curr !== stageRef.current) {
         const id = curr.id ? curr.id() : null;
         if (id && shapesMap.has(id)) {
-          toDelete.add(id);
-          break;
+          const s = shapesMap.get(id);
+          if (s && s.type !== "line") {
+            toDelete.add(id);
+            break;
+          }
         }
         curr = curr.parent;
       }
     }
 
-    // 2. Spatial hit test against all shapes
-    shapes.forEach((shape) => {
+    // 2. Process shapes: slice lines according to eraser radius, delete vector shapes if touched
+    const currentShapes = [];
+    shapesMap.forEach((val, key) => {
+      currentShapes.push({ ...val, id: key });
+    });
+
+    currentShapes.forEach((shape) => {
       if (toDelete.has(shape.id)) return;
 
       if (shape.type === "line") {
         const pts = shape.points;
-        if (!pts || pts.length < 2) return;
-        const strokeHalf = (shape.strokeWidth || 3) / 2;
-        const threshold = radius + strokeHalf + 2;
+        if (!pts || pts.length < 2) {
+          toDelete.add(shape.id);
+          return;
+        }
 
-        if (pts.length === 2) {
-          if (Math.hypot(pts[0] - pos.x, pts[1] - pos.y) <= threshold) {
-            toDelete.add(shape.id);
-          }
+        const hit = lineIntersectsCircle(
+          pts,
+          pos.x,
+          pos.y,
+          radius + (shape.strokeWidth || 3) / 4,
+        );
+        if (!hit) return;
+
+        const chains = sliceStrokeByCircle(pts, pos.x, pos.y, radius);
+
+        if (chains.length === 0) {
+          shapesMap.delete(shape.id);
+          if (selectedId === shape.id) setSelectedId(null);
+        } else if (chains.length === 1) {
+          shapesMap.set(shape.id, {
+            ...shape,
+            points: chains[0],
+          });
         } else {
-          for (let i = 0; i < pts.length - 2; i += 2) {
-            if (
-              distToSegment(
-                pos.x,
-                pos.y,
-                pts[i],
-                pts[i + 1],
-                pts[i + 2],
-                pts[i + 3],
-              ) <= threshold
-            ) {
-              toDelete.add(shape.id);
-              break;
-            }
+          shapesMap.set(shape.id, {
+            ...shape,
+            points: chains[0],
+          });
+          for (let k = 1; k < chains.length; k++) {
+            const newId = nextId();
+            shapesMap.set(newId, {
+              ...shape,
+              id: newId,
+              points: chains[k],
+            });
           }
         }
-      } else if (shape.type === "arrow") {
+        return;
+      }
+
+      if (shape.type === "arrow") {
         let startP;
         let endP;
         const startShape = shape.startId
-          ? shapes.find((s) => s.id === shape.startId)
+          ? currentShapes.find((s) => s.id === shape.startId)
           : null;
         const endShape = shape.endId
-          ? shapes.find((s) => s.id === shape.endId)
+          ? currentShapes.find((s) => s.id === shape.endId)
           : null;
 
         if (startShape && endShape) {
@@ -1011,9 +1178,12 @@ export default function CanvasBoard({
         throw new Error("Session expired, please log in again.");
       }
       if (status === 402) {
-        throw new Error(
+        const creditErr = new Error(
           serverMsg || "You don’t have enough credits for this generation.",
         );
+        creditErr.isInsufficientCredits = true;
+        creditErr.creditData = err.response?.data;
+        throw creditErr;
       }
       if (status === 429) {
         throw new Error(
@@ -1199,6 +1369,8 @@ export default function CanvasBoard({
         y: -centerY * stageScale + size.height / 2,
       });
     }
+
+    return res?.data;
   };
 
   return (
@@ -1446,13 +1618,29 @@ export default function CanvasBoard({
                   draggable: activeTool === "select" && !isArrow,
                   scaleX: shape.scaleX || 1,
                   scaleY: shape.scaleY || 1,
-                  onClick: () => {
+                  onClick: (e) => {
                     if (activeTool === "select") setSelectedId(shape.id);
-                    else if (activeTool === "eraser") eraseShape(shape.id);
+                    else if (activeTool === "eraser") {
+                      if (shape.type === "line") {
+                        const stage = e.target.getStage();
+                        const pos = getRelativePointerPosition(stage);
+                        eraseShapeAt(pos);
+                      } else {
+                        eraseShape(shape.id);
+                      }
+                    }
                   },
-                  onTap: () => {
+                  onTap: (e) => {
                     if (activeTool === "select") setSelectedId(shape.id);
-                    else if (activeTool === "eraser") eraseShape(shape.id);
+                    else if (activeTool === "eraser") {
+                      if (shape.type === "line") {
+                        const stage = e.target.getStage();
+                        const pos = getRelativePointerPosition(stage);
+                        eraseShapeAt(pos);
+                      } else {
+                        eraseShape(shape.id);
+                      }
+                    }
                   },
                   onDragStart: (e) => {
                     dragPositionsRef.current[shape.id] = {

@@ -523,8 +523,11 @@ export default function Workspace() {
       </div>
       <div className="absolute top-4 left-4 md:top-6 md:left-6 z-50 bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 rounded-2xl p-3.5 sm:p-4 w-60 sm:w-64 max-w-[calc(100vw-5rem)] shadow-2xl">
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-white shadow-[0_0_12px_rgba(37,99,235,0.4)] shrink-0">
-            S
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-purple-500/10 border border-purple-500/20 shadow-[0_0_12px_rgba(147,51,234,0.25)]">
+            <svg viewBox="0 0 28 28" width="22" height="22" fill="#9333ea">
+              <rect x="3" y="3" width="16" height="16" rx="4" opacity="0.5" />
+              <rect x="9" y="9" width="16" height="16" rx="4" />
+            </svg>
           </div>
           <div className="min-w-0 flex-1">
             <h1
