@@ -17,6 +17,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { ArchitectureNode, LIGHT_NODE_PALETTE, DARK_NODE_PALETTE } from "./ArchitectureNodes";
 import Toolbars from "./Toolbars";
+import ToolOptionsBar from "./ToolOptionsBar";
 import PropertiesPanel from "./PropertiesPanel";
 import AIAssistant from "../ui/AIAssistant";
 import api from "../../api/axios";
@@ -55,6 +56,13 @@ export default function CanvasBoard({
   const [selectedId, setSelectedId] = useState(null);
   const [drawingShapeId, setDrawingShapeId] = useState(null);
   const [activeTool, setActiveTool] = useState("select");
+  const [penColor, setPenColor] = useState(
+    () => (localStorage.getItem("canvasTheme") === "light" ? "#111827" : "#ffffff"),
+  );
+  const [penWidth, setPenWidth] = useState(3);
+  const [eraserSize, setEraserSize] = useState(24);
+  const [eraserCursorPos, setEraserCursorPos] = useState(null);
+  const [isErasing, setIsErasing] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
   const [editingTextId, setEditingTextId] = useState(null);
   const [hoveredSnapId, setHoveredSnapId] = useState(null);
@@ -70,6 +78,11 @@ export default function CanvasBoard({
     setTheme((t) => {
       const next = t === "dark" ? "light" : "dark";
       localStorage.setItem("canvasTheme", next);
+      setPenColor((prev) => {
+        if (t === "dark" && prev === "#ffffff") return "#111827";
+        if (t === "light" && prev === "#111827") return "#ffffff";
+        return prev;
+      });
       return next;
     });
   const themeConfig = CANVAS_THEMES[theme];
@@ -333,6 +346,13 @@ export default function CanvasBoard({
       return;
     }
 
+    if (activeTool === "eraser") {
+      setIsErasing(true);
+      setSelectedId(null);
+      eraseShapeAt(pos, e.target);
+      return;
+    }
+
     if (activeTool === "arrow") {
       let startNode = null;
       if (clickedId && shapesMap.has(clickedId)) {
@@ -376,8 +396,8 @@ export default function CanvasBoard({
         points: [pos.x, pos.y],
         fill: "transparent",
         stroke:
-          activeTool === "highlighter" ? "#f59e0b" : themeConfig.penStroke,
-        strokeWidth: activeTool === "highlighter" ? 14 : 3,
+          activeTool === "highlighter" ? "#f59e0b" : penColor,
+        strokeWidth: activeTool === "highlighter" ? 14 : penWidth,
         opacity: activeTool === "highlighter" ? 0.4 : 1,
         dash: [],
       });
@@ -441,6 +461,15 @@ export default function CanvasBoard({
       }
     } else if (hoveredSnapId) {
       setHoveredSnapId(null);
+    }
+
+    if (activeTool === "eraser") {
+      setEraserCursorPos(relativePoint);
+      if (isErasing) {
+        eraseShapeAt(relativePoint, e.target);
+      }
+    } else if (eraserCursorPos) {
+      setEraserCursorPos(null);
     }
 
     if (!isDrawing) return;
@@ -515,10 +544,15 @@ export default function CanvasBoard({
       setDrawingShapeId(null);
       setHoveredSnapId(null);
     }
+    if (isErasing) {
+      setIsErasing(false);
+    }
   };
 
   const handleMouseLeave = () => {
     if (isDrawing) setIsDrawing(false);
+    if (isErasing) setIsErasing(false);
+    setEraserCursorPos(null);
     if (!awareness) return;
     const state = awareness.getLocalState();
     if (state?.user)
@@ -693,6 +727,13 @@ export default function CanvasBoard({
       if ((e.key === "Delete" || e.key === "Backspace") && !isTyping) {
         deleteSelected();
       }
+
+      if (!isCmdOrCtrl && !isTyping) {
+        if (e.key.toLowerCase() === "p") setActiveTool("pen");
+        if (e.key.toLowerCase() === "e") setActiveTool("eraser");
+        if (e.key.toLowerCase() === "v") setActiveTool("select");
+        if (e.key.toLowerCase() === "h") setActiveTool("pan");
+      }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
@@ -783,6 +824,176 @@ export default function CanvasBoard({
       }
     }
     return closestNode;
+  };
+
+  const handlePenColorChange = (newColor) => {
+    setPenColor(newColor);
+    if (selectedId && shapesMap.has(selectedId)) {
+      const s = shapesMap.get(selectedId);
+      if (s && s.type === "line") {
+        shapesMap.set(selectedId, { ...s, stroke: newColor });
+      }
+    }
+  };
+
+  const handlePenWidthChange = (newWidth) => {
+    setPenWidth(newWidth);
+    if (selectedId && shapesMap.has(selectedId)) {
+      const s = shapesMap.get(selectedId);
+      if (s && s.type === "line") {
+        shapesMap.set(selectedId, { ...s, strokeWidth: newWidth });
+      }
+    }
+  };
+
+  const handleEraserSizeChange = (newSize) => {
+    setEraserSize(newSize);
+  };
+
+  const distToSegment = (px, py, x1, y1, x2, y2) => {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const lenSq = dx * dx + dy * dy;
+    if (lenSq === 0) return Math.hypot(px - x1, py - y1);
+    let t = ((px - x1) * dx + (py - y1) * dy) / lenSq;
+    t = Math.max(0, Math.min(1, t));
+    return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
+  };
+
+  const eraseShape = (id) => {
+    if (!id || !shapesMap.has(id)) return;
+    shapesMap.delete(id);
+    // Also remove any arrows that were connected to this node
+    shapesMap.forEach((val, key) => {
+      if (
+        val.type === "arrow" &&
+        (val.startId === id || val.endId === id)
+      ) {
+        shapesMap.delete(key);
+      }
+    });
+    if (selectedId === id) setSelectedId(null);
+  };
+
+  const eraseShapeAt = (pos, targetNode) => {
+    if (!pos) return;
+    const radius = eraserSize / 2;
+    const toDelete = new Set();
+
+    // 1. Direct Konva target node hit
+    if (targetNode && targetNode !== stageRef.current) {
+      let curr = targetNode;
+      while (curr && curr !== stageRef.current) {
+        const id = curr.id ? curr.id() : null;
+        if (id && shapesMap.has(id)) {
+          toDelete.add(id);
+          break;
+        }
+        curr = curr.parent;
+      }
+    }
+
+    // 2. Spatial hit test against all shapes
+    shapes.forEach((shape) => {
+      if (toDelete.has(shape.id)) return;
+
+      if (shape.type === "line") {
+        const pts = shape.points;
+        if (!pts || pts.length < 2) return;
+        const strokeHalf = (shape.strokeWidth || 3) / 2;
+        const threshold = radius + strokeHalf + 2;
+
+        if (pts.length === 2) {
+          if (Math.hypot(pts[0] - pos.x, pts[1] - pos.y) <= threshold) {
+            toDelete.add(shape.id);
+          }
+        } else {
+          for (let i = 0; i < pts.length - 2; i += 2) {
+            if (
+              distToSegment(
+                pos.x,
+                pos.y,
+                pts[i],
+                pts[i + 1],
+                pts[i + 2],
+                pts[i + 3],
+              ) <= threshold
+            ) {
+              toDelete.add(shape.id);
+              break;
+            }
+          }
+        }
+      } else if (shape.type === "arrow") {
+        let startP;
+        let endP;
+        const startShape = shape.startId
+          ? shapes.find((s) => s.id === shape.startId)
+          : null;
+        const endShape = shape.endId
+          ? shapes.find((s) => s.id === shape.endId)
+          : null;
+
+        if (startShape && endShape) {
+          startP = getDockingPoint(startShape, getShapeCenter(endShape));
+          endP = getDockingPoint(endShape, startP);
+        } else if (startShape) {
+          startP = getDockingPoint(startShape, {
+            x: shape.endX ?? startShape.x,
+            y: shape.endY ?? startShape.y,
+          });
+          endP = {
+            x: shape.endX ?? startShape.x,
+            y: shape.endY ?? startShape.y,
+          };
+        } else if (shape.startX != null && shape.endX != null) {
+          startP = { x: shape.startX, y: shape.startY };
+          endP = { x: shape.endX, y: shape.endY };
+        }
+
+        if (startP && endP) {
+          if (
+            distToSegment(pos.x, pos.y, startP.x, startP.y, endP.x, endP.y) <=
+            radius + 8
+          ) {
+            toDelete.add(shape.id);
+          }
+        }
+      } else if (shape.type === "circle") {
+        const sx = shape.x || 0;
+        const sy = shape.y || 0;
+        const r = (shape.radius || 40) * (shape.scaleX || 1);
+        if (Math.hypot(pos.x - sx, pos.y - sy) <= r + radius) {
+          toDelete.add(shape.id);
+        }
+      } else if (shape.type === "diamond") {
+        const sx = shape.x || 0;
+        const sy = shape.y || 0;
+        const r = (shape.radius || 70) * (shape.scaleX || 1);
+        if (Math.hypot(pos.x - sx, pos.y - sy) <= r + radius) {
+          toDelete.add(shape.id);
+        }
+      } else {
+        const sx = shape.x || 0;
+        const sy = shape.y || 0;
+        const w =
+          (shape.width || (shape.type === "text" ? 120 : 190)) *
+          (shape.scaleX || 1);
+        const h =
+          (shape.height || (shape.type === "text" ? 30 : 72)) *
+          (shape.scaleY || 1);
+        if (
+          pos.x >= sx - radius &&
+          pos.x <= sx + w + radius &&
+          pos.y >= sy - radius &&
+          pos.y <= sy + h + radius
+        ) {
+          toDelete.add(shape.id);
+        }
+      }
+    });
+
+    toDelete.forEach((id) => eraseShape(id));
   };
 
   // ----- AI-assisted shape generation -----
@@ -1056,6 +1267,16 @@ export default function CanvasBoard({
         </div>
       )}
 
+      <ToolOptionsBar
+        activeTool={activeTool}
+        penColor={penColor}
+        onPenColorChange={handlePenColorChange}
+        penWidth={penWidth}
+        onPenWidthChange={handlePenWidthChange}
+        eraserSize={eraserSize}
+        onEraserSizeChange={handleEraserSizeChange}
+        theme={theme}
+      />
       <Toolbars
         activeTool={activeTool}
         setActiveTool={setActiveTool}
@@ -1159,7 +1380,8 @@ export default function CanvasBoard({
             : activeTool === "pen" ||
                 activeTool === "highlighter" ||
                 activeTool === "text" ||
-                activeTool === "arrow"
+                activeTool === "arrow" ||
+                activeTool === "eraser"
               ? "cursor-crosshair"
               : "cursor-default"
         }`}
@@ -1226,9 +1448,11 @@ export default function CanvasBoard({
                   scaleY: shape.scaleY || 1,
                   onClick: () => {
                     if (activeTool === "select") setSelectedId(shape.id);
+                    else if (activeTool === "eraser") eraseShape(shape.id);
                   },
                   onTap: () => {
                     if (activeTool === "select") setSelectedId(shape.id);
+                    else if (activeTool === "eraser") eraseShape(shape.id);
                   },
                   onDragStart: (e) => {
                     dragPositionsRef.current[shape.id] = {
@@ -1534,6 +1758,24 @@ export default function CanvasBoard({
                   </Group>
                 );
               })()}
+
+              {/* Eraser visual indicator following cursor */}
+              {activeTool === "eraser" && eraserCursorPos && (
+                <Circle
+                  x={eraserCursorPos.x}
+                  y={eraserCursorPos.y}
+                  radius={eraserSize / 2}
+                  stroke={theme === "light" ? "#ef4444" : "#f87171"}
+                  strokeWidth={1.5}
+                  dash={[4, 4]}
+                  fill={
+                    theme === "light"
+                      ? "rgba(239, 68, 68, 0.15)"
+                      : "rgba(248, 113, 113, 0.2)"
+                  }
+                  listening={false}
+                />
+              )}
 
               <Transformer
                 ref={transformerRef}

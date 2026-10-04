@@ -22,7 +22,7 @@ import {
   FiMoon,
   FiLogOut,
 } from "react-icons/fi";
-import { LuHand, LuDiamond } from "react-icons/lu";
+import { LuHand, LuDiamond, LuEraser } from "react-icons/lu";
 import { FloatingDock, FloatingDockVertical } from "../ReactBits/FloatingDock";
 
 export default function Toolbars({
@@ -50,6 +50,7 @@ export default function Toolbars({
     { id: "diamond", icon: <LuDiamond size="100%" />, action: addDiamond },
     { id: "pen", icon: <FiPenTool size="100%" /> },
     { id: "highlighter", icon: <FiEdit3 size="100%" /> },
+    { id: "eraser", icon: <LuEraser size="100%" /> },
     {
       id: "text",
       icon: (
