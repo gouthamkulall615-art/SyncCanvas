@@ -19,6 +19,7 @@ import { ArchitectureNode, LIGHT_NODE_PALETTE, DARK_NODE_PALETTE } from "./Archi
 import Toolbars from "./Toolbars";
 import ToolOptionsBar from "./ToolOptionsBar";
 import PropertiesPanel from "./PropertiesPanel";
+import ShareModal from "./ShareModal";
 import AIAssistant from "../ui/AIAssistant";
 import api from "../../api/axios";
 import { layoutDiagram } from "../../ai/layoutDiagram";
@@ -49,6 +50,7 @@ export default function CanvasBoard({
   undoManager,
   onLeave,
   onRequestLeave,
+  roomName = "SyncCanvas Workspace",
 }) {
   const navigate = useNavigate();
   const [shapes, setShapes] = useState([]);
@@ -70,6 +72,7 @@ export default function CanvasBoard({
   // Modals state
   const [showClearModal, setShowClearModal] = useState(false);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const [theme, setTheme] = useState(
     () => localStorage.getItem("canvasTheme") || "dark",
@@ -1439,6 +1442,17 @@ export default function CanvasBoard({
         </div>
       )}
 
+      {/* Share & Download Canvas Modal */}
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        roomName={roomName}
+        stageRef={stageRef}
+        theme={theme}
+        themeConfig={themeConfig}
+        shapes={shapes}
+      />
+
       <ToolOptionsBar
         activeTool={activeTool}
         penColor={penColor}
@@ -1460,6 +1474,7 @@ export default function CanvasBoard({
         onLeaveRoom={onRequestLeave || (() => setShowLeaveModal(true))}
         theme={theme}
         onToggleTheme={toggleTheme}
+        onOpenShareModal={() => setShowShareModal(true)}
       />
       <PropertiesPanel
         selectedId={selectedId}

@@ -21,6 +21,7 @@ import {
   FiSun,
   FiMoon,
   FiLogOut,
+  FiShare2,
 } from "react-icons/fi";
 import { LuHand, LuDiamond, LuEraser } from "react-icons/lu";
 import { FloatingDock, FloatingDockVertical } from "../ReactBits/FloatingDock";
@@ -36,6 +37,7 @@ export default function Toolbars({
   onLeaveRoom,
   theme,
   onToggleTheme,
+  onOpenShareModal,
 }) {
   // Controls the mobile-only architecture drawer (there's no left column on
   // small screens, so these tools live behind a toggle instead).
@@ -129,7 +131,7 @@ export default function Toolbars({
       ========================================================= */}
       <FloatingDock
         items={drawItems}
-        className="hidden md:flex absolute top-6 left-1/2 -translate-x-1/2 z-50 mx-auto h-16 items-end gap-4 rounded-2xl bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 px-4 pb-2 shadow-2xl"
+        className="hidden md:flex absolute top-5 left-1/2 -translate-x-1/2 z-50 mx-auto h-16 items-end gap-2 md:gap-2.5 lg:gap-3 rounded-2xl bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 px-3.5 pb-2 shadow-2xl"
       />
 
       {/* Pinned between the header card (~top-48) and the zoom bar
@@ -147,8 +149,19 @@ export default function Toolbars({
         />
       </div>
 
-      {/* Top right actions: Theme toggle + Leave Room + Clear Canvas */}
-      <div className="absolute top-4 right-4 md:top-6 md:right-6 z-50 flex flex-col md:flex-row items-center gap-2 sm:gap-2.5 md:gap-3">
+      {/* Top right actions: Share + Theme toggle + Leave Room + Clear Canvas */}
+      <div className="absolute top-4 right-4 md:top-5 md:right-5 lg:top-6 lg:right-6 z-50 flex flex-col md:flex-row items-center gap-2 md:gap-2.5">
+        {onOpenShareModal && (
+          <button
+            onClick={onOpenShareModal}
+            title="Share Canvas"
+            className="flex items-center justify-center gap-1.5 w-9 h-9 md:w-auto md:h-10 md:px-3 rounded-xl bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 text-zinc-300 hover:text-white hover:bg-zinc-800 hover:border-zinc-700 shadow-xl transition-all cursor-pointer text-xs font-semibold uppercase tracking-wider"
+          >
+            <FiShare2 size={15} />
+            <span className="hidden lg:inline">Share</span>
+          </button>
+        )}
+
         <button
           onClick={onToggleTheme}
           title={
@@ -156,33 +169,31 @@ export default function Toolbars({
               ? "Switch canvas to light"
               : "Switch canvas to dark"
           }
-          className="flex items-center justify-center w-10 h-10 md:w-auto md:h-auto md:px-3 md:py-2 rounded-full md:rounded-xl bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 text-zinc-300 hover:text-white shadow-xl transition-all cursor-pointer"
+          className="flex items-center justify-center w-9 h-9 md:w-10 md:h-10 rounded-xl bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 text-zinc-300 hover:text-white hover:bg-zinc-800 hover:border-zinc-700 shadow-xl transition-all cursor-pointer"
         >
-          {theme === "dark" ? <FiSun size={16} /> : <FiMoon size={16} />}
+          {theme === "dark" ? <FiSun size={15} /> : <FiMoon size={15} />}
         </button>
 
         {onLeaveRoom && (
           <button
             onClick={onLeaveRoom}
             title="Leave Room"
-            className="flex items-center justify-center gap-2 w-10 h-10 md:w-auto md:h-auto rounded-full md:rounded-xl md:px-4 md:py-2 bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 text-zinc-300 shadow-xl transition-all hover:bg-zinc-800 hover:text-white cursor-pointer"
+            className="flex items-center justify-center gap-1.5 w-9 h-9 md:w-auto md:h-10 md:px-3 rounded-xl bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 text-zinc-300 shadow-xl transition-all hover:bg-zinc-800 hover:text-white hover:border-zinc-700 cursor-pointer text-xs font-semibold uppercase tracking-wider"
           >
             <FiLogOut size={15} />
-            <span className="hidden md:inline text-xs font-semibold tracking-wide uppercase">
-              Leave Room
-            </span>
+            <span className="hidden xl:inline">Leave Room</span>
+            <span className="hidden md:inline xl:hidden">Leave</span>
           </button>
         )}
 
         <button
           onClick={() => setShowClearModal(true)}
           title="Clear Canvas"
-          className="flex items-center justify-center gap-2 w-10 h-10 md:w-auto md:h-auto rounded-full md:rounded-xl md:px-4 md:py-2 bg-[#1a1d24]/95 backdrop-blur-md border border-red-900/50 text-red-400 shadow-xl transition-all hover:bg-red-500/10 hover:border-red-500/80 cursor-pointer"
+          className="flex items-center justify-center gap-1.5 w-9 h-9 md:w-auto md:h-10 md:px-3 rounded-xl bg-[#1a1d24]/95 backdrop-blur-md border border-zinc-800/80 text-zinc-400 shadow-xl transition-all hover:bg-red-500/10 hover:border-red-500/50 hover:text-red-400 cursor-pointer text-xs font-semibold uppercase tracking-wider"
         >
-          <FiTrash2 size={16} />
-          <span className="hidden md:inline text-xs font-semibold tracking-wide uppercase">
-            Clear Canvas
-          </span>
+          <FiTrash2 size={15} />
+          <span className="hidden xl:inline">Clear Canvas</span>
+          <span className="hidden md:inline xl:hidden">Clear</span>
         </button>
       </div>
 

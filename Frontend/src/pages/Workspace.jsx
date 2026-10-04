@@ -570,6 +570,7 @@ export default function Workspace() {
           undoManager={undoManager}
           onLeave={handleConfirmLeave}
           onRequestLeave={() => setShowLeaveModal(true)}
+          roomName={roomInfo.roomName || "SyncCanvas Workspace"}
         />
       </section>
 
