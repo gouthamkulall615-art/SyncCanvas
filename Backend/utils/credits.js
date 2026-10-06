@@ -84,14 +84,20 @@ export async function syncDailyCredits(userDocOrId) {
     user.credits = user.dailyCredits + user.bonusCredits;
     needsSave = true;
 
-    // Record migration in ledger
-    await CreditLedger.create({
+    // Record migration in ledger only once
+    const existingMigration = await CreditLedger.findOne({
       userId: user._id,
-      amount: user.bonusCredits,
-      bucket: "bonus",
       type: "migration",
-      reason: "Migrated legacy credits to bonus bucket",
-    }).catch((e) => console.error("Migration ledger error:", e));
+    });
+    if (!existingMigration) {
+      await CreditLedger.create({
+        userId: user._id,
+        amount: user.bonusCredits,
+        bucket: "bonus",
+        type: "migration",
+        reason: "Initial bonus credits",
+      }).catch((e) => console.error("Migration ledger error:", e));
+    }
   }
 
   // 2. Ensure referral code exists
@@ -108,15 +114,22 @@ export async function syncDailyCredits(userDocOrId) {
     user.credits = user.dailyCredits + (user.bonusCredits || 0);
     needsSave = true;
 
-    // Record daily refill in ledger
-    await CreditLedger.create({
+    // Record daily refill in ledger only once per day
+    const existingRefill = await CreditLedger.findOne({
       userId: user._id,
-      amount: dailyAllowance,
-      bucket: "daily",
       type: "daily_refill",
-      reason: `Daily refill (${dailyAllowance} credits)`,
-      metadata: { previousDaily: oldDaily, date: todayIST },
-    }).catch((e) => console.error("Daily refill ledger error:", e));
+      "metadata.date": todayIST,
+    });
+    if (!existingRefill) {
+      await CreditLedger.create({
+        userId: user._id,
+        amount: dailyAllowance,
+        bucket: "daily",
+        type: "daily_refill",
+        reason: `Daily refill (+${dailyAllowance} credits)`,
+        metadata: { previousDaily: oldDaily, date: todayIST },
+      }).catch((e) => console.error("Daily refill ledger error:", e));
+    }
   }
 
   if (needsSave) {
@@ -152,89 +165,43 @@ export async function syncDailyCredits(userDocOrId) {
  */
 export async function spendCredits(userId, amount, reason = "AI Diagram Generation", metadata = {}) {
   // First ensure daily credits are up-to-date for today
-  await syncDailyCredits(userId);
+  const user = await syncDailyCredits(userId);
+  if (!user) throw new Error("User not found");
 
-  // Single atomic conditional update pipeline:
-  // Fails if (dailyCredits + bonusCredits) < amount
-  const filter = {
-    _id: userId,
-    $expr: {
-      $gte: [
-        {
-          $add: [
-            { $ifNull: ["$dailyCredits", 0] },
-            { $ifNull: ["$bonusCredits", 0] },
-          ],
-        },
-        amount,
-      ],
-    },
-  };
+  const currentDaily = user.dailyCredits || 0;
+  const currentBonus = user.bonusCredits || 0;
+  const available = currentDaily + currentBonus;
 
-  const updatePipeline = [
-    {
-      $set: {
-        _tempSpentDaily: {
-          $cond: [
-            { $gte: [{ $ifNull: ["$dailyCredits", 0] }, amount] },
-            amount,
-            { $ifNull: ["$dailyCredits", 0] },
-          ],
-        },
-        _tempSpentBonus: {
-          $cond: [
-            { $gte: [{ $ifNull: ["$dailyCredits", 0] }, amount] },
-            0,
-            { $subtract: [amount, { $ifNull: ["$dailyCredits", 0] }] },
-          ],
-        },
-        dailyCredits: {
-          $cond: [
-            { $gte: [{ $ifNull: ["$dailyCredits", 0] }, amount] },
-            { $subtract: [{ $ifNull: ["$dailyCredits", 0] }, amount] },
-            0,
-          ],
-        },
-        bonusCredits: {
-          $cond: [
-            { $gte: [{ $ifNull: ["$dailyCredits", 0] }, amount] },
-            { $ifNull: ["$bonusCredits", 0] },
-            {
-              $subtract: [
-                { $ifNull: ["$bonusCredits", 0] },
-                { $subtract: [amount, { $ifNull: ["$dailyCredits", 0] }] },
-              ],
-            },
-          ],
-        },
-      },
-    },
-    {
-      $set: {
-        credits: { $add: ["$dailyCredits", "$bonusCredits"] },
-      },
-    },
-  ];
-
-  const updatedUser = await User.findOneAndUpdate(filter, updatePipeline, {
-    returnDocument: "after",
-    updatePipeline: true,
-  });
-
-  if (!updatedUser) {
-    const user = await User.findById(userId);
-    const available = (user?.dailyCredits || 0) + (user?.bonusCredits || 0);
+  if (available < amount) {
     throw new InsufficientCreditsError(userId, amount, available);
   }
 
-  const spentDaily = updatedUser._tempSpentDaily || 0;
-  const spentBonus = updatedUser._tempSpentBonus || 0;
+  // Calculate bucket breakdown: drain daily first, then bonus
+  const spentDaily = Math.min(currentDaily, amount);
+  const spentBonus = amount - spentDaily;
 
-  // Clean up temporary calculation fields asynchronously
-  User.updateOne(
-    { _id: userId },
-    { $unset: { _tempSpentDaily: 1, _tempSpentBonus: 1 } }
-  ).exec().catch(() => {});
+  // Atomically deduct matching buckets
+  const updatedUser = await User.findOneAndUpdate(
+    {
+      _id: userId,
+      dailyCredits: { $gte: spentDaily },
+      bonusCredits: { $gte: spentBonus },
+    },
+    {
+      $inc: {
+        dailyCredits: -spentDaily,
+        bonusCredits: -spentBonus,
+        credits: -amount,
+      },
+    },
+    { new: true }
+  );
+
+  if (!updatedUser) {
+    const freshUser = await User.findById(userId);
+    const freshAvailable = (freshUser?.dailyCredits || 0) + (freshUser?.bonusCredits || 0);
+    throw new InsufficientCreditsError(userId, amount, freshAvailable);
+  }
 
   // Record ledger rows for the spend
   const ledgerEntries = [];
@@ -260,7 +227,7 @@ export async function spendCredits(userId, amount, reason = "AI Diagram Generati
   }
 
   if (ledgerEntries.length > 0) {
-    CreditLedger.insertMany(ledgerEntries).catch((e) =>
+    await CreditLedger.insertMany(ledgerEntries).catch((e) =>
       console.error("Ledger insert error:", e)
     );
   }

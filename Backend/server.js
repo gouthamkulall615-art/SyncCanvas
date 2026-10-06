@@ -4,12 +4,14 @@ dotenv.config({ path: ".config.env" });
 import mongoose from "mongoose";
 import { httpServer } from "./app.js";
 import { runCreditsMigration } from "./utils/migrateCredits.js";
+import { cleanupDuplicateLedger } from "./utils/cleanupLedger.js";
 
 const connectDB = async () => {
   try {
     const conn = await mongoose.connect(process.env.MONGO_URL);
     console.log(`mongodb connected`);
     await runCreditsMigration();
+    await cleanupDuplicateLedger();
   } catch (error) {
     console.log(`mongodb connection error:${error.message}`);
     process.exit(1);
