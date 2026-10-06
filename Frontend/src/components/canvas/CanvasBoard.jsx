@@ -1219,7 +1219,7 @@ export default function CanvasBoard({
       };
 
       addAIDiagram(shapesMap, laidOut, origin, theme);
-      return;
+      return res.data;
     }
 
     const newShapes = res.data?.shapes;

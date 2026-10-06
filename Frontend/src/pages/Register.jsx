@@ -1,14 +1,18 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { User, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import api from "../api/axios";
 import Beams from "../components/ReactBits/Beams";
 import BrandLogo from "../components/common/BrandLogo";
 
 export default function Register() {
+  const [searchParams] = useSearchParams();
+  const refCodeFromUrl = searchParams.get("ref") || searchParams.get("referral") || "";
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [referralCode, setReferralCode] = useState(refCodeFromUrl);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -20,6 +24,7 @@ export default function Register() {
         name,
         email,
         password,
+        referralCode: referralCode.trim() || undefined,
       });
       localStorage.setItem("token", response.data.token);
       localStorage.setItem("user", JSON.stringify(response.data.user));
@@ -125,6 +130,19 @@ export default function Register() {
                 )}
               </button>
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-zinc-300 mb-1.5 ml-1">
+              Referral Code <span className="text-zinc-500 font-normal">(Optional)</span>
+            </label>
+            <input
+              type="text"
+              placeholder="e.g. 7A8B9C"
+              value={referralCode}
+              onChange={(e) => setReferralCode(e.target.value)}
+              className="w-full bg-[#050505] border border-zinc-800/80 rounded-xl px-4 py-3 text-sm font-mono text-zinc-100 uppercase focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all placeholder:text-zinc-600"
+            />
           </div>
 
           <button

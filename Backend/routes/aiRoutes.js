@@ -7,7 +7,11 @@ import {
   spendCredits,
   refundCredits,
   InsufficientCreditsError,
+  processFirstGenerationReferral,
+  syncDailyCredits,
+  getSecondsUntilReset,
 } from "../utils/credits.js";
+import { CREDITS_CONFIG } from "../config/creditsConfig.js";
 import { generateDiagram } from "../ai/generateDiagram.js";
 import { createGeminiLlm } from "../ai/geminiWrapper.js";
 import { isEmailAdmin } from "../controllers/authController.js";
@@ -20,7 +24,7 @@ const router = express.Router();
 // ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
-const CREDIT_COST = 10; // credits consumed per generation
+const CREDIT_COST = CREDITS_CONFIG.COSTS.DIAGRAM_GENERATION; // credits consumed per generation (5)
 
 // Rate limiters — express-rate-limit defaults to keying by IP (req.ip).
 // Since protect runs first, we dispatch to a more generous limit for admins during testing.
@@ -278,21 +282,22 @@ router.post("/generate", protect, aiLimiter, async (req, res) => {
 
     // 1. Spend credits BEFORE calling Gemini
     const userId = req.user._id;
-    const isAdmin = req.user?.role === "admin" || isEmailAdmin(req.user?.email);
-    const totalCredits = isAdmin ? 300 : 100;
 
-    let updatedUser;
+    let spendResult;
     try {
-      updatedUser = await spendCredits(userId, CREDIT_COST);
+      spendResult = await spendCredits(
+        userId,
+        CREDIT_COST,
+        "AI Diagram Generation",
+        { prompt: prompt.trim().slice(0, 80) }
+      );
     } catch (err) {
       if (err instanceof InsufficientCreditsError) {
         return res.status(402).json({
-          error: "You have used all your AI credits. Please upgrade to continue.",
+          error: "You have used all your AI credits. Please upgrade or earn more to continue.",
           required: CREDIT_COST,
           available: err.available,
           credits: err.available || 0,
-          totalCredits,
-          usedCredits: totalCredits,
           upgradeRequired: true,
         });
       }
@@ -308,23 +313,34 @@ router.post("/generate", protect, aiLimiter, async (req, res) => {
     const result = await generateDiagram(geminiLlm, prompt.trim());
 
     if (!result.ok) {
-      await refundCredits(userId, CREDIT_COST);
+      await refundCredits(
+        userId,
+        { daily: spendResult.spentDaily, bonus: spendResult.spentBonus },
+        "AI generation failed refund"
+      );
       console.error("[AI] Generation failed:", result.error);
       return res.status(500).json({
         error: `AI generation failed: ${result.error}. Your credits have been refunded.`,
       });
     }
 
-    const finalCredits = updatedUser ? updatedUser.credits : Math.max(0, (req.user.credits || totalCredits) - CREDIT_COST);
-    const usedCredits = Math.max(0, totalCredits - finalCredits);
+    // Check & award referral reward if referee's first generation
+    await processFirstGenerationReferral(userId);
+
+    const userDoc = spendResult.user;
+    const daily = userDoc.dailyCredits ?? 0;
+    const bonus = userDoc.bonusCredits ?? 0;
+    const total = daily + bonus;
 
     // 3. Return the validated diagram and updated credit stats
     return res.status(200).json({
       diagram: result.diagram,
       shapes: result.diagram.nodes,
-      credits: finalCredits,
-      totalCredits,
-      usedCredits,
+      daily,
+      bonus,
+      credits: total,
+      totalCredits: total,
+      usedCredits: 0,
     });
   } catch (err) {
     console.error("Unexpected error in /api/ai/generate:", err);
@@ -335,36 +351,26 @@ router.post("/generate", protect, aiLimiter, async (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
-// GET /api/ai/credits — Fetch current user credit stats
+// GET /api/ai/credits — Backward-compatible credit stats endpoint
 // ---------------------------------------------------------------------------
 router.get("/credits", protect, async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select("credits role email");
+    const user = await syncDailyCredits(req.user._id);
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    const isAdmin = user.role === "admin" || isEmailAdmin(user.email);
-    if (isAdmin) {
-      let changed = false;
-      if (user.role !== "admin") {
-        user.role = "admin";
-        changed = true;
-      }
-      if (user.credits == null || user.credits < 300) {
-        user.credits = 300;
-        changed = true;
-      }
-      if (changed) await user.save();
-    }
-
-    const totalCredits = isAdmin ? 300 : 100;
-    const currentCredits = user.credits != null ? user.credits : totalCredits;
-    const usedCredits = Math.max(0, totalCredits - currentCredits);
+    const daily = user.dailyCredits || 0;
+    const bonus = user.bonusCredits || 0;
+    const total = daily + bonus;
+    const secondsUntilReset = getSecondsUntilReset();
 
     return res.status(200).json({
-      credits: currentCredits,
-      totalCredits,
-      usedCredits,
-      isAdmin,
+      daily,
+      bonus,
+      credits: total,
+      totalCredits: total,
+      usedCredits: 0,
+      secondsUntilReset,
+      isAdmin: user.role === "admin",
     });
   } catch (err) {
     return res.status(500).json({ error: "Failed to fetch credits" });
@@ -372,26 +378,23 @@ router.get("/credits", protect, async (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
-// POST /api/ai/upgrade — Refill or upgrade credits
+// POST /api/ai/upgrade — Refill or upgrade credits (redirects to bonus pool)
 // ---------------------------------------------------------------------------
 router.post("/upgrade", protect, async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
+    const user = await syncDailyCredits(req.user._id);
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    const isAdmin = user.role === "admin" || isEmailAdmin(user.email);
-    const refillAmount = req.body?.credits || (isAdmin ? 300 : 100);
-    user.credits = (user.credits || 0) + refillAmount;
+    const refillAmount = req.body?.credits || 100;
+    user.bonusCredits = (user.bonusCredits || 0) + refillAmount;
+    user.credits = (user.dailyCredits || 0) + user.bonusCredits;
     await user.save();
 
-    const totalCredits = (isAdmin ? 300 : 100) + Math.max(0, user.credits - (isAdmin ? 300 : 100));
-    const usedCredits = Math.max(0, totalCredits - user.credits);
-
     return res.status(200).json({
-      message: "Plan upgraded successfully! Credits added.",
+      message: "Plan upgraded successfully! Credits added to bonus pool.",
+      daily: user.dailyCredits || 0,
+      bonus: user.bonusCredits || 0,
       credits: user.credits,
-      totalCredits,
-      usedCredits,
     });
   } catch (err) {
     return res.status(500).json({ error: "Failed to upgrade plan" });

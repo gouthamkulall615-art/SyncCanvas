@@ -7,6 +7,7 @@ import { removeAwarenessStates } from "y-protocols/awareness";
 import authRoutes from "./routes/authRoutes.js";
 import roomRoutes from "./routes/roomRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
+import creditsRoutes from "./routes/creditsRoutes.js";
 const app = express();
 app.use(express.json());
 app.use(
@@ -19,6 +20,7 @@ app.use(express.static("public"));
 app.use("/api/auth", authRoutes);
 app.use("/api/rooms", roomRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/credits", creditsRoutes);
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {

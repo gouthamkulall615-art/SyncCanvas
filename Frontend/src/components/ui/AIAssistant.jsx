@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { HiSparkles } from "react-icons/hi2";
 import { FiSend, FiX, FiZap, FiCheck, FiArrowUpRight } from "react-icons/fi";
 import LatticeLoader from "./LatticeLoader";
@@ -24,6 +25,16 @@ const isUserAdmin = (user) => {
   );
 };
 
+function formatResetCountdown(seconds) {
+  if (!seconds || seconds <= 0) return "soon";
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  if (h > 0) return `in ${h}h ${m}m`;
+  if (m > 0) return `in ${m}m ${s}s`;
+  return `in ${s}s`;
+}
+
 export default function AIAssistant({
   onGenerate = async (prompt) => {
     console.log("AI prompt submitted:", prompt);
@@ -47,14 +58,14 @@ export default function AIAssistant({
       // ignore
     }
     const admin = isUserAdmin(storedUser);
-    const total = admin ? 300 : 100;
-    const current =
-      storedUser?.credits != null ? storedUser.credits : total;
-    const used = Math.max(0, total - current);
+    const daily = storedUser?.daily != null ? storedUser.daily : (admin ? 30 : 10);
+    const bonus = storedUser?.bonus != null ? storedUser.bonus : 0;
+    const total = storedUser?.credits != null ? storedUser.credits : (daily + bonus);
     return {
-      credits: current,
-      totalCredits: total,
-      usedCredits: used,
+      daily,
+      bonus,
+      total,
+      secondsUntilReset: 0,
       isAdmin: admin,
     };
   });
@@ -62,27 +73,42 @@ export default function AIAssistant({
   const textareaRef = useRef(null);
   const timerTimeoutRef = useRef(null);
 
+  // Ticking countdown effect for daily reset
+  useEffect(() => {
+    if (!creditsInfo.secondsUntilReset || creditsInfo.secondsUntilReset <= 0) return;
+    const interval = setInterval(() => {
+      setCreditsInfo((prev) => ({
+        ...prev,
+        secondsUntilReset: Math.max(0, (prev.secondsUntilReset || 0) - 1),
+      }));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [creditsInfo.secondsUntilReset]);
+
   // Fetch verified credits from backend
   const fetchCredits = async () => {
     try {
-      const res = await api.get("/ai/credits");
+      const res = await api.get("/credits");
       if (res.data) {
+        const daily = res.data.daily ?? 10;
+        const bonus = res.data.bonus ?? 0;
+        const total = res.data.total ?? (daily + bonus);
         setCreditsInfo({
-          credits: res.data.credits,
-          totalCredits: res.data.totalCredits,
-          usedCredits: res.data.usedCredits,
+          daily,
+          bonus,
+          total,
+          secondsUntilReset: res.data.secondsUntilReset || 0,
           isAdmin: res.data.isAdmin,
         });
-        // Update stored user
         try {
           const u = JSON.parse(localStorage.getItem("user") || "{}");
           localStorage.setItem(
             "user",
             JSON.stringify({
               ...u,
-              credits: res.data.credits,
-              totalCredits: res.data.totalCredits,
-              usedCredits: res.data.usedCredits,
+              daily,
+              bonus,
+              credits: total,
               role: res.data.isAdmin ? "admin" : u.role || "user",
             }),
           );
@@ -92,13 +118,14 @@ export default function AIAssistant({
       }
     } catch {
       // If unauthenticated / guest, check local storage
-      const guestUsed = Number(
-        localStorage.getItem("syncy_guest_credits_used") || "0",
+      const guestDaily = Number(
+        localStorage.getItem("syncy_guest_daily") || "10",
       );
       setCreditsInfo((prev) => ({
         ...prev,
-        usedCredits: guestUsed,
-        credits: Math.max(0, prev.totalCredits - guestUsed),
+        daily: guestDaily,
+        bonus: 0,
+        total: guestDaily,
       }));
     }
   };
@@ -121,9 +148,7 @@ export default function AIAssistant({
     };
   }, []);
 
-  const isExhausted =
-    creditsInfo.usedCredits >= creditsInfo.totalCredits ||
-    creditsInfo.credits <= 0;
+  const isExhausted = (creditsInfo.daily + creditsInfo.bonus) <= 0;
 
   const percentUsed = Math.min(
     100,
@@ -146,31 +171,23 @@ export default function AIAssistant({
     try {
       const resData = await onGenerate(trimmed);
 
-      if (resData && typeof resData.credits === "number") {
+      if (resData && typeof resData.daily === "number") {
         setCreditsInfo((prev) => ({
           ...prev,
-          credits: resData.credits,
-          totalCredits: resData.totalCredits || prev.totalCredits,
-          usedCredits:
-            resData.usedCredits != null
-              ? resData.usedCredits
-              : Math.max(
-                  0,
-                  (resData.totalCredits || prev.totalCredits) - resData.credits,
-                ),
+          daily: resData.daily,
+          bonus: resData.bonus ?? prev.bonus,
+          total: resData.credits ?? (resData.daily + (resData.bonus ?? prev.bonus)),
         }));
+      } else if (resData && typeof resData.credits === "number") {
+        fetchCredits();
       } else {
-        // Fallback local increment
+        // Fallback local decrement
         setCreditsInfo((prev) => {
-          const nextUsed = Math.min(prev.totalCredits, prev.usedCredits + 10);
-          localStorage.setItem(
-            "syncy_guest_credits_used",
-            String(nextUsed),
-          );
+          const nextDaily = Math.max(0, prev.daily - 5);
           return {
             ...prev,
-            usedCredits: nextUsed,
-            credits: Math.max(0, prev.totalCredits - nextUsed),
+            daily: nextDaily,
+            total: nextDaily + prev.bonus,
           };
         });
       }
@@ -192,10 +209,10 @@ export default function AIAssistant({
       if (isCreditErr) {
         setCreditsInfo((prev) => ({
           ...prev,
-          credits: 0,
-          usedCredits: prev.totalCredits,
+          daily: 0,
+          bonus: 0,
+          total: 0,
         }));
-        setShowUpgradeModal(true);
       }
 
       setError(err?.message || "Something went wrong. Try again.");
@@ -304,7 +321,7 @@ export default function AIAssistant({
             </button>
           </div>
 
-          {/* Credits Display & Upgrade Trigger */}
+          {/* Credits Display & Manage Link */}
           <div className="mb-3 p-2.5 rounded-xl bg-zinc-900/90 border border-zinc-800/90 shadow-inner">
             <div className="flex items-center justify-between text-xs mb-1.5">
               <span className="text-[11px] font-medium text-zinc-300 flex items-center gap-1.5">
@@ -312,80 +329,87 @@ export default function AIAssistant({
                   className={`w-2 h-2 rounded-full ${
                     isExhausted
                       ? "bg-red-500"
-                      : percentUsed > 75
+                      : creditsInfo.daily === 0
                       ? "bg-amber-400"
-                      : "bg-purple-400"
+                      : "bg-emerald-400"
                   }`}
                 />
                 Credits:{" "}
                 <strong className="text-white font-semibold">
-                  {creditsInfo.usedCredits} / {creditsInfo.totalCredits} used
+                  {creditsInfo.daily} daily + {creditsInfo.bonus} bonus
                 </strong>
               </span>
 
-              {/* Upgrade button in header */}
-              <button
-                type="button"
-                onClick={() => setShowUpgradeModal(true)}
-                className={`text-[10px] font-semibold px-2 py-0.5 rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
-                  isExhausted
-                    ? "bg-gradient-to-r from-amber-500 to-orange-500 text-black font-bold shadow-md shadow-orange-950/50 animate-pulse"
-                    : "bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30"
-                }`}
+              {/* Link to /credits page */}
+              <Link
+                to="/credits"
+                onClick={() => setOpen(false)}
+                className="text-[10px] font-semibold px-2 py-0.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700/60 transition-all flex items-center gap-1 cursor-pointer"
               >
-                <FiZap size={11} />
-                <span>Upgrade</span>
-              </button>
+                <FiZap size={11} className="text-amber-400" />
+                <span>Earn</span>
+              </Link>
             </div>
 
-            {/* Visual Progress Bar */}
+            {/* Visual Progress Bar of Daily Quota */}
             <div className="w-full h-1.5 rounded-full bg-zinc-800 overflow-hidden">
               <div
                 className={`h-full transition-all duration-300 rounded-full ${
                   isExhausted
                     ? "bg-red-500"
-                    : percentUsed > 75
+                    : creditsInfo.daily <= 2
                     ? "bg-amber-500"
-                    : "bg-gradient-to-r from-purple-500 via-indigo-500 to-purple-400"
+                    : "bg-purple-500"
                 }`}
-                style={{ width: `${Math.min(100, Math.max(4, percentUsed))}%` }}
+                style={{
+                  width: `${Math.min(
+                    100,
+                    Math.max(
+                      4,
+                      Math.round(
+                        (creditsInfo.daily /
+                          (creditsInfo.isAdmin ? 30 : 10)) *
+                          100,
+                      ),
+                    ),
+                  )}%`,
+                }}
               />
             </div>
 
             <div className="flex items-center justify-between text-[10px] text-zinc-400 mt-1.5">
-              <span>
-                {Math.max(
-                  0,
-                  creditsInfo.totalCredits - creditsInfo.usedCredits,
-                )}{" "}
-                credits remaining
+              <span>{creditsInfo.daily + creditsInfo.bonus} total available</span>
+              <span className="font-mono text-zinc-500">
+                Resets {formatResetCountdown(creditsInfo.secondsUntilReset)}
               </span>
-              <span className="font-mono text-zinc-500">{percentUsed}%</span>
             </div>
           </div>
 
           {/* Prompt textarea or Exhausted Banner */}
           {isExhausted ? (
-            <div className="p-3.5 rounded-xl bg-gradient-to-b from-amber-500/15 via-orange-500/10 to-transparent border border-amber-500/30 text-center space-y-2.5 my-2">
-              <div className="w-8 h-8 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto">
+            <div className="p-3.5 rounded-xl bg-zinc-900 border border-zinc-800 text-center space-y-2.5 my-2">
+              <div className="w-8 h-8 rounded-full bg-zinc-800 text-amber-400 flex items-center justify-center mx-auto">
                 <FiZap size={16} />
               </div>
               <div>
-                <p className="text-xs font-bold text-amber-300">
-                  You have used all {creditsInfo.totalCredits} credits!
+                <p className="text-xs font-semibold text-white">
+                  You are out of credits
                 </p>
-                <p className="text-[11px] text-zinc-400 leading-snug mt-1">
-                  You’ve reached the {creditsInfo.totalCredits}/{creditsInfo.totalCredits} credit limit. Upgrade your account to continue generating diagrams with Syncy.
+                <p className="text-[11px] text-zinc-400 leading-snug mt-1 font-mono">
+                  Daily credits reset {formatResetCountdown(creditsInfo.secondsUntilReset)}
+                </p>
+                <p className="text-[11px] text-zinc-500 mt-0.5">
+                  Earn bonus credits through invites, shares, or ratings to keep generating.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowUpgradeModal(true)}
-                className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black font-bold text-xs shadow-lg shadow-orange-950/50 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              <Link
+                to="/credits"
+                onClick={() => setOpen(false)}
+                className="w-full py-2.5 px-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-medium text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
               >
-                <HiSparkles size={14} />
-                <span>Upgrade to Continue</span>
-              </button>
+                <span>Go to Credits & Rewards</span>
+                <FiArrowUpRight size={13} />
+              </Link>
             </div>
           ) : (
             <>

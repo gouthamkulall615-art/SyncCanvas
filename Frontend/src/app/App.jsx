@@ -15,6 +15,7 @@ import Privacy from "../pages/Privacy";
 import Terms from "../pages/Terms";
 import NotFound from "../pages/NotFound";
 import DiagramDemo from "../ai/DiagramDemo";
+import Credits from "../pages/Credits";
 
 export default function App() {
   return (
@@ -27,6 +28,9 @@ export default function App() {
 
       {/* Authenticated Dashboard */}
       <Route path="/dashboard" element={<Dashboard />} />
+
+      {/* Credits & Rewards */}
+      <Route path="/credits" element={<Credits />} />
 
       {/* Auth Pages */}
       <Route path="/login" element={<Login />} />

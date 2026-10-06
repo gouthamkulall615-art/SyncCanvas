@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Search, Settings, LogOut, X } from "lucide-react";
+import { Search, Settings, LogOut, X, Coins } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import SettingsModal from "./SettingsModal";
 import BrandLogo from "../common/BrandLogo";
@@ -116,6 +116,15 @@ export default function DashboardNavbar({ searchQuery = "", onSearchChange }) {
                   {userData.email || "user@syncanvas.io"}
                 </p>
               </div>
+
+              <Link
+                to="/credits"
+                onClick={() => setDropdownOpen(false)}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50 transition-colors cursor-pointer"
+              >
+                <Coins className="w-4 h-4 text-zinc-500" />
+                Credits & Rewards
+              </Link>
 
               <button
                 onClick={() => {

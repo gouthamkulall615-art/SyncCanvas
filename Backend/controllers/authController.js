@@ -1,6 +1,13 @@
 import User from "../models/user.js";
+import CreditLedger from "../models/CreditLedger.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { CREDITS_CONFIG } from "../config/creditsConfig.js";
+import {
+  generateReferralCode,
+  getISTDateString,
+  syncDailyCredits,
+} from "../utils/credits.js";
 
 export const isEmailAdmin = (email) => {
   if (!email || typeof email !== "string") return false;
@@ -16,7 +23,7 @@ export const isEmailAdmin = (email) => {
 
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, referralCode } = req.body;
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -27,15 +34,53 @@ export const registerUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const isAdmin = isEmailAdmin(email);
-    const totalCredits = isAdmin ? 300 : 100;
+    const dailyAllowance = isAdmin
+      ? CREDITS_CONFIG.DAILY_REFILL.ADMIN
+      : CREDITS_CONFIG.DAILY_REFILL.STANDARD;
+
+    // Resolve referredBy if referralCode provided
+    let referredBy = null;
+    if (referralCode && typeof referralCode === "string") {
+      const inviter = await User.findOne({
+        referralCode: referralCode.trim().toUpperCase(),
+      });
+      if (inviter) {
+        referredBy = inviter._id;
+      }
+    }
+
+    const clientIp =
+      req.headers["x-forwarded-for"]?.split(",")[0] ||
+      req.socket?.remoteAddress ||
+      req.ip;
+
+    const welcomeBonus = isAdmin
+      ? CREDITS_CONFIG.WELCOME_BONUS.ADMIN
+      : CREDITS_CONFIG.WELCOME_BONUS.STANDARD;
 
     const newUser = await User.create({
       name,
       email,
       password: hashedPassword,
       role: isAdmin ? "admin" : "user",
-      credits: totalCredits,
+      dailyCredits: dailyAllowance,
+      bonusCredits: welcomeBonus,
+      credits: dailyAllowance + welcomeBonus,
+      lastRefillDate: getISTDateString(),
+      referralCode: generateReferralCode(),
+      referredBy,
+      signupIp: clientIp,
     });
+
+    if (welcomeBonus > 0) {
+      await CreditLedger.create({
+        userId: newUser._id,
+        amount: welcomeBonus,
+        bucket: "bonus",
+        type: "onboarding",
+        reason: "Welcome bonus on signup",
+      }).catch((e) => console.error("Welcome bonus ledger error:", e));
+    }
 
     const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, {
       expiresIn: "7d",
@@ -49,9 +94,10 @@ export const registerUser = async (req, res) => {
         name: newUser.name,
         email: newUser.email,
         role: newUser.role,
+        daily: newUser.dailyCredits,
+        bonus: newUser.bonusCredits,
         credits: newUser.credits,
-        totalCredits,
-        usedCredits: 0,
+        referralCode: newUser.referralCode,
       },
     });
   } catch (error) {
@@ -74,38 +120,32 @@ export const loginUser = async (req, res) => {
     }
 
     const isAdmin = isEmailAdmin(user.email) || user.role === "admin";
-    if (isAdmin) {
-      let changed = false;
-      if (user.role !== "admin") {
-        user.role = "admin";
-        changed = true;
-      }
-      if (user.credits == null || user.credits < 300) {
-        user.credits = 300;
-        changed = true;
-      }
-      if (changed) await user.save();
+    if (isAdmin && user.role !== "admin") {
+      user.role = "admin";
+      await user.save();
     }
 
-    const totalCredits = (user.role === "admin" || isAdmin) ? 300 : 100;
-    const currentCredits = user.credits != null ? user.credits : totalCredits;
-    const usedCredits = Math.max(0, totalCredits - currentCredits);
+    const syncedUser = await syncDailyCredits(user);
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ id: syncedUser._id }, process.env.JWT_SECRET, {
       expiresIn: "7d",
     });
+
+    const daily = syncedUser.dailyCredits || 0;
+    const bonus = syncedUser.bonusCredits || 0;
 
     res.status(200).json({
       message: "login successfull",
       token,
       user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        credits: currentCredits,
-        totalCredits,
-        usedCredits,
+        id: syncedUser._id,
+        name: syncedUser.name,
+        email: syncedUser.email,
+        role: syncedUser.role,
+        daily,
+        bonus,
+        credits: daily + bonus,
+        referralCode: syncedUser.referralCode,
       },
     });
   } catch (error) {
@@ -116,7 +156,7 @@ export const loginUser = async (req, res) => {
 // New Google Login Function
 export const googleLogin = async (req, res) => {
   try {
-    const { access_token } = req.body;
+    const { access_token, referralCode } = req.body;
 
     // Fetch user profile from Google
     const response = await fetch(
@@ -134,7 +174,9 @@ export const googleLogin = async (req, res) => {
     const { name, email } = data;
 
     const isAdmin = isEmailAdmin(email);
-    const defaultCredits = isAdmin ? 300 : 100;
+    const dailyAllowance = isAdmin
+      ? CREDITS_CONFIG.DAILY_REFILL.ADMIN
+      : CREDITS_CONFIG.DAILY_REFILL.STANDARD;
 
     // Check if user already exists
     let user = await User.findOne({ email });
@@ -143,46 +185,67 @@ export const googleLogin = async (req, res) => {
     if (!user) {
       const randomPassword = Math.random().toString(36).slice(-10) + "A1!@";
 
+      let referredBy = null;
+      if (referralCode && typeof referralCode === "string") {
+        const inviter = await User.findOne({
+          referralCode: referralCode.trim().toUpperCase(),
+        });
+        if (inviter) referredBy = inviter._id;
+      }
+
+      const welcomeBonus = isAdmin
+        ? CREDITS_CONFIG.WELCOME_BONUS.ADMIN
+        : CREDITS_CONFIG.WELCOME_BONUS.STANDARD;
+
       user = await User.create({
         name,
         email,
         password: randomPassword,
         role: isAdmin ? "admin" : "user",
-        credits: defaultCredits,
+        dailyCredits: dailyAllowance,
+        bonusCredits: welcomeBonus,
+        credits: dailyAllowance + welcomeBonus,
+        lastRefillDate: getISTDateString(),
+        referralCode: generateReferralCode(),
+        referredBy,
       });
-    } else if (isAdmin) {
-      let changed = false;
-      if (user.role !== "admin") {
-        user.role = "admin";
-        changed = true;
+
+      if (welcomeBonus > 0) {
+        await CreditLedger.create({
+          userId: user._id,
+          amount: welcomeBonus,
+          bucket: "bonus",
+          type: "onboarding",
+          reason: "Welcome bonus on signup",
+        }).catch((e) => console.error("Google welcome bonus ledger error:", e));
       }
-      if (user.credits == null || user.credits < 300) {
-        user.credits = 300;
-        changed = true;
-      }
-      if (changed) await user.save();
+    } else if (isAdmin && user.role !== "admin") {
+      user.role = "admin";
+      await user.save();
     }
 
-    const totalCredits = (user.role === "admin" || isAdmin) ? 300 : 100;
-    const currentCredits = user.credits != null ? user.credits : totalCredits;
-    const usedCredits = Math.max(0, totalCredits - currentCredits);
+    const syncedUser = await syncDailyCredits(user);
 
     // Generate SyncCanvas JWT
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ id: syncedUser._id }, process.env.JWT_SECRET, {
       expiresIn: "7d",
     });
+
+    const daily = syncedUser.dailyCredits || 0;
+    const bonus = syncedUser.bonusCredits || 0;
 
     res.status(200).json({
       message: "Google login successful",
       token,
       user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        credits: currentCredits,
-        totalCredits,
-        usedCredits,
+        id: syncedUser._id,
+        name: syncedUser.name,
+        email: syncedUser.email,
+        role: syncedUser.role,
+        daily,
+        bonus,
+        credits: daily + bonus,
+        referralCode: syncedUser.referralCode,
       },
     });
   } catch (error) {
