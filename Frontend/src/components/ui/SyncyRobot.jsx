@@ -101,16 +101,6 @@ export default function SyncyRobot({
             <filter id="syncyShadow" x="-20%" y="-20%" width="140%" height="140%">
               <feDropShadow dx="0" dy="6" stdDeviation="8" floodColor="#000000" floodOpacity="0.35" />
             </filter>
-
-            {/* Glowing eyes filter */}
-            <filter id="eyeCyanGlow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" result="blur" />
-              <feMerge>
-                <feMergeNode in="blur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-
             {/* Visor Gradient: deep reflective black/navy */}
             <radialGradient id="syncyVisor" cx="50%" cy="30%" r="70%">
               <stop offset="0%" stopColor="#1e222d" />
@@ -137,13 +127,6 @@ export default function SyncyRobot({
               <stop offset="60%" stopColor="#ffffff" stopOpacity="0.04" />
               <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
             </linearGradient>
-
-            {/* Eye Glow Radial Gradient */}
-            <radialGradient id="eyeGlowGrad" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#ffffff" />
-              <stop offset="55%" stopColor="#38bdf8" />
-              <stop offset="100%" stopColor="#0284c7" />
-            </radialGradient>
           </defs>
 
           {/* Group with 3D Parallax tilt */}
@@ -239,7 +222,6 @@ export default function SyncyRobot({
                     stroke="#38bdf8"
                     strokeWidth="4.5"
                     strokeLinecap="round"
-                    filter="url(#eyeCyanGlow)"
                   />
                   <path
                     d="M 116 95 C 116 85, 132 85, 132 95"
@@ -247,11 +229,10 @@ export default function SyncyRobot({
                     stroke="#38bdf8"
                     strokeWidth="4.5"
                     strokeLinecap="round"
-                    filter="url(#eyeCyanGlow)"
                   />
                 </>
               ) : (
-                /* Round Glowing Expressive Eyes */
+                /* Round Expressive Eyes */
                 <>
                   {/* Left Eye */}
                   <ellipse
@@ -259,8 +240,7 @@ export default function SyncyRobot({
                     cy="93"
                     rx="9.5"
                     ry="10.5"
-                    fill="url(#eyeGlowGrad)"
-                    filter="url(#eyeCyanGlow)"
+                    fill="#38bdf8"
                   />
                   {/* Left Eye Pupil highlight */}
                   <circle cx="79" cy="90" r="3" fill="#ffffff" opacity="0.9" />
@@ -271,15 +251,14 @@ export default function SyncyRobot({
                     cy="93"
                     rx="9.5"
                     ry="10.5"
-                    fill="url(#eyeGlowGrad)"
-                    filter="url(#eyeCyanGlow)"
+                    fill="#38bdf8"
                   />
                   {/* Right Eye Pupil highlight */}
                   <circle cx="127" cy="90" r="3" fill="#ffffff" opacity="0.9" />
                 </>
               )}
 
-              {/* Glowing Smile */}
+              {/* Smile */}
               <path
                 d={
                   isHappy
@@ -290,19 +269,17 @@ export default function SyncyRobot({
                 stroke="#38bdf8"
                 strokeWidth="3.2"
                 strokeLinecap="round"
-                filter="url(#eyeCyanGlow)"
               />
             </g>
           </g>
         </svg>
 
-        {/* Soft interactive ground shadow */}
+        {/* Soft ground shadow */}
         <div className="syncy-ground-shadow" />
       </div>
 
       {showBadge && (
         <span className="syncy-badge">
-          <span className="syncy-status-dot" />
           {badgeText}
         </span>
       )}

@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { HiSparkles } from "react-icons/hi2";
 import { FiSend, FiX, FiZap, FiCheck, FiArrowUpRight } from "react-icons/fi";
 import LatticeLoader from "./LatticeLoader";
 import SyncyRobot from "./SyncyRobot";
@@ -30,9 +29,9 @@ function formatResetCountdown(seconds) {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   const s = seconds % 60;
-  if (h > 0) return `in ${h}h ${m}m`;
-  if (m > 0) return `in ${m}m ${s}s`;
-  return `in ${s}s`;
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
 }
 
 export default function AIAssistant({
@@ -148,11 +147,12 @@ export default function AIAssistant({
     };
   }, []);
 
-  const isExhausted = (creditsInfo.daily + creditsInfo.bonus) <= 0;
-
-  const percentUsed = Math.min(
+  const dailyMax = creditsInfo.isAdmin ? 30 : 10;
+  const totalAvailable = creditsInfo.daily + creditsInfo.bonus;
+  const isExhausted = totalAvailable <= 0;
+  const dailyPercent = Math.min(
     100,
-    Math.round((creditsInfo.usedCredits / creditsInfo.totalCredits) * 100),
+    Math.max(0, Math.round((creditsInfo.daily / dailyMax) * 100)),
   );
 
   const handleSubmit = async () => {
@@ -272,22 +272,22 @@ export default function AIAssistant({
   return (
     <div className="absolute z-50 bottom-[148px] right-4 md:bottom-6 md:right-6 flex flex-col items-end gap-3 select-none">
       {open && (
-        <div className="w-[310px] sm:w-[370px] max-h-[calc(100vh-170px)] overflow-y-auto rounded-2xl bg-[#1a1d24]/95 backdrop-blur-md border border-purple-500/30 shadow-2xl shadow-purple-900/30 p-4 animate-in fade-in slide-in-from-bottom-2 duration-200">
+        <div className="w-[calc(100vw-32px)] sm:w-[370px] max-w-[370px] max-h-[calc(100vh-170px)] overflow-y-auto rounded-2xl bg-[#0e1017] border border-zinc-800 shadow-2xl shadow-black/80 p-4 animate-in fade-in slide-in-from-bottom-2 duration-200">
           {/* Header */}
           <div className="flex items-center justify-between mb-2.5">
             <div className="flex items-center gap-2.5">
               <SyncyRobot
-                size={38}
+                size={36}
                 floating={false}
                 state={loading ? "thinking" : "idle"}
               />
               <div>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-sm font-bold text-white tracking-tight">
+                  <span className="text-sm font-semibold text-white tracking-tight">
                     Syncy
                   </span>
                   {creditsInfo.isAdmin ? (
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
                       Admin
                     </span>
                   ) : (
@@ -297,24 +297,19 @@ export default function AIAssistant({
                   )}
                 </div>
                 <span
-                  className={`inline-flex items-center gap-1.5 text-[10px] font-medium ${
-                    loading ? "text-purple-400" : "text-emerald-400"
+                  aria-live="polite"
+                  className={`text-[10px] font-medium ${
+                    loading ? "text-purple-400" : "text-zinc-400"
                   }`}
                 >
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      loading
-                        ? "bg-purple-400 animate-ping"
-                        : "bg-emerald-400 animate-pulse"
-                    }`}
-                  />
                   {loading ? "Thinking..." : "Ready"}
                 </span>
               </div>
             </div>
             <button
               onClick={() => setOpen(false)}
-              className="text-zinc-500 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-zinc-800/60 cursor-pointer"
+              aria-label="Close Syncy"
+              className="text-zinc-500 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-zinc-800 cursor-pointer"
               title="Close"
             >
               <FiX size={16} />
@@ -322,92 +317,78 @@ export default function AIAssistant({
           </div>
 
           {/* Credits Display & Manage Link */}
-          <div className="mb-3 p-2.5 rounded-xl bg-zinc-900/90 border border-zinc-800/90 shadow-inner">
-            <div className="flex items-center justify-between text-xs mb-1.5">
-              <span className="text-[11px] font-medium text-zinc-300 flex items-center gap-1.5">
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    isExhausted
-                      ? "bg-red-500"
-                      : creditsInfo.daily === 0
-                      ? "bg-amber-400"
-                      : "bg-emerald-400"
+          {/* Credits Display */}
+          <div className="mb-3 p-2.5 rounded-xl bg-zinc-900 border border-zinc-800" aria-live="polite">
+            {/* Line 1: Daily */}
+            <div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-[11px] font-medium text-zinc-300">
+                  Daily:{" "}
+                  <strong className="text-white font-semibold">
+                    {creditsInfo.daily} / {dailyMax}
+                  </strong>
+                </span>
+                <span className="text-[10px] text-zinc-500 font-mono">
+                  Daily resets in {formatResetCountdown(creditsInfo.secondsUntilReset)}
+                </span>
+              </div>
+              <div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden mt-1.5">
+                <div
+                  className={`h-full transition-all duration-300 rounded-full ${
+                    totalAvailable <= 0
+                      ? "bg-zinc-700"
+                      : totalAvailable < 10
+                      ? "bg-amber-500"
+                      : "bg-purple-500"
                   }`}
+                  style={{ width: `${dailyPercent}%` }}
                 />
-                Credits:{" "}
+              </div>
+            </div>
+
+            {/* Line 2: Bonus */}
+            <div className="flex items-center justify-between text-xs mt-2.5 pt-2 border-t border-zinc-800/80">
+              <span className="text-[11px] font-medium text-zinc-300">
+                Bonus:{" "}
                 <strong className="text-white font-semibold">
-                  {creditsInfo.daily} daily + {creditsInfo.bonus} bonus
+                  {creditsInfo.bonus}
                 </strong>
               </span>
-
-              {/* Link to /credits page */}
               <Link
                 to="/credits"
                 onClick={() => setOpen(false)}
-                className="text-[10px] font-semibold px-2 py-0.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700/60 transition-all flex items-center gap-1 cursor-pointer"
+                className="text-[10px] font-medium text-purple-400 hover:text-purple-300 transition-colors cursor-pointer"
               >
-                <FiZap size={11} className="text-amber-400" />
-                <span>Earn</span>
+                Earn credits
               </Link>
             </div>
 
-            {/* Visual Progress Bar of Daily Quota */}
-            <div className="w-full h-1.5 rounded-full bg-zinc-800 overflow-hidden">
-              <div
-                className={`h-full transition-all duration-300 rounded-full ${
-                  isExhausted
-                    ? "bg-red-500"
-                    : creditsInfo.daily <= 2
-                    ? "bg-amber-500"
-                    : "bg-purple-500"
-                }`}
-                style={{
-                  width: `${Math.min(
-                    100,
-                    Math.max(
-                      4,
-                      Math.round(
-                        (creditsInfo.daily /
-                          (creditsInfo.isAdmin ? 30 : 10)) *
-                          100,
-                      ),
-                    ),
-                  )}%`,
-                }}
-              />
-            </div>
-
-            <div className="flex items-center justify-between text-[10px] text-zinc-400 mt-1.5">
-              <span>{creditsInfo.daily + creditsInfo.bonus} total available</span>
-              <span className="font-mono text-zinc-500">
-                Resets {formatResetCountdown(creditsInfo.secondsUntilReset)}
-              </span>
+            {/* Subline: Total available */}
+            <div className="mt-2 text-[10px] text-zinc-500">
+              {totalAvailable} total available
             </div>
           </div>
 
           {/* Prompt textarea or Exhausted Banner */}
           {isExhausted ? (
             <div className="p-3.5 rounded-xl bg-zinc-900 border border-zinc-800 text-center space-y-2.5 my-2">
-              <div className="w-8 h-8 rounded-full bg-zinc-800 text-amber-400 flex items-center justify-center mx-auto">
-                <FiZap size={16} />
-              </div>
               <div>
                 <p className="text-xs font-semibold text-white">
-                  You are out of credits
+                  Out of credits
                 </p>
                 <p className="text-[11px] text-zinc-400 leading-snug mt-1 font-mono">
-                  Daily credits reset {formatResetCountdown(creditsInfo.secondsUntilReset)}
+                  Daily resets in {formatResetCountdown(creditsInfo.secondsUntilReset)}
                 </p>
-                <p className="text-[11px] text-zinc-500 mt-0.5">
-                  Earn bonus credits through invites, shares, or ratings to keep generating.
+                <p className="text-[11px] text-zinc-500 mt-1">
+                  Earn bonus credits through invites, shares, or feedback to keep generating.
                 </p>
               </div>
               <Link
                 to="/credits"
                 onClick={() => setOpen(false)}
-                className="w-full py-2.5 px-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-medium text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                className="w-full py-2 px-3 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white font-medium text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
               >
-                <span>Go to Credits & Rewards</span>
+                <span>Earn credits</span>
                 <FiArrowUpRight size={13} />
               </Link>
             </div>
@@ -426,14 +407,13 @@ export default function AIAssistant({
                   'Ask Syncy to build — e.g. "a microservices payment architecture"'
                 }
                 rows={3}
-                className="w-full resize-none rounded-xl bg-[#0b0d13] border border-zinc-800/90 focus:border-purple-500/70 focus:ring-1 focus:ring-purple-500/40 text-xs sm:text-sm text-white placeholder-zinc-500 p-3 outline-none transition-colors disabled:opacity-50 select-text"
+                className="w-full resize-none rounded-xl bg-[#0b0d13] border border-zinc-800 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/40 text-xs sm:text-sm text-white placeholder-zinc-500 p-3 outline-none transition-colors disabled:opacity-50 select-text"
               />
 
               {/* Quick Suggestions */}
               <div className="mt-2.5 flex flex-col gap-1.5">
-                <span className="text-[10px] text-zinc-400 font-medium flex items-center gap-1">
-                  <HiSparkles size={12} className="text-purple-400" />
-                  Quick Prompts:
+                <span className="text-[10px] text-zinc-400 font-medium">
+                  Try asking
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   {QUICK_PROMPTS.map((qp, idx) => (
@@ -441,7 +421,7 @@ export default function AIAssistant({
                       key={idx}
                       type="button"
                       onClick={() => setPrompt(qp)}
-                      className="text-[10px] px-2 py-1 rounded-lg bg-purple-950/40 hover:bg-purple-900/50 border border-purple-500/20 text-purple-300 hover:text-white transition-all text-left cursor-pointer"
+                      className="text-[11px] px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white transition-colors text-left cursor-pointer"
                     >
                       {qp}
                     </button>
@@ -456,18 +436,18 @@ export default function AIAssistant({
               )}
 
               <div className="flex items-center justify-between mt-3 gap-2">
-                <span className="text-[10px] text-zinc-500 font-mono truncate max-w-[130px] sm:max-w-none">
-                  Enter to generate · Shift+Enter newline
+                <span className="text-[10px] text-zinc-500 font-mono leading-tight">
+                  Enter to send · Shift+Enter for new line
                 </span>
                 <button
                   onClick={handleSubmit}
                   disabled={!prompt.trim() || loading}
-                  className={`shrink-0 flex items-center justify-center gap-1.5 rounded-xl text-white text-xs font-medium px-3.5 py-2 transition-all shadow-lg ${
+                  className={`shrink-0 flex items-center justify-center gap-1.5 rounded-xl text-white text-xs font-medium px-3.5 py-2 transition-colors ${
                     loading
-                      ? "bg-purple-600/90 cursor-wait shadow-purple-900/30"
+                      ? "bg-purple-600/80 cursor-wait"
                       : !prompt.trim()
-                      ? "bg-zinc-800 text-zinc-600 cursor-not-allowed"
-                      : "bg-purple-600 hover:bg-purple-500 cursor-pointer shadow-purple-900/20"
+                      ? "bg-zinc-800 text-zinc-500 cursor-not-allowed"
+                      : "bg-purple-600 hover:bg-purple-500 cursor-pointer"
                   }`}
                 >
                   {loading ? (
@@ -494,7 +474,7 @@ export default function AIAssistant({
                   ) : (
                     <>
                       <FiSend size={13} />
-                      <span>Generate</span>
+                      <span>Generate · 5 credits</span>
                     </>
                   )}
                 </button>
@@ -504,117 +484,81 @@ export default function AIAssistant({
         </div>
       )}
 
-      {/* Floating Syncy Trigger Button with Eye Tracking & Float */}
+      {/* Floating Syncy Trigger Button */}
       <button
         onClick={() => setOpen((v) => !v)}
+        aria-label={open ? "Close Syncy" : "Open Syncy AI Assistant"}
         title="Syncy - AI Canvas Assistant"
-        className={`group relative w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl cursor-pointer ${
-          open
-            ? "bg-purple-600/30 backdrop-blur-xl border-2 border-purple-500/80 ring-4 ring-purple-500/25"
-            : "bg-[#12141c]/95 backdrop-blur-xl border-2 border-purple-500/50 hover:border-purple-400 hover:shadow-[0_0_24px_rgba(168,85,247,0.45)] hover:scale-105"
+        className={`group relative w-14 h-14 rounded-full flex items-center justify-center transition-all bg-[#0e1017] border border-zinc-800 hover:border-zinc-700 shadow-xl cursor-pointer ${
+          open ? "border-purple-500/60" : ""
         }`}
       >
         <SyncyRobot
-          size={52}
+          size={46}
           floating={!open}
           state={loading ? "thinking" : "idle"}
           showBadge={!open}
-          badgeText={isExhausted ? "Upgrade" : "Syncy"}
-        />
-        <span
-          className={`absolute top-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-[#12141c] shadow-[0_0_8px_rgba(16,185,129,0.8)] ${
-            isExhausted ? "bg-amber-500" : "bg-emerald-500 animate-pulse"
-          }`}
+          badgeText={isExhausted ? "0 credits" : "Syncy"}
         />
       </button>
 
       {/* Upgrade Modal */}
       {showUpgradeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-150">
-          <div className="w-full max-w-md rounded-2xl bg-[#1a1d24] border border-purple-500/40 p-5 shadow-2xl text-white relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-150">
+          <div className="w-full max-w-md rounded-2xl bg-[#0e1017] border border-zinc-800 p-5 shadow-2xl text-white relative">
             <button
               onClick={() => setShowUpgradeModal(false)}
-              className="absolute top-4 right-4 text-zinc-400 hover:text-white p-1 rounded-lg hover:bg-zinc-800 transition-colors"
+              className="absolute top-4 right-4 text-zinc-400 hover:text-white p-1 rounded-lg hover:bg-zinc-800 transition-colors cursor-pointer"
             >
               <FiX size={18} />
             </button>
 
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-amber-500 flex items-center justify-center shadow-lg shadow-purple-900/40">
-                <HiSparkles size={20} className="text-white" />
+              <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400">
+                <FiZap size={20} />
               </div>
               <div>
-                <h3 className="text-base font-bold text-white">
-                  Upgrade Syncy AI Credits
+                <h3 className="text-base font-semibold text-white">
+                  Syncy AI Credits
                 </h3>
                 <p className="text-xs text-zinc-400">
-                  Current usage: {creditsInfo.usedCredits} / {creditsInfo.totalCredits} credits used
+                  {totalAvailable} credits available
                 </p>
               </div>
             </div>
 
-            {/* Plan Card */}
-            <div className="p-4 rounded-xl bg-gradient-to-br from-purple-900/30 via-zinc-900/60 to-zinc-900 border border-purple-500/40 mb-4">
+            {/* Info Card */}
+            <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-800 mb-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-purple-400">
-                  SyncCanvas Pro
+                <span className="text-xs font-semibold text-zinc-200">
+                  Daily Quota & Bonus
                 </span>
-                <span className="text-sm font-extrabold text-white">
-                  100 Credits Refill
+                <span className="text-xs text-zinc-400 font-mono">
+                  {creditsInfo.daily} daily + {creditsInfo.bonus} bonus
                 </span>
               </div>
-              <ul className="space-y-1.5 text-xs text-zinc-300">
-                <li className="flex items-center gap-2">
-                  <FiCheck className="text-emerald-400 shrink-0" size={14} />
-                  <span>Instant +100 credits for Syncy AI</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <FiCheck className="text-emerald-400 shrink-0" size={14} />
-                  <span>Full architecture diagram & microservices generator</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <FiCheck className="text-emerald-400 shrink-0" size={14} />
-                  <span>High-speed generation with Gemini 2.0 Pro</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <FiCheck className="text-emerald-400 shrink-0" size={14} />
-                  <span>Unlimited collaborative rooms</span>
-                </li>
-              </ul>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                Daily credits refill every 24 hours. You can earn bonus credits for invites, shares, and ratings on the Credits & Rewards page.
+              </p>
             </div>
 
-            {upgradeSuccess ? (
-              <div className="py-3 px-4 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-semibold flex items-center justify-center gap-2 mb-2">
-                <FiCheck size={16} />
-                <span>Credits Refilled Successfully!</span>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2">
-                <button
-                  type="button"
-                  onClick={handleUpgradePlan}
-                  disabled={upgrading}
-                  className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-purple-600 hover:opacity-95 text-white font-bold text-xs shadow-lg shadow-orange-950/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
-                >
-                  {upgrading ? (
-                    <span>Upgrading...</span>
-                  ) : (
-                    <>
-                      <FiZap size={14} />
-                      <span>Upgrade Plan Now</span>
-                      <FiArrowUpRight size={14} />
-                    </>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowUpgradeModal(false)}
-                  className="w-full py-2 px-4 rounded-xl bg-zinc-800/80 hover:bg-zinc-800 text-zinc-400 hover:text-white text-xs font-medium transition-colors"
-                >
-                  Maybe Later
-                </button>
-              </div>
-            )}
+            <div className="flex flex-col gap-2">
+              <Link
+                to="/credits"
+                onClick={() => setShowUpgradeModal(false)}
+                className="w-full py-2.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>Go to Credits & Rewards</span>
+                <FiArrowUpRight size={14} />
+              </Link>
+              <button
+                type="button"
+                onClick={() => setShowUpgradeModal(false)}
+                className="w-full py-2 px-4 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400 hover:text-white text-xs font-medium transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
