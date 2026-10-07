@@ -5,9 +5,11 @@ import Navbar from "../components/landing/LandingNavbar";
 import MiniCanvasDemo from "../components/landing/MiniCanvasDemo";
 import WavyRibbon from "../components/ReactBits/WavyRibbon";
 import CollaborativeSection from "../components/landing/CollaborativeSection";
+import SyncySection from "../components/landing/SyncySection";
 import SyncEngineSection from "../components/landing/SyncEngineSection";
 import HowItWorksSection from "../components/landing/HowItWorksSection";
 import Footer from "../components/landing/Footer";
+import HeroSyncyRobot from "../components/landing/HeroSyncyRobot";
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -91,7 +93,10 @@ export default function LandingPage() {
 
       {/* Live mini-canvas demo */}
       <div className="relative z-10 w-full max-w-5xl px-6 mt-20 mb-16 md:mb-20">
-        <MiniCanvasDemo />
+        <div className="relative w-full">
+          <MiniCanvasDemo />
+          <HeroSyncyRobot />
+        </div>
         <p className="text-lg md:text-xl text-zinc-400 text-center max-w-xl mx-auto mt-8">
           Sketch freely. Map out systems. Watch it happen together.
         </p>
@@ -126,6 +131,11 @@ export default function LandingPage() {
       {/* Collaborative Features Section */}
       <div className="relative z-10 w-full mt-10 md:mt-16">
         <CollaborativeSection />
+      </div>
+
+      {/* Meet Syncy AI Section */}
+      <div className="relative z-10 w-full mt-10 md:mt-16">
+        <SyncySection />
       </div>
 
       {/* Sync Engine Architecture Section */}
