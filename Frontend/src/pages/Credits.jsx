@@ -205,12 +205,12 @@ export default function Credits() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#050505] text-zinc-300 font-sans p-6 flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-app-base text-zinc-300 font-sans p-6 flex flex-col items-center justify-center">
         <div className="w-full max-w-[720px] space-y-6 animate-pulse">
           <div className="h-4 w-28 bg-zinc-800 rounded"></div>
           <div className="h-14 w-44 bg-zinc-800 rounded-lg"></div>
-          <div className="h-40 bg-zinc-900 border border-zinc-800 rounded-xl"></div>
-          <div className="h-48 bg-zinc-900 border border-zinc-800 rounded-xl"></div>
+          <div className="h-40 bg-app-surface border border-zinc-800 rounded-xl"></div>
+          <div className="h-48 bg-app-surface border border-zinc-800 rounded-xl"></div>
         </div>
       </div>
     );
@@ -218,12 +218,12 @@ export default function Credits() {
 
   if (error && !data) {
     return (
-      <div className="min-h-screen bg-[#050505] text-zinc-300 font-sans p-6 flex flex-col items-center justify-center">
-        <div className="w-full max-w-[720px] bg-zinc-900 border border-zinc-800 rounded-xl p-6 text-center space-y-3">
+      <div className="min-h-screen bg-app-base text-zinc-300 font-sans p-6 flex flex-col items-center justify-center">
+        <div className="w-full max-w-[720px] bg-app-surface border border-zinc-800 rounded-xl p-6 text-center space-y-3">
           <p className="text-sm text-red-400">{error}</p>
           <button
             onClick={fetchCreditsData}
-            className="px-4 py-2 text-xs bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors cursor-pointer"
+            className="px-4 py-2 text-xs bg-app-raised hover:bg-zinc-800 text-zinc-200 hover:text-white border border-zinc-800 rounded-lg transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500"
           >
             Try Again
           </button>
@@ -242,13 +242,13 @@ export default function Credits() {
   } = data || {};
 
   return (
-    <div className="min-h-screen bg-[#050505] text-zinc-300 font-sans pb-16">
-      {/* Top Simple Navigation */}
-      <header className="border-b border-zinc-800/80 bg-[#050505]/90 sticky top-0 z-40">
+    <div className="min-h-screen bg-app-base text-zinc-300 font-sans pb-16">
+      {/* Top Simple Navigation - matches Dashboard header */}
+      <header className="border-b border-zinc-800/80 bg-app-header/90 backdrop-blur-xl sticky top-0 z-40">
         <div className="max-w-[720px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <Link
             to="/dashboard"
-            className="inline-flex items-center gap-2 text-xs font-medium text-zinc-400 hover:text-white transition-colors"
+            className="inline-flex items-center gap-2 text-xs font-medium text-zinc-400 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 rounded px-1.5 py-1"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Back to Dashboard</span>
@@ -259,7 +259,7 @@ export default function Credits() {
               fetchInitialLedger();
             }}
             title="Refresh balance"
-            className="text-zinc-500 hover:text-zinc-300 p-1.5 rounded transition-colors"
+            className="text-zinc-400 hover:text-white p-1.5 rounded-lg border border-zinc-800 bg-app-raised hover:bg-zinc-800 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500"
           >
             <RefreshCw className="w-3.5 h-3.5" />
           </button>
@@ -274,7 +274,7 @@ export default function Credits() {
         <section aria-labelledby="balance-heading" className="space-y-1">
           <h1
             id="balance-heading"
-            className="text-xs font-semibold uppercase tracking-wider text-zinc-500"
+            className="text-xs font-semibold uppercase tracking-wider text-zinc-400"
           >
             Credits Balance
           </h1>
@@ -285,7 +285,7 @@ export default function Credits() {
             <div className="text-sm font-medium text-zinc-400 mt-1">
               {daily} daily · {bonus} bonus
             </div>
-            <div className="text-xs text-zinc-500 mt-1.5 font-mono">
+            <div className="text-xs text-zinc-400 mt-1.5 font-mono tabular-nums">
               Daily credits reset {formatResetCountdown(secondsLeft)}
             </div>
           </div>
@@ -307,15 +307,15 @@ export default function Credits() {
             </p>
           </div>
 
-          <div className="border border-zinc-800 rounded-xl divide-y divide-zinc-800/80 bg-zinc-900/40">
+          <div className="border border-zinc-800 rounded-xl divide-y divide-white/5 bg-app-surface overflow-hidden">
             {/* ROW 1: Referral */}
-            <div className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-app-raised transition-colors">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-semibold text-white">
                     Invite a friend
                   </span>
-                  <span className="text-[11px] font-mono text-zinc-400">
+                  <span className="text-[11px] font-mono text-zinc-400 tabular-nums">
                     +{earnStatus.referral?.reward || 30}
                   </span>
                 </div>
@@ -324,7 +324,7 @@ export default function Credits() {
                 </p>
               </div>
               <div className="sm:text-right shrink-0">
-                <span className="text-xs text-zinc-400 font-mono">
+                <span className="text-xs text-zinc-400 font-mono tabular-nums">
                   {earnStatus.referral?.rewardedCount || 0} of{" "}
                   {earnStatus.referral?.maxRewarded || 10} rewarded
                 </span>
@@ -332,13 +332,13 @@ export default function Credits() {
             </div>
 
             {/* ROW 2: Share a diagram */}
-            <div className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-app-raised transition-colors">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-semibold text-white">
                     Share a public diagram
                   </span>
-                  <span className="text-[11px] font-mono text-zinc-400">
+                  <span className="text-[11px] font-mono text-zinc-400 tabular-nums">
                     +{earnStatus.share?.reward || 10}
                   </span>
                 </div>
@@ -347,7 +347,7 @@ export default function Credits() {
                 </p>
               </div>
               <div className="flex items-center gap-3 shrink-0">
-                <span className="text-xs text-zinc-400 font-mono">
+                <span className="text-xs text-zinc-400 font-mono tabular-nums">
                   {earnStatus.share?.claimedThisWeek || 0} of{" "}
                   {earnStatus.share?.maxPerWeek || 3} this week
                 </span>
@@ -357,24 +357,24 @@ export default function Credits() {
                       setActionError(null);
                       setActiveModal("share");
                     }}
-                    className="px-3 py-1.5 text-xs font-medium rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white transition-colors cursor-pointer"
+                    className="px-3 py-1.5 text-xs font-medium rounded-lg bg-purple-600 hover:bg-purple-500 text-white transition-colors cursor-pointer shadow-[0_2px_10px_rgba(147,51,234,0.25)] focus:outline-none focus:ring-2 focus:ring-purple-500"
                   >
                     Claim
                   </button>
                 ) : (
-                  <span className="text-xs text-zinc-500 font-medium">Cap reached</span>
+                  <span className="text-xs text-zinc-400 font-medium">Cap reached</span>
                 )}
               </div>
             </div>
 
             {/* ROW 3: Rate AI result */}
-            <div className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-app-raised transition-colors">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-semibold text-white">
                     Rate an AI result
                   </span>
-                  <span className="text-[11px] font-mono text-zinc-400">
+                  <span className="text-[11px] font-mono text-zinc-400 tabular-nums">
                     +{earnStatus.rating?.reward || 3}
                   </span>
                 </div>
@@ -383,7 +383,7 @@ export default function Credits() {
                 </p>
               </div>
               <div className="flex items-center gap-3 shrink-0">
-                <span className="text-xs text-zinc-400 font-mono">
+                <span className="text-xs text-zinc-400 font-mono tabular-nums">
                   {earnStatus.rating?.claimedToday || 0} of{" "}
                   {earnStatus.rating?.maxPerDay || 5} today
                 </span>
@@ -393,24 +393,24 @@ export default function Credits() {
                       setActionError(null);
                       setActiveModal("rating");
                     }}
-                    className="px-3 py-1.5 text-xs font-medium rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white transition-colors cursor-pointer"
+                    className="px-3 py-1.5 text-xs font-medium rounded-lg bg-app-raised hover:bg-zinc-800 text-zinc-200 hover:text-white border border-zinc-800 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500"
                   >
                     Rate
                   </button>
                 ) : (
-                  <span className="text-xs text-zinc-500 font-medium">Cap reached</span>
+                  <span className="text-xs text-zinc-400 font-medium">Cap reached</span>
                 )}
               </div>
             </div>
 
             {/* ROW 4: Onboarding (First diagram) */}
-            <div className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-app-raised transition-colors">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-semibold text-white">
                     First diagram created
                   </span>
-                  <span className="text-[11px] font-mono text-zinc-400">
+                  <span className="text-[11px] font-mono text-zinc-400 tabular-nums">
                     +{earnStatus.onboarding?.reward || 20}
                   </span>
                 </div>
@@ -420,15 +420,15 @@ export default function Credits() {
               </div>
               <div className="shrink-0">
                 {earnStatus.onboarding?.claimed ? (
-                  <span className="inline-flex items-center gap-1 text-xs text-zinc-500">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span className="inline-flex items-center gap-1 text-xs text-zinc-400 font-medium">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                     <span>Done</span>
                   </span>
                 ) : (
                   <button
                     onClick={() => handleClaimAction("onboarding")}
                     disabled={actionSubmitting}
-                    className="px-3 py-1.5 text-xs font-medium rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white transition-colors cursor-pointer"
+                    className="px-3 py-1.5 text-xs font-medium rounded-lg bg-purple-600 hover:bg-purple-500 text-white transition-colors cursor-pointer shadow-[0_2px_10px_rgba(147,51,234,0.25)] focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Claim
                   </button>
@@ -437,13 +437,13 @@ export default function Credits() {
             </div>
 
             {/* ROW 5: 7-day streak */}
-            <div className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-app-raised transition-colors">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-semibold text-white">
                     7-day activity streak
                   </span>
-                  <span className="text-[11px] font-mono text-zinc-400">
+                  <span className="text-[11px] font-mono text-zinc-400 tabular-nums">
                     +{earnStatus.streak?.reward || 20}
                   </span>
                 </div>
@@ -453,21 +453,21 @@ export default function Credits() {
               </div>
               <div className="shrink-0">
                 {earnStatus.streak?.claimed ? (
-                  <span className="inline-flex items-center gap-1 text-xs text-zinc-500">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span className="inline-flex items-center gap-1 text-xs text-zinc-400 font-medium">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                     <span>Done</span>
                   </span>
                 ) : earnStatus.streak?.available ? (
                   <button
                     onClick={() => handleClaimAction("streak")}
                     disabled={actionSubmitting}
-                    className="px-3 py-1.5 text-xs font-medium rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white transition-colors cursor-pointer"
+                    className="px-3 py-1.5 text-xs font-medium rounded-lg bg-purple-600 hover:bg-purple-500 text-white transition-colors cursor-pointer shadow-[0_2px_10px_rgba(147,51,234,0.25)] focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Claim
                   </button>
                 ) : (
-                  <span className="inline-flex items-center gap-1 text-xs text-zinc-500">
-                    <Lock className="w-3 h-3" />
+                  <span className="inline-flex items-center gap-1 text-xs text-zinc-400 font-medium">
+                    <Lock className="w-3 h-3 text-zinc-400" />
                     <span>Day {earnStatus.streak?.currentDays || 1} of 7</span>
                   </span>
                 )}
@@ -502,12 +502,12 @@ export default function Credits() {
                     ? `${window.location.origin}/register?ref=${referralCode}`
                     : "Generating code..."
                 }
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs font-mono text-zinc-200 focus:outline-none select-all"
+                className="w-full bg-app-inset border border-zinc-800 rounded-lg px-3 py-2 text-xs font-mono text-zinc-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 select-all"
               />
               <button
                 type="button"
                 onClick={handleCopyLink}
-                className="px-3.5 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-medium transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer"
+                className="px-3.5 py-2 rounded-lg bg-app-raised hover:bg-zinc-800 text-zinc-200 hover:text-white border border-zinc-800 text-xs font-medium transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
                 {copied ? (
                   <>
@@ -523,7 +523,7 @@ export default function Credits() {
               </button>
             </div>
 
-            <p className="text-xs text-zinc-400">
+            <p className="text-xs text-zinc-400 tabular-nums">
               {referralStats.friendsJoined} {referralStats.friendsJoined === 1 ? "friend" : "friends"} joined, {referralStats.creditsEarned} credits earned
             </p>
           </div>
@@ -545,18 +545,18 @@ export default function Credits() {
             </p>
           </div>
 
-          <div className="border border-zinc-800 rounded-xl overflow-hidden bg-zinc-900/40">
+          <div className="border border-zinc-800 rounded-xl overflow-hidden bg-app-surface">
             {ledgerItems.length === 0 && !ledgerLoading ? (
               <div className="p-8 text-center space-y-3">
                 <div className="inline-block opacity-40">
                   <SyncyRobot size={36} floating={false} interactive={false} />
                 </div>
-                <p className="text-xs text-zinc-500">No activity yet</p>
+                <p className="text-xs text-zinc-400">No activity yet</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="border-b border-zinc-800 bg-zinc-900/60 text-zinc-500 uppercase tracking-wider font-medium text-[10px]">
+                  <thead className="border-b border-zinc-800 bg-app-inset text-zinc-400 uppercase tracking-wider font-semibold text-[10px]">
                     <tr>
                       <th scope="col" className="py-2.5 px-3.5">
                         Date
@@ -569,21 +569,21 @@ export default function Credits() {
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-zinc-800/60 font-sans">
+                  <tbody className="divide-y divide-white/5 font-sans">
                     {ledgerItems.map((item) => (
-                      <tr key={item._id} className="hover:bg-zinc-800/20">
-                        <td className="py-2.5 px-3.5 text-zinc-400 font-mono whitespace-nowrap text-[11px]">
+                      <tr key={item._id} className="hover:bg-app-raised transition-colors">
+                        <td className="py-2.5 px-3.5 text-zinc-400 font-mono whitespace-nowrap text-[11px] tabular-nums">
                           {formatDate(item.createdAt)}
                         </td>
-                        <td className="py-2.5 px-3.5 text-zinc-300">
+                        <td className="py-2.5 px-3.5 text-zinc-200">
                           <span>{item.reason}</span>
-                          <span className="text-[10px] text-zinc-500 ml-1.5 font-mono">
+                          <span className="text-[10px] text-zinc-400 ml-1.5 font-mono tabular-nums">
                             ({item.bucket})
                           </span>
                         </td>
                         <td
-                          className={`py-2.5 px-3.5 text-right font-mono font-medium ${
-                            item.amount > 0 ? "text-emerald-400" : "text-zinc-400"
+                          className={`py-2.5 px-3.5 text-right font-mono font-medium tabular-nums ${
+                            item.amount > 0 ? "text-emerald-400" : "text-zinc-300"
                           }`}
                         >
                           {item.amount > 0 ? `+${item.amount}` : item.amount}
@@ -601,7 +601,7 @@ export default function Credits() {
                   type="button"
                   onClick={loadMoreLedger}
                   disabled={ledgerLoading}
-                  className="text-xs font-medium text-zinc-400 hover:text-white transition-colors cursor-pointer disabled:opacity-50"
+                  className="text-xs font-medium text-zinc-300 hover:text-white transition-colors cursor-pointer disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-purple-500 rounded px-2.5 py-1"
                 >
                   {ledgerLoading ? "Loading..." : "Load more"}
                 </button>
@@ -618,10 +618,10 @@ export default function Credits() {
           className="border-t border-zinc-800/80 pt-8 pb-4 space-y-3"
         >
           <div>
-            <h2 id="refill-heading" className="text-xs font-semibold text-zinc-400">
+            <h2 id="refill-heading" className="text-xs font-semibold text-zinc-300">
               Need extra credits?
             </h2>
-            <p className="text-xs text-zinc-500 mt-0.5">
+            <p className="text-xs text-zinc-400 mt-0.5">
               Refill 100 bonus credits instantly to test diagrams without waiting for daily resets.
             </p>
           </div>
@@ -631,12 +631,12 @@ export default function Credits() {
               type="button"
               onClick={handleRefillBonus}
               disabled={upgrading}
-              className="px-3.5 py-2 text-xs font-medium rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white transition-colors cursor-pointer disabled:opacity-50"
+              className="px-3.5 py-2 text-xs font-medium rounded-lg bg-app-raised hover:bg-zinc-800 text-zinc-200 hover:text-white border border-zinc-800 transition-colors cursor-pointer disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
               {upgrading ? "Adding credits..." : "Refill 100 Credits"}
             </button>
             {upgradeMsg && (
-              <span className="text-xs text-zinc-400 animate-in fade-in">
+              <span className="text-xs text-zinc-300 animate-in fade-in">
                 {upgradeMsg}
               </span>
             )}
@@ -648,10 +648,10 @@ export default function Credits() {
       {/* INTERACTIVE CLAIM MODALS */}
       {/* ======================================================== */}
       {activeModal === "share" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-sm rounded-xl bg-zinc-900 border border-zinc-800 p-5 space-y-4 text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4">
+          <div className="w-full max-w-sm rounded-xl bg-app-surface border border-zinc-800 p-5 space-y-4 text-white shadow-2xl">
             <div>
-              <h3 className="text-sm font-semibold">Claim Share Reward</h3>
+              <h3 className="text-sm font-semibold text-white">Claim Share Reward</h3>
               <p className="text-xs text-zinc-400 mt-1">
                 Enter your shared diagram or canvas room ID to verify and claim +10 bonus credits.
               </p>
@@ -661,7 +661,7 @@ export default function Credits() {
               placeholder="e.g. room-token or diagram title"
               value={shareInput}
               onChange={(e) => setShareInput(e.target.value)}
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none"
+              className="w-full bg-app-inset border border-zinc-800 rounded-lg p-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
             />
             {actionError && <p className="text-xs text-red-400">{actionError}</p>}
             {actionSuccess && <p className="text-xs text-emerald-400">{actionSuccess}</p>}
@@ -669,7 +669,7 @@ export default function Credits() {
               <button
                 type="button"
                 onClick={() => setActiveModal(null)}
-                className="px-3 py-1.5 text-xs rounded-lg text-zinc-400 hover:text-white"
+                className="px-3 py-1.5 text-xs rounded-lg text-zinc-300 hover:text-white hover:bg-zinc-800 border border-transparent hover:border-zinc-700 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
                 Cancel
               </button>
@@ -679,7 +679,7 @@ export default function Credits() {
                 onClick={() =>
                   handleClaimAction("share", { diagramId: shareInput.trim() })
                 }
-                className="px-3.5 py-1.5 text-xs font-medium rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white disabled:opacity-50 cursor-pointer"
+                className="px-3.5 py-1.5 text-xs font-medium rounded-lg bg-purple-600 hover:bg-purple-500 text-white disabled:opacity-50 cursor-pointer shadow-[0_2px_10px_rgba(147,51,234,0.25)] focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
                 {actionSubmitting ? "Verifying..." : "Claim +10"}
               </button>
@@ -689,10 +689,10 @@ export default function Credits() {
       )}
 
       {activeModal === "rating" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-sm rounded-xl bg-zinc-900 border border-zinc-800 p-5 space-y-4 text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4">
+          <div className="w-full max-w-sm rounded-xl bg-app-surface border border-zinc-800 p-5 space-y-4 text-white shadow-2xl">
             <div>
-              <h3 className="text-sm font-semibold">Rate an AI Generation</h3>
+              <h3 className="text-sm font-semibold text-white">Rate an AI Generation</h3>
               <p className="text-xs text-zinc-400 mt-1">
                 Help improve Syncy's diagram layout quality and earn +3 bonus credits.
               </p>
@@ -704,14 +704,14 @@ export default function Credits() {
                   key={star}
                   type="button"
                   onClick={() => setRatingStars(star)}
-                  className={`p-1 text-sm rounded ${
+                  className={`p-1 text-sm rounded transition-colors focus:outline-none focus:ring-1 focus:ring-purple-500 ${
                     star <= ratingStars ? "text-amber-400" : "text-zinc-600"
                   }`}
                 >
                   ★
                 </button>
               ))}
-              <span className="text-xs text-zinc-400 ml-2 font-mono">
+              <span className="text-xs text-zinc-400 ml-2 font-mono tabular-nums">
                 {ratingStars}/5
               </span>
             </div>
@@ -721,7 +721,7 @@ export default function Credits() {
               rows={2}
               value={ratingNote}
               onChange={(e) => setRatingNote(e.target.value)}
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none resize-none"
+              className="w-full bg-app-inset border border-zinc-800 rounded-lg p-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none"
             />
 
             {actionError && <p className="text-xs text-red-400">{actionError}</p>}
@@ -731,7 +731,7 @@ export default function Credits() {
               <button
                 type="button"
                 onClick={() => setActiveModal(null)}
-                className="px-3 py-1.5 text-xs rounded-lg text-zinc-400 hover:text-white"
+                className="px-3 py-1.5 text-xs rounded-lg text-zinc-300 hover:text-white hover:bg-zinc-800 border border-transparent hover:border-zinc-700 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
                 Cancel
               </button>
@@ -744,7 +744,7 @@ export default function Credits() {
                     note: ratingNote.trim(),
                   })
                 }
-                className="px-3.5 py-1.5 text-xs font-medium rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white disabled:opacity-50 cursor-pointer"
+                className="px-3.5 py-1.5 text-xs font-medium rounded-lg bg-purple-600 hover:bg-purple-500 text-white disabled:opacity-50 cursor-pointer shadow-[0_2px_10px_rgba(147,51,234,0.25)] focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
                 {actionSubmitting ? "Submitting..." : "Claim +3"}
               </button>

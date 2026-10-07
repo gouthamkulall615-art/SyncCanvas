@@ -2,6 +2,43 @@
 
 @theme {
   --font-sans: 'Poppins', sans-serif;
+  --color-app-base: #0e1116;
+  --color-app-surface: #161b22;
+  --color-app-raised: #1a1d24;
+  --color-app-inset: #0b0d13;
+  --color-app-header: #0a0a0c;
+  --color-app-border: #27272a;
+  --color-app-accent: #9333ea;
+  --color-app-accent-hover: #a855f7;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+/* Thin dark scrollbar matching app background and borders */
+html {
+  scrollbar-color: #27272a #0e1116;
+  scrollbar-width: thin;
+  background-color: #0e1116;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0e1116;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #27272a;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
 }
 
 html,
