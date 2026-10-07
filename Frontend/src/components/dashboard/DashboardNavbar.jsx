@@ -51,7 +51,7 @@ export default function DashboardNavbar({ searchQuery = "", onSearchChange }) {
       {/* Brand & Logo */}
       <div className="flex items-center gap-3">
         <Link
-          to="/dashboard"
+          to="/"
           className="flex items-center hover:opacity-95 transition-opacity"
         >
           <BrandLogo size={26} textSize="text-lg" />
