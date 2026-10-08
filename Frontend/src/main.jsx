@@ -5,6 +5,7 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 import { BrowserRouter } from "react-router-dom";
 import App from "./app/App.jsx";
 import "./index.css";
+import { register as registerServiceWorker } from "./registerSW.js";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
@@ -15,3 +16,6 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     </GoogleOAuthProvider>
   </React.StrictMode>,
 );
+
+registerServiceWorker();
+

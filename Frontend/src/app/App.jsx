@@ -16,10 +16,12 @@ import Terms from "../pages/Terms";
 import NotFound from "../pages/NotFound";
 import DiagramDemo from "../ai/DiagramDemo";
 import Credits from "../pages/Credits";
+import InstallPrompt from "../components/InstallPrompt";
 
 export default function App() {
   return (
-    <Routes>
+    <>
+      <Routes>
       {/* Public Landing Page */}
       <Route path="/" element={<Landing />} />
 
@@ -61,5 +63,7 @@ export default function App() {
       <Route path="/404" element={<NotFound />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
+    <InstallPrompt />
+  </>
   );
 }
